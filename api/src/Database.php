@@ -47,6 +47,11 @@ final class Database
 
         self::$pdo = new PDO($dsn, $user, $pass, $options);
 
+        // Baglanti oturumunu UTC'ye sabitle: tum DATETIME/TIMESTAMP degerleri
+        // UTC okunur/yazilir. Serilestirici (Serialize) saklanan degerin UTC
+        // oldugunu varsayip sonuna 'Z' ekler; bu garanti onu dogru kilar.
+        self::$pdo->exec("SET time_zone = '+00:00'");
+
         return self::$pdo;
     }
 

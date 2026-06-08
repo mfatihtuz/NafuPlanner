@@ -6,6 +6,7 @@ namespace Nafu\Controllers;
 
 use Nafu\Http\Request;
 use Nafu\Support\ApiException;
+use Nafu\Support\Serialize;
 use Nafu\Support\Validator;
 
 /**
@@ -51,7 +52,7 @@ final class GroupController extends Controller
               ORDER BY g.created_at ASC'
         );
         $stmt->execute([':uid' => $userId]);
-        return $stmt->fetchAll();
+        return Serialize::rows($stmt->fetchAll(), Serialize::GROUP);
     }
 
     /**
@@ -179,7 +180,23 @@ final class GroupController extends Controller
               ORDER BY m.role = \'owner\' DESC, m.joined_at ASC'
         );
         $stmt->execute([':gid' => $groupId]);
-        return $stmt->fetchAll();
+
+        // Her uye satirini GroupMember sozlesmesine cevir; gomulu user ozeti ekle.
+        $out = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $row['id'] = $row['member_id'];
+            unset($row['member_id']);
+            $user = [
+                'id'         => $row['user_id'],
+                'name'       => $row['name'],
+                'avatar_url' => $row['avatar_url'],
+            ];
+            unset($row['name'], $row['email'], $row['avatar_url']);
+            $row = Serialize::row($row, Serialize::MEMBER);
+            $row['user'] = Serialize::row($user, Serialize::USER_SUMMARY);
+            $out[] = $row;
+        }
+        return $out;
     }
 
     // --- Yardimcilar -------------------------------------------------------
@@ -221,6 +238,6 @@ final class GroupController extends Controller
         if ($row === false) {
             throw ApiException::notFound('Grup bulunamadi.');
         }
-        return $row;
+        return Serialize::row($row, Serialize::GROUP);
     }
 }

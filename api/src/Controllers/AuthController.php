@@ -8,6 +8,7 @@ use Nafu\Auth\GoogleVerifier;
 use Nafu\Auth\Session;
 use Nafu\Http\Request;
 use Nafu\Support\ApiException;
+use Nafu\Support\Serialize;
 use Nafu\Support\Validator;
 
 /**
@@ -162,7 +163,7 @@ final class AuthController extends Controller
         if ($row === false) {
             throw ApiException::notFound('Kullanici bulunamadi.');
         }
-        return $row;
+        return Serialize::row($row, Serialize::USER);
     }
 
     /**
@@ -181,6 +182,6 @@ final class AuthController extends Controller
               ORDER BY g.created_at ASC'
         );
         $stmt->execute([':uid' => $userId]);
-        return $stmt->fetchAll();
+        return Serialize::rows($stmt->fetchAll(), Serialize::GROUP);
     }
 }

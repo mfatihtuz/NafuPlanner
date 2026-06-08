@@ -7,6 +7,7 @@ namespace Nafu\Controllers;
 use Nafu\Config;
 use Nafu\Http\Request;
 use Nafu\Support\ApiException;
+use Nafu\Support\Serialize;
 use Nafu\Support\Str;
 use Nafu\Support\Validator;
 
@@ -247,6 +248,6 @@ final class InvitationController extends Controller
         if ($row === false) {
             throw ApiException::notFound('Grup bulunamadi.');
         }
-        return $row;
+        return Serialize::row($row, Serialize::GROUP);
     }
 }
