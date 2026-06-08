@@ -5,6 +5,7 @@ import {
   ChevronRight,
   LogOut,
   Tags,
+  Trophy,
   UserPlus,
   Users,
 } from 'lucide-react';
@@ -128,6 +129,18 @@ export function MorePage() {
               <p className="truncate text-sm text-[var(--muted)]">{user.email}</p>
             </div>
           </div>
+        </Card>
+      ) : null}
+
+      {/* Katki tablosu */}
+      {currentGroup ? (
+        <Card padding="none" className="overflow-hidden">
+          <NavRow
+            first
+            icon={Trophy}
+            label={tr.more.leaderboard}
+            onClick={() => navigate('/tablo')}
+          />
         </Card>
       ) : null}
 

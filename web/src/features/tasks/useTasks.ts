@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useCelebration } from '@/providers/CelebrationProvider';
 import type { Task } from '@/types/api';
 
 export type TaskScope = 'today' | 'all' | 'overdue' | 'upcoming';
@@ -42,6 +43,7 @@ export function useTasks({ groupId, scope, category, assignee }: UseTasksParams)
  */
 export function useToggleTask(groupId: string | null) {
   const queryClient = useQueryClient();
+  const { celebrate } = useCelebration();
 
   return useMutation({
     mutationFn: ({ task }: { task: Task }) => {
@@ -79,11 +81,17 @@ export function useToggleTask(groupId: string | null) {
     onSuccess: (updated) => {
       // Sunucudan donen tamamlayan/zaman bilgisini detayda guncelle.
       queryClient.setQueryData(['task', updated.id], updated);
+      // Tamamlama odulu varsa kutla (yalnizca yeni tamamlamada gelir).
+      if (updated.reward) {
+        celebrate(updated.reward);
+      }
     },
     onSettled: (_data, _err, { task }) => {
       void queryClient.invalidateQueries({ queryKey: ['tasks', groupId] });
       void queryClient.invalidateQueries({ queryKey: ['task', task.id] });
       void queryClient.invalidateQueries({ queryKey: ['activity', groupId] });
+      void queryClient.invalidateQueries({ queryKey: ['leaderboard', groupId] });
+      void queryClient.invalidateQueries({ queryKey: ['badges', groupId] });
     },
   });
 }

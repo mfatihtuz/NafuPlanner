@@ -59,7 +59,8 @@ final class LeaderboardController extends Controller
             $points = (int) $r['points'];
             $displayName = trim((string) ($r['display_name'] ?? ''));
             $out[] = [
-                'user_id'         => (int) $r['user_id'],
+                // Id sozlesmesi: kimlikler STRING (web/src/types/api.ts Id = string).
+                'user_id'         => (string) $r['user_id'],
                 'name'            => $displayName !== '' ? $displayName : (string) $r['name'],
                 'avatar_url'      => $r['avatar_url'],
                 'rank'            => $rank,

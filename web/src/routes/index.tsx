@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { AppShell } from '@/components/layout/AppShell';
+import { CelebrationProvider } from '@/providers/CelebrationProvider';
 import { Spinner } from '@/components/ui';
 import { tr } from '@/i18n/tr';
 
@@ -32,9 +33,11 @@ export function ProtectedLayout() {
   }
 
   return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
+    <CelebrationProvider>
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    </CelebrationProvider>
   );
 }
 

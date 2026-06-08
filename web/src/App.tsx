@@ -8,6 +8,7 @@ import { ShoppingPage } from '@/routes/ShoppingPage';
 import { MorePage } from '@/routes/MorePage';
 import { CategoriesPage } from '@/routes/CategoriesPage';
 import { ActivityPage } from '@/routes/ActivityPage';
+import { LeaderboardPage } from '@/routes/LeaderboardPage';
 import { InviteAcceptPage } from '@/routes/InviteAcceptPage';
 
 const router = createBrowserRouter([
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
       { path: 'daha', element: <MorePage /> },
       { path: 'kategoriler', element: <CategoriesPage /> },
       { path: 'akis', element: <ActivityPage /> },
+      { path: 'tablo', element: <LeaderboardPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

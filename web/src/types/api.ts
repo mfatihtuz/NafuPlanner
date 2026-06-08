@@ -148,6 +148,8 @@ export interface Task {
   attachments?: TaskAttachment[];
   /** Etiket adlari (varsa). */
   tags?: string[];
+  /** Tamamlama yanitinda gelir (kutlama icin). */
+  reward?: TaskReward;
 }
 
 // --- Tekrar serileri ------------------------------------------------------
@@ -198,25 +200,46 @@ export interface ShoppingItem {
 // --- Oyunlastirma / akis --------------------------------------------------
 
 export interface Badge {
-  id: Id;
   code: string;
   name: string;
   description: string;
   icon: string;
-  threshold_type: string; // tasks_completed | streak_days | points_total
+  threshold_type: string; // tasks_completed | streak_days | points_total | early_complete | zero_overdue
   threshold_value: number;
-  /** Sunucu ekledigi turetilmis alan: bu rozet kazanildi mi. */
-  earned_at?: IsoDateTime | null;
+  earned: boolean;
+  earned_at: IsoDateTime | null;
+  /** Olculebilen turlerde mevcut deger; olculemiyorsa null. */
+  progress: number | null;
 }
 
 export interface LeaderboardRow {
   user_id: Id;
-  display_name: string;
+  name: string;
   avatar_url: string | null;
-  points: number;
-  streak_current: number;
   rank: number;
-  tasks_completed?: number;
+  points: number;
+  weekly_points: number;
+  level: number;
+  streak_current: number;
+  streak_best: number;
+  badge_count: number;
+  tasks_completed: number;
+}
+
+/** Gorev tamamlaninca verilen kutlama ozeti (POST /tasks/{id}/complete). */
+export interface RewardBadge {
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export interface TaskReward {
+  points: number;
+  total_points: number;
+  streak: number;
+  level: number;
+  new_badges: RewardBadge[];
 }
 
 export interface Activity {
