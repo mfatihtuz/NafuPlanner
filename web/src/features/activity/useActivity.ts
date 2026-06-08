@@ -4,8 +4,8 @@ import type { Activity } from '@/types/api';
 
 /**
  * Grup aktivite akisini sayfali ceker. Sayfalama `before` imleci ile yapilir:
- * son ogenin created_at degeri bir sonraki sayfa icin gonderilir. Sayfa boyutu
- * sunucuya birakilir; bir sayfa bos donerse sona ulasilmis sayilir.
+ * son ogenin id degeri bir sonraki sayfa icin gonderilir (sunucu id'den kucuk,
+ * yani daha eski kayitlari doner). Bir sayfa bos donerse sona ulasilmis sayilir.
  */
 export function useActivity(groupId: string | null) {
   return useInfiniteQuery<Activity[]>({
@@ -18,6 +18,6 @@ export function useActivity(groupId: string | null) {
         signal,
       }),
     getNextPageParam: (lastPage) =>
-      lastPage.length === 0 ? undefined : lastPage[lastPage.length - 1]?.created_at,
+      lastPage.length === 0 ? undefined : lastPage[lastPage.length - 1]?.id,
   });
 }

@@ -135,6 +135,7 @@ final class TaskController extends Controller
         $assignees = $this->idList($body['assignee_ids'] ?? []);
         $subtasks  = $this->stringList($body['subtasks'] ?? []);
         $tagIds    = $this->idList($body['tag_id'] ?? ($body['tag_ids'] ?? []));
+        $tagNames  = $this->stringList($body['tags'] ?? []);
 
         $pdo = $this->db();
 
@@ -165,6 +166,7 @@ final class TaskController extends Controller
             $this->syncAssignees($pdo, $taskId, $groupId, $assignees);
             $this->insertSubtasks($pdo, $taskId, $subtasks);
             $this->syncTags($pdo, $taskId, $groupId, $tagIds);
+            $this->syncTagsByName($pdo, $taskId, $groupId, $tagNames);
 
             $pdo->commit();
         } catch (\Throwable $e) {
@@ -258,6 +260,9 @@ final class TaskController extends Controller
             if (array_key_exists('tag_id', $body) || array_key_exists('tag_ids', $body)) {
                 $tags = $this->idList($body['tag_id'] ?? ($body['tag_ids'] ?? []));
                 $this->syncTags($pdo, $taskId, $groupId, $tags, true);
+            }
+            if (array_key_exists('tags', $body)) {
+                $this->syncTagsByName($pdo, $taskId, $groupId, $this->stringList($body['tags']), true);
             }
             $pdo->commit();
         } catch (\Throwable $e) {
@@ -400,6 +405,7 @@ final class TaskController extends Controller
 
         $assigneeMap = $this->assigneesFor($ids);
         $subtaskMap  = $this->subtasksFor($ids);
+        $tagMap      = $this->tagsFor($ids);
 
         $out = [];
         foreach ($rows as $row) {
@@ -407,6 +413,7 @@ final class TaskController extends Controller
             $task = Serialize::row($row, Serialize::TASK);
             $task['assignee_ids'] = $assigneeMap[$id] ?? [];
             $task['subtasks']     = $subtaskMap[$id] ?? [];
+            $task['tags']         = $tagMap[$id] ?? [];
             if (!array_key_exists('comment_count', $task)) {
                 $task['comment_count'] = 0;
             }
@@ -464,6 +471,53 @@ final class TaskController extends Controller
     }
 
     /**
+     * Verilen gorev id'leri icin etiket ADLARI haritasi (istemci etiketleri
+     * serbest metin ad olarak tutar).
+     *
+     * @param array<int,int> $taskIds
+     * @return array<int,array<int,string>>
+     */
+    private function tagsFor(array $taskIds): array
+    {
+        if ($taskIds === []) {
+            return [];
+        }
+        [$in, $args] = $this->inClause($taskIds);
+        $stmt = $this->db()->prepare(
+            "SELECT tt.task_id, g.name
+               FROM np_task_tags tt
+               JOIN np_tags g ON g.id = tt.tag_id
+              WHERE tt.task_id IN ($in)
+              ORDER BY g.name ASC"
+        );
+        $stmt->execute($args);
+        $map = [];
+        foreach ($stmt->fetchAll() as $r) {
+            $map[(int) $r['task_id']][] = (string) $r['name'];
+        }
+        return $map;
+    }
+
+    /**
+     * Tek gorevin eklerini (serilestirilmis) dondurur.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function attachmentsFor(int $taskId): array
+    {
+        $stmt = $this->db()->prepare(
+            'SELECT id, task_id, user_id, file_path, original_name, mime, size_bytes, created_at
+               FROM np_task_attachments WHERE task_id = :tid ORDER BY id ASC'
+        );
+        $stmt->execute([':tid' => $taskId]);
+        $out = [];
+        foreach ($stmt->fetchAll() as $r) {
+            $out[] = Serialize::row($r, Serialize::ATTACHMENT);
+        }
+        return $out;
+    }
+
+    /**
      * IN(...) yer tutuculari ve bagli argumanlari uretir (PDO prepared).
      *
      * @param array<int,int> $ids
@@ -499,7 +553,11 @@ final class TaskController extends Controller
             throw ApiException::notFound('Gorev bulunamadi.');
         }
         $hydrated = $this->hydrateTasks([$row]);
-        return $hydrated[0];
+        $task = $hydrated[0];
+        // Tek gorev yanitina ekleri (fotograflar) gom; istemci detayda bunu kullanir
+        // ve ayri bir uca gerek kalmaz.
+        $task['attachments'] = $this->attachmentsFor($taskId);
+        return $task;
     }
 
     /**
@@ -592,6 +650,43 @@ final class TaskController extends Controller
         $insTag = $pdo->prepare('INSERT IGNORE INTO np_task_tags (task_id, tag_id) VALUES (:tid, :tag)');
         foreach ($valid as $tagId) {
             $insTag->execute([':tid' => $taskId, ':tag' => $tagId]);
+        }
+    }
+
+    /**
+     * Etiketleri ADLARIYLA baglar: grupta yoksa olusturur (bul-veya-olustur),
+     * sonra goreve baglar. $replace true ise once mevcut baglari siler.
+     * Istemci etiketleri serbest metin ad olarak gonderir.
+     *
+     * @param array<int,string> $names
+     */
+    private function syncTagsByName(PDO $pdo, int $taskId, int $groupId, array $names, bool $replace = false): void
+    {
+        if ($replace) {
+            $pdo->prepare('DELETE FROM np_task_tags WHERE task_id = :tid')->execute([':tid' => $taskId]);
+        }
+        if ($names === []) {
+            return;
+        }
+        $find   = $pdo->prepare('SELECT id FROM np_tags WHERE group_id = :gid AND name = :name LIMIT 1');
+        $create = $pdo->prepare('INSERT INTO np_tags (group_id, name) VALUES (:gid, :name)');
+        $link   = $pdo->prepare('INSERT IGNORE INTO np_task_tags (task_id, tag_id) VALUES (:tid, :tag)');
+
+        $seen = [];
+        foreach ($names as $name) {
+            $name = mb_substr(trim($name), 0, 60);
+            if ($name === '' || isset($seen[$name])) {
+                continue;
+            }
+            $seen[$name] = true;
+
+            $find->execute([':gid' => $groupId, ':name' => $name]);
+            $tagId = $find->fetchColumn();
+            if ($tagId === false) {
+                $create->execute([':gid' => $groupId, ':name' => $name]);
+                $tagId = (int) $pdo->lastInsertId();
+            }
+            $link->execute([':tid' => $taskId, ':tag' => (int) $tagId]);
         }
     }
 
