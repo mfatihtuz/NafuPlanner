@@ -35,11 +35,14 @@ echo "==> public_html agaci toplaniyor"
 # Arayuz (derlenmis) -> kok
 cp -r "$ROOT/web/dist/." "$PUB/"
 # Sunucu -> /api  (config.php HARIC)
-cp -r "$ROOT/api/index.php" "$ROOT/api/.htaccess" "$ROOT/api/router.php" \
+cp -r "$ROOT/api/index.php" "$ROOT/api/install.php" "$ROOT/api/.htaccess" "$ROOT/api/router.php" \
       "$ROOT/api/config.example.php" "$ROOT/api/composer.json" "$ROOT/api/composer.lock" \
       "$ROOT/api/README.md" "$ROOT/api/src" "$ROOT/api/vendor" "$PUB/api/"
 mkdir -p "$PUB/api/uploads"
 touch "$PUB/api/uploads/.gitkeep"
+# Web yukleyicinin (install.php) okuyacagi SQL dosyalari (.htaccess disaridan erisimi engeller)
+mkdir -p "$PUB/api/sql"
+cp "$ROOT/db/schema.sql" "$ROOT/db/seed.sql" "$PUB/api/sql/"
 
 echo "==> Veritabani dosyalari"
 cp "$ROOT/db/schema.sql" "$ROOT/db/seed.sql" "$OUT/database/"

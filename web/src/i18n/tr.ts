@@ -63,13 +63,17 @@ export const tr = {
     heroTitle: 'Ev hayatınız, tek bir sakin yerde.',
     heroSubtitle:
       'Görevleri, alışverişi ve küçük hatırlatmaları birlikte taşıyın. Sürekli mesajlaşmadan, herkes ne yapacağını bilsin.',
-    continueWithGoogle: 'Google ile devam et',
+    continueWithGoogle: 'Google hesabı ile devam et',
+    signUpTab: 'Kaydol',
+    signInTab: 'Giriş yap',
+    signUpHint: 'Google ile devam et; hesabın saniyeler içinde oluşturulur ve doğrudan giriş yaparsın.',
+    signInHint: 'Google hesabınla giriş yap.',
     signingIn: 'Giriş yapılıyor...',
     signOut: 'Çıkış yap',
     signOutConfirm: 'Çıkış yapmak istediğine emin misin?',
     noClientIdTitle: 'Google girişi henüz ayarlı değil',
     noClientIdBody:
-      'Giriş yapabilmek için VITE_GOOGLE_CLIENT_ID değerinin tanımlı olması gerekiyor. Kurulum tamamlanınca buradan giriş yapabileceksin.',
+      'Giriş yapabilmek için sunucudaki config.php dosyasında google_client_id değerinin girilmesi gerekiyor. Kurulum tamamlanınca buradan giriş yapabileceksin.',
     privacyNote: 'Yalnızca adını ve e-postanı kullanırız. Verilerin sizde kalır.',
     googleLoadError:
       'Google giriş servisi yüklenemedi. Bağlantını kontrol edip tekrar dener misin?',
