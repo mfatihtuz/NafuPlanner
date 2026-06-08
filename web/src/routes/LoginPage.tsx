@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Sparkles, TriangleAlert } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { tr } from '@/i18n/tr';
-import { Button, Card, SegmentedControl, Spinner, type SegmentOption } from '@/components/ui';
+import { Button, Card, Spinner } from '@/components/ui';
 
 /** Google logosu (resmi renkler). Tek kullanimlik oldugu icin yerinde tutulur. */
 function GoogleMark() {
@@ -28,17 +28,10 @@ function GoogleMark() {
   );
 }
 
-/** Kaydol / Giris secenekleri. Ikisi de ayni Google akisini calistirir. */
-const authModes: SegmentOption<string>[] = [
-  { value: 'signup', label: tr.auth.signUpTab },
-  { value: 'login', label: tr.auth.signInTab },
-];
-
-/** Giris ekrani: sicak kahraman metni, Kaydol/Giris ve Google girisi. Emoji yok. */
+/** Giris ekrani: sicak kahraman metni ve tek butonla Google girisi. Emoji yok. */
 export function LoginPage() {
   const { isGoogleConfigured, isAuthConfigLoading, signInWithGoogle } = useAuth();
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<'signup' | 'login'>('signup');
 
   const handleSignIn = () => {
     setBusy(true);
@@ -70,28 +63,20 @@ export function LoginPage() {
               <Spinner className="h-6 w-6" label={tr.common.loading} />
             </div>
           ) : isGoogleConfigured ? (
-            <div className="space-y-4">
-              <SegmentedControl
-                options={authModes}
-                value={mode}
-                onChange={(v) => setMode(v as 'signup' | 'login')}
-                ariaLabel={`${tr.auth.signUpTab} / ${tr.auth.signInTab}`}
-              />
-              <div className="space-y-2">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  block
-                  loading={busy}
-                  leftIcon={<GoogleMark />}
-                  onClick={handleSignIn}
-                >
-                  {busy ? tr.auth.signingIn : tr.auth.continueWithGoogle}
-                </Button>
-                <p className="text-center text-xs leading-relaxed text-[var(--muted)]">
-                  {mode === 'signup' ? tr.auth.signUpHint : tr.auth.signInHint}
-                </p>
-              </div>
+            <div className="space-y-2">
+              <Button
+                size="lg"
+                variant="secondary"
+                block
+                loading={busy}
+                leftIcon={<GoogleMark />}
+                onClick={handleSignIn}
+              >
+                {busy ? tr.auth.signingIn : tr.auth.continueWithGoogle}
+              </Button>
+              <p className="text-center text-xs leading-relaxed text-[var(--muted)]">
+                {tr.auth.autoCreateNote}
+              </p>
               <p className="text-center text-xs text-[var(--muted)]">{tr.auth.privacyNote}</p>
             </div>
           ) : (

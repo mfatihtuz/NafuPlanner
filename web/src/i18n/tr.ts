@@ -63,11 +63,8 @@ export const tr = {
     heroTitle: 'Ev hayatınız, tek bir sakin yerde.',
     heroSubtitle:
       'Görevleri, alışverişi ve küçük hatırlatmaları birlikte taşıyın. Sürekli mesajlaşmadan, herkes ne yapacağını bilsin.',
-    continueWithGoogle: 'Google hesabı ile devam et',
-    signUpTab: 'Kaydol',
-    signInTab: 'Giriş yap',
-    signUpHint: 'Google ile devam et; hesabın saniyeler içinde oluşturulur ve doğrudan giriş yaparsın.',
-    signInHint: 'Google hesabınla giriş yap.',
+    continueWithGoogle: 'Google ile Giriş Yap',
+    autoCreateNote: 'Hesabın yoksa ilk girişte otomatik oluşturulur.',
     signingIn: 'Giriş yapılıyor...',
     signOut: 'Çıkış yap',
     signOutConfirm: 'Çıkış yapmak istediğine emin misin?',
