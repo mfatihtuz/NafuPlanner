@@ -1,0 +1,46 @@
+# NafuPlanner API — Apache yapilandirmasi (Hostinger paylasimli hosting)
+# Tum istekleri (var olan dosya/dizin haricinde) index.php on denetleyicisine yonlendirir.
+
+# UTF-8 (utf8mb4 ile uyumlu) varsayilan karakter kumesi
+AddDefaultCharset utf-8
+
+# Dizin listelemeyi kapat
+Options -Indexes
+
+# ----------------------------------------------------------------------------
+# Hassas dosyalara dogrudan erisimi engelle
+# ----------------------------------------------------------------------------
+<FilesMatch "(?i)(config\.php|config\.example\.php|composer\.(json|lock)|\.sql)$">
+    Require all denied
+</FilesMatch>
+
+# vendor ve src dizinlerine dogrudan HTTP erisimini engelle
+RedirectMatch 404 (?i)^/api/(vendor|src)/
+
+# ----------------------------------------------------------------------------
+# Temel guvenlik basliklari
+# ----------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+</IfModule>
+
+# ----------------------------------------------------------------------------
+# Yonlendirme: var olmayan yol -> index.php
+# ----------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Alt klasorde calisiyorsa taban yolu otomatik bulunur; gerekirse ayarlayin.
+    # RewriteBase /api/
+
+    # Var olan dosya veya dizinlere dokunma (uploads, statik vb.)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Geri kalan her sey on denetleyiciye
+    RewriteRule ^ index.php [L]
+</IfModule>
