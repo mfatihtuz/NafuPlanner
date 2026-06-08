@@ -1,8 +1,9 @@
 name: Hostinger'a dagit
 
-# Her push'ta (ve elle tetiklemede) derler, FTP ile Hostinger'a yukler ve
-# veritabani tablolarini kurar. Sirlar GitHub Secrets'tan gelir; depoda tutulmaz.
-# Secret'lar tanimli degilse yalnizca derler ve indirilebilir artifact uretir.
+# Her push'ta derler ve Hostinger'a dagitir. Sirlar GitHub Secrets'tan gelir;
+# depoda tutulmaz. Hiz icin 950 dosya tek tek degil, tek site.zip yuklenir ve
+# sunucuda _deploy.php ile acilir. config.php (sirlar) zip'e KONMAZ; ayrica
+# dogrudan api/'ye yuklenir (HTTP erisimi .htaccess ile kapali).
 
 on:
   push:
@@ -16,6 +17,9 @@ concurrency:
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    env:
+      APP_URL: https://nafuplanner.mftyazilim.com
+      FTP_HOST: 145.14.156.26
     steps:
       - name: Depoyu al
         uses: actions/checkout@v4
@@ -49,59 +53,70 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::FTP_PASSWORD secret yok; yalnizca derleme + artifact yapildi. Dagitim icin Secrets ekleyin."
+            echo "::notice::FTP secret yok; yalnizca derleme + artifact yapildi."
           fi
 
-      - name: config.php olustur (GitHub Secrets'tan)
+      - name: config.php olustur (sirlardan, zip DISINA)
         if: steps.guard.outputs.ready == 'true'
         env:
-          OUT: deploy/output/public_html/api/config.php
-          # Hostinger'da DB adi ve kullanici ayni; tek secret yeter (DB_USER).
+          OUT: deploy/output/config.php
           DB_NAME: ${{ secrets.DB_USER }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASS: ${{ secrets.DB_PASSWORD }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          APP_URL: https://nafuplanner.mftyazilim.com
         run: php deploy/make-config.php
 
-      - name: FTP ile Hostinger'a yukle
+      - name: Yukleme paketi hazirla (site.zip + _deploy.php)
         if: steps.guard.outputs.ready == 'true'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: 145.14.156.26
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          security: loose
-          port: 21
-          local-dir: ./deploy/output/public_html/
-          # FTP girisinin koku public_html ise './' kalir; degilse 'public_html/' yapin.
-          server-dir: ./
+        env:
+          DEPLOY_KEY: ${{ secrets.CRON_SECRET }}
+        run: |
+          mkdir -p deploy/output/upload
+          # site.zip: public_html ICERIGI (duz, kokte). config.php burada YOK.
+          ( cd deploy/output/public_html && zip -rqX ../upload/site.zip . )
+          # _deploy.php: anahtar gomulu cikartici
+          sed "s|__DEPLOY_KEY__|${DEPLOY_KEY}|g" deploy/deploy-extract.php > deploy/output/upload/_deploy.php
+          ls -la deploy/output/upload
+
+      - name: FTP'ye yukle ve sunucuda cikart
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          KEY: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -e
+          ftp_put() {
+            curl -fsS --ssl-reqd --ftp-pasv --ftp-create-dirs -T "$1" "ftp://${FTP_HOST}/$2" --user "${FTP_USER}:${FTP_PASS}" \
+              || curl -fsS --ftp-pasv --ftp-create-dirs -T "$1" "ftp://${FTP_HOST}/$2" --user "${FTP_USER}:${FTP_PASS}"
+          }
+          echo "site.zip yukleniyor..."
+          ftp_put deploy/output/upload/site.zip site.zip
+          echo "_deploy.php yukleniyor..."
+          ftp_put deploy/output/upload/_deploy.php _deploy.php
+          echo "Sunucuda cikartiliyor (_deploy.php)..."
+          sleep 3
+          out=$(curl -s -w "\nHTTP %{http_code}" "${APP_URL}/_deploy.php?key=${KEY}")
+          echo "$out"
+          echo "$out" | grep -q "HTTP 200" || { echo "::error::_deploy.php 200 donmedi. server kök/yol kontrolu gerekli."; exit 1; }
+          echo "config.php api/'ye yukleniyor (zip disinda, gizli)..."
+          ftp_put deploy/output/config.php api/config.php
 
       - name: Veritabani tablolarini kur (install.php)
         if: steps.guard.outputs.ready == 'true'
+        env:
+          KEY: ${{ secrets.CRON_SECRET }}
         run: |
-          echo "Dagitim sonrasi install.php cagriliyor..."
-          sleep 6
-          code=$(curl -s -o /tmp/install_out.txt -w "%{http_code}" \
-            "https://nafuplanner.mftyazilim.com/api/install.php?key=${{ secrets.CRON_SECRET }}" || echo "000")
-          echo "HTTP $code"
-          cat /tmp/install_out.txt || true
-          echo ""
-          if [ "$code" != "200" ]; then
-            echo "::warning::install.php 200 donmedi (HTTP $code). server-dir veya DB ayarlarini kontrol edin; alternatif olarak phpMyAdmin Import."
-          fi
+          sleep 2
+          echo "install.php cagriliyor..."
+          curl -s -w "\nHTTP %{http_code}\n" "${APP_URL}/api/install.php?key=${KEY}"
 
       - name: Saglik kontrolu
         if: steps.guard.outputs.ready == 'true'
         run: |
-          sleep 2
           echo "api/health:"
-          curl -s -o /tmp/h.txt -w "HTTP %{http_code}\n" "https://nafuplanner.mftyazilim.com/api/health" || true
-          cat /tmp/h.txt || true
-          echo ""
+          curl -s -w "  HTTP %{http_code}\n" "${APP_URL}/api/health"; echo
           echo "api/config (google_client_id gorunmeli):"
-          curl -s -o /tmp/c.txt -w "HTTP %{http_code}\n" "https://nafuplanner.mftyazilim.com/api/config" || true
-          cat /tmp/c.txt || true
+          curl -s -w "  HTTP %{http_code}\n" "${APP_URL}/api/config"; echo
