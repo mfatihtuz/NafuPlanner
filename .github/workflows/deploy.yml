@@ -1,0 +1,106 @@
+name: Hostinger'a dagit
+
+# Her push'ta (ve elle tetiklemede) derler, FTP ile Hostinger'a yukler ve
+# veritabani tablolarini kurar. Sirlar GitHub Secrets'tan gelir; depoda tutulmaz.
+# Secret'lar tanimli degilse yalnizca derler ve indirilebilir artifact uretir.
+
+on:
+  push:
+    branches: [claude/adoring-gates-IQ4wM, main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Node kurulumu
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: PHP ve Composer kurulumu
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, mbstring, gmp, bcmath, curl, openssl
+          tools: composer
+
+      - name: Paketi derle (arayuz + sunucu + public_html)
+        run: bash deploy/build.sh
+
+      - name: Paketi indirilebilir yap (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: nafuplanner-public_html
+          path: deploy/output/nafuplanner-public_html.zip
+          if-no-files-found: error
+
+      - name: Sirlar tanimli mi
+        id: guard
+        run: |
+          if [ -n "${{ secrets.FTP_PASSWORD }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::FTP_PASSWORD secret yok; yalnizca derleme + artifact yapildi. Dagitim icin Secrets ekleyin."
+          fi
+
+      - name: config.php olustur (GitHub Secrets'tan)
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          OUT: deploy/output/public_html/api/config.php
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USERNAME }}
+          DB_PASS: ${{ secrets.DB_PASSWORD }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: https://nafuplanner.mftyazilim.com
+        run: php deploy/make-config.php
+
+      - name: FTP ile Hostinger'a yukle
+        if: steps.guard.outputs.ready == 'true'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: 145.14.156.26
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          security: loose
+          port: 21
+          local-dir: ./deploy/output/public_html/
+          # FTP girisinin koku public_html ise './' kalir; degilse 'public_html/' yapin.
+          server-dir: ./
+
+      - name: Veritabani tablolarini kur (install.php)
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          echo "Dagitim sonrasi install.php cagriliyor..."
+          sleep 6
+          code=$(curl -s -o /tmp/install_out.txt -w "%{http_code}" \
+            "https://nafuplanner.mftyazilim.com/api/install.php?key=${{ secrets.CRON_SECRET }}" || echo "000")
+          echo "HTTP $code"
+          cat /tmp/install_out.txt || true
+          echo ""
+          if [ "$code" != "200" ]; then
+            echo "::warning::install.php 200 donmedi (HTTP $code). server-dir veya DB ayarlarini kontrol edin; alternatif olarak phpMyAdmin Import."
+          fi
+
+      - name: Saglik kontrolu
+        if: steps.guard.outputs.ready == 'true'
+        run: |
+          sleep 2
+          echo "api/health:"
+          curl -s -o /tmp/h.txt -w "HTTP %{http_code}\n" "https://nafuplanner.mftyazilim.com/api/health" || true
+          cat /tmp/h.txt || true
+          echo ""
+          echo "api/config (google_client_id gorunmeli):"
+          curl -s -o /tmp/c.txt -w "HTTP %{http_code}\n" "https://nafuplanner.mftyazilim.com/api/config" || true
+          cat /tmp/c.txt || true
