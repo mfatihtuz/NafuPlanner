@@ -1,0 +1,27 @@
+# NafuPlanner arayuzu (SPA) - Apache yapilandirmasi
+# Var olan dosya/dizin ve /api/ disindaki tum istekleri index.html'e yonlendirir;
+# boylece bir alt yolda (orn. /akis) sayfa yenilense de uygulama acilir.
+
+AddDefaultCharset utf-8
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Var olan dosyalar/dizinler dogrudan servis edilir (assets, ikonlar, sw.js...)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # API kendi on denetleyicisine gider; SPA'ya yonlendirme
+  RewriteRule ^api/ - [L]
+
+  # Geri kalan her sey istemci tarafi yonlendirme icin giris noktasina
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
