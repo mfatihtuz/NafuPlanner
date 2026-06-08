@@ -56,8 +56,9 @@ jobs:
         if: steps.guard.outputs.ready == 'true'
         env:
           OUT: deploy/output/public_html/api/config.php
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USERNAME }}
+          # Hostinger'da DB adi ve kullanici ayni; tek secret yeter (DB_USER).
+          DB_NAME: ${{ secrets.DB_USER }}
+          DB_USER: ${{ secrets.DB_USER }}
           DB_PASS: ${{ secrets.DB_PASSWORD }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
