@@ -1,0 +1,203 @@
+// Tum kullanici metinleri burada. Ton: samimi, sicak, olgun.
+// Emoji yok. Gercek Turkce karakterler (cgiIosu) — dosya UTF-8.
+//
+// Kullanim: import { tr } from '@/i18n/tr';  ->  tr.today.title
+// Fonksiyon degerler kucuk sablonlardir (ornek: tr.today.summary(3)).
+
+export const tr = {
+  common: {
+    appName: 'NafuPlanner',
+    save: 'Kaydet',
+    cancel: 'Vazgeç',
+    close: 'Kapat',
+    delete: 'Sil',
+    edit: 'Düzenle',
+    add: 'Ekle',
+    done: 'Tamam',
+    back: 'Geri',
+    next: 'İleri',
+    confirm: 'Onayla',
+    loading: 'Yükleniyor...',
+    retry: 'Tekrar dene',
+    search: 'Ara',
+    all: 'Tümü',
+    today: 'Bugün',
+    yesterday: 'Dün',
+    tomorrow: 'Yarın',
+    optional: 'isteğe bağlı',
+    you: 'Sen',
+  },
+
+  nav: {
+    bugun: 'Bugün',
+    gorevler: 'Görevler',
+    alisveris: 'Alışveriş',
+    daha: 'Daha',
+  },
+
+  auth: {
+    welcome: 'Hoş geldin',
+    heroTitle: 'Ev hayatınız, tek bir sakin yerde.',
+    heroSubtitle:
+      'Görevleri, alışverişi ve küçük hatırlatmaları birlikte taşıyın. Sürekli mesajlaşmadan, herkes ne yapacağını bilsin.',
+    continueWithGoogle: 'Google ile devam et',
+    signingIn: 'Giriş yapılıyor...',
+    signOut: 'Çıkış yap',
+    signOutConfirm: 'Çıkış yapmak istediğine emin misin?',
+    noClientIdTitle: 'Google girişi henüz ayarlı değil',
+    noClientIdBody:
+      'Giriş yapabilmek için VITE_GOOGLE_CLIENT_ID değerinin tanımlı olması gerekiyor. Kurulum tamamlanınca buradan giriş yapabileceksin.',
+    privacyNote: 'Yalnızca adını ve e-postanı kullanırız. Verilerin sizde kalır.',
+    googleLoadError:
+      'Google giriş servisi yüklenemedi. Bağlantını kontrol edip tekrar dener misin?',
+    signInFailed: 'Giriş yapılamadı. Lütfen tekrar dene.',
+  },
+
+  today: {
+    // Gunun saatine gore selam
+    greetingMorning: 'Günaydın',
+    greetingAfternoon: 'İyi günler',
+    greetingEvening: 'İyi akşamlar',
+    greetingNight: 'İyi geceler',
+    greetingWithName: (greeting: string, name: string) => `${greeting}, ${name}`,
+    // Ozet satiri
+    summaryNone: 'Bugün için planlanmış bir iş yok. Keyfine bak.',
+    summaryOne: 'Bugün tek bir iş var.',
+    summaryMany: (n: number) => `Bugün ${n} iş var.`,
+    summaryForTwo: (n: number) => `Bugün ikiniz için ${n} iş var.`,
+    overdueTitle: 'Geciken işler',
+    overdueCount: (n: number) =>
+      n === 1 ? '1 iş zamanını biraz geçti' : `${n} iş zamanını biraz geçti`,
+    todayTitle: 'Bugün',
+    upcomingTitle: 'Yaklaşanlar',
+    allDone: 'Bugünün işleri tamam. Ellerine sağlık.',
+    noTasksTitle: 'Bugün sayfası tertemiz',
+    noTasksBody: 'Yeni bir iş eklediğinde burada belirir.',
+  },
+
+  tasks: {
+    title: 'Görevler',
+    newTask: 'Yeni görev',
+    addTask: 'Görev ekle',
+    titleLabel: 'Başlık',
+    titlePlaceholder: 'Ne yapılacak?',
+    notesLabel: 'Not',
+    notesPlaceholder: 'Eklemek istediğin bir ayrıntı?',
+    dueLabel: 'Bitiş zamanı',
+    priorityLabel: 'Öncelik',
+    categoryLabel: 'Kategori',
+    assigneesLabel: 'Kim üstlensin?',
+    priorityLow: 'Düşük',
+    priorityNormal: 'Normal',
+    priorityHigh: 'Yüksek',
+    markDone: 'Tamamlandı olarak işaretle',
+    markUndone: 'Geri al',
+    completed: 'Tamamlandı',
+    completedBy: (name: string) => `${name} tamamladı`,
+    deleteConfirm: 'Bu görevi silmek istediğine emin misin?',
+    subtasks: 'Alt adımlar',
+    addSubtask: 'Alt adım ekle',
+    comments: 'Notlar',
+    addComment: 'Bir not bırak',
+    filterAll: 'Tümü',
+    filterOpen: 'Açık',
+    filterDone: 'Bitti',
+    overdue: 'Gecikti',
+    dueToday: 'Bugün',
+    noDate: 'Tarihsiz',
+    emptyTitle: 'Henüz görev yok',
+    emptyBody: 'İlk görevi ekleyerek başla. Küçük bir adım bile sayılır.',
+  },
+
+  shopping: {
+    title: 'Alışveriş',
+    addItem: 'Ürün ekle',
+    itemPlaceholder: 'Ne almak lazım?',
+    quantityLabel: 'Miktar',
+    quantityPlaceholder: 'Örn. 2 kg',
+    noteLabel: 'Not',
+    toBuy: 'Alınacaklar',
+    inCart: 'Sepette',
+    clearChecked: 'İşaretlenenleri temizle',
+    addedBy: (name: string) => `${name} ekledi`,
+    deleteConfirm: 'Bu ürünü listeden çıkaralım mı?',
+    emptyTitle: 'Liste boş',
+    emptyBody: 'Aklına gelen ilk şeyi yaz, gerisi gelir.',
+  },
+
+  groups: {
+    title: 'Gruplar',
+    create: 'Grup oluştur',
+    createTitle: 'Ortak alanını oluştur',
+    createSubtitle:
+      'Birlikte yaşadığın kişilerle paylaşacağın bir alan. Adını sonra da değiştirebilirsin.',
+    nameLabel: 'Grup adı',
+    namePlaceholder: 'Örn. Evimiz',
+    createCta: 'Oluştur ve başla',
+    creating: 'Oluşturuluyor...',
+    members: 'Üyeler',
+    invite: 'Davet et',
+    inviteTitle: 'Birini davet et',
+    inviteSubtitle: 'Bu bağlantıyı paylaş; tıklayan kişi gruba katılabilir.',
+    copyLink: 'Bağlantıyı kopyala',
+    linkCopied: 'Bağlantı kopyalandı',
+    switchGroup: 'Grup değiştir',
+    owner: 'Kurucu',
+    member: 'Üye',
+    leaveGroup: 'Gruptan ayrıl',
+    emptyMembers: 'Şimdilik tek başınasın. Dilersen birini davet et.',
+  },
+
+  invite: {
+    title: 'Davet',
+    previewTitle: (groupName: string) => `${groupName} grubuna davetlisin`,
+    previewSubtitle: 'Katıldığında görevleri ve alışveriş listesini birlikte yönetebilirsiniz.',
+    accept: 'Daveti kabul et',
+    accepting: 'Katılınıyor...',
+    decline: 'Şimdilik geç',
+    invalidTitle: 'Bu davet artık geçerli değil',
+    invalidBody:
+      'Bağlantının süresi dolmuş ya da kaldırılmış olabilir. Seni davet eden kişiden yeni bir bağlantı isteyebilirsin.',
+    accepted: 'Katıldın. Hoş geldin.',
+    needSignIn: 'Daveti görmek için önce giriş yapman gerekiyor.',
+  },
+
+  settings: {
+    title: 'Ayarlar',
+    profile: 'Profil',
+    appearance: 'Görünüm',
+    theme: 'Tema',
+    themeSystem: 'Sistem',
+    themeLight: 'Açık',
+    themeDark: 'Koyu',
+    notifications: 'Bildirimler',
+    quietHours: 'Sessiz saatler',
+    dailyDigest: 'Günlük özet',
+    account: 'Hesap',
+    nameLabel: 'Ad',
+    timezoneLabel: 'Saat dilimi',
+    about: 'Hakkında',
+    version: 'Sürüm',
+  },
+
+  empty: {
+    generic: 'Burada henüz bir şey yok',
+    genericBody: 'İçerik eklendiğinde burada görünecek.',
+    noResults: 'Sonuç bulunamadı',
+    noResultsBody: 'Aramanı biraz değiştirmeyi dene.',
+  },
+
+  errors: {
+    generic: 'Bir şeyler ters gitti. Birazdan tekrar dener misin?',
+    network: 'Bağlantı kurulamadı. İnternetini kontrol et.',
+    offline: 'Çevrimdışısın. Bağlantı gelince devam ederiz.',
+    unauthorized: 'Oturumun sona ermiş. Lütfen tekrar giriş yap.',
+    forbidden: 'Bunu görme yetkin yok.',
+    notFound: 'Aradığın şey bulunamadı.',
+    validation: 'Girdiğin bilgileri bir kontrol eder misin?',
+    conflict: 'Bu işlem şu an çakışıyor. Tekrar dener misin?',
+    server: 'Sunucuda bir sorun oluştu. Kısa süre sonra düzelir.',
+  },
+} as const;
+
+export type Translations = typeof tr;

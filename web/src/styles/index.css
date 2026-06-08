@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Semantik token'lar. Renkler CONVENTIONS.md paletine baglidir; bilesenler
+  dogrudan palet yerine bu degiskenleri kullanir, boylece tema tek yerden doner.
+*/
+@layer base {
+  :root {
+    --bg: #fffffa; /* porcelain.DEFAULT */
+    --surface: #ffffff;
+    --surface-2: #f6f7f8; /* ink.50 */
+    --primary: #44a1a0; /* tropical_teal.DEFAULT */
+    --primary-contrast: #ffffff;
+    --accent: #247b7b; /* teal.DEFAULT */
+    --text: #1b1f23; /* ink.900 */
+    --heading: #052528; /* stormy_teal.200 */
+    --muted: #67727d; /* ink.500 */
+    --border: #e3e6e9;
+    --ring: #44a1a0;
+  }
+
+  .dark {
+    --bg: #031214; /* stormy_teal.100 */
+    --surface: #08373c; /* stormy_teal.300 */
+    --surface-2: #0a4a4f; /* stormy_teal.400 */
+    --primary: #78cdd7; /* pearl_aqua.500 */
+    --primary-contrast: #031214;
+    --accent: #78cdd7; /* pearl_aqua.500 */
+    --text: #fffffa; /* porcelain.DEFAULT */
+    --heading: #fffffa; /* porcelain.DEFAULT */
+    --muted: #94a3aa;
+    --border: #0a4a4f; /* stormy_teal.400 */
+    --ring: #78cdd7;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: theme('fontFamily.sans');
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: var(--heading);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  /* Odak gorunurlugu: klavye kullanicilari icin net halka. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Hareket azaltma tercihine saygi. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* iPhone centik/ev cubugu icin guvenli alan yardimcilari. */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+  .min-h-dvh {
+    min-height: 100dvh;
+  }
+
+  /* Yardimci kaydirma cubugu gizleme (yatay sekme seritleri icin). */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
