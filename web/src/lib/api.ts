@@ -149,4 +149,14 @@ export const api = {
     request<T>('DELETE', path, undefined, options),
 };
 
+/**
+ * Yuklenen dosyanin (TaskAttachment.file_path) tarayicidan erisilebilir tam
+ * URL'sini uretir. Sunucu goreli yol dondurur (ornek: "uploads/abc.jpg");
+ * web bunu API tabani altinda "/api/uploads/abc.jpg" olarak gosterir.
+ */
+export function fileUrl(filePath: string): string {
+  if (/^https?:\/\//.test(filePath)) return filePath;
+  return `${API_BASE}/${filePath.replace(/^\//, '')}`;
+}
+
 export { API_BASE };

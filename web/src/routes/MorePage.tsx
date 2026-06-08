@@ -1,9 +1,19 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { LogOut, UserPlus, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Activity as ActivityIcon,
+  ChevronRight,
+  LogOut,
+  Tags,
+  UserPlus,
+  Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useTheme, type Theme } from '@/providers/ThemeProvider';
-import { api } from '@/lib/api';
+import { useMembers } from '@/features/groups/useGroupData';
+import { InviteSheet } from '@/features/groups/InviteSheet';
+import { cn } from '@/lib/cn';
 import { tr } from '@/i18n/tr';
 import {
   Avatar,
@@ -15,7 +25,6 @@ import {
   Spinner,
   type SegmentOption,
 } from '@/components/ui';
-import type { GroupMember } from '@/types/api';
 
 const themeOptions: SegmentOption<Theme>[] = [
   { value: 'system', label: tr.settings.themeSystem },
@@ -26,13 +35,7 @@ const themeOptions: SegmentOption<Theme>[] = [
 /** Grup uyelerini listeleyen kart. */
 function MembersCard({ groupId }: { groupId: string }) {
   const { user } = useAuth();
-  const { data, isLoading } = useQuery<GroupMember[]>({
-    queryKey: ['members', groupId],
-    queryFn: ({ signal }) =>
-      api.get<GroupMember[]>(`/groups/${groupId}/members`, { signal }),
-    enabled: Boolean(groupId),
-  });
-
+  const { data, isLoading } = useMembers(groupId);
   const members = data ?? [];
 
   return (
@@ -75,10 +78,41 @@ function MembersCard({ groupId }: { groupId: string }) {
   );
 }
 
+/** Yonetim baglantisi satiri (kategoriler, akis). */
+function NavRow({
+  icon: Icon,
+  label,
+  onClick,
+  first,
+}: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  first?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--surface-2)]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]',
+        !first && 'border-t border-[var(--border)]',
+      )}
+    >
+      <Icon className="h-5 w-5 text-[var(--muted)]" aria-hidden="true" />
+      <span className="flex-1 text-[0.97rem] text-[var(--text)]">{label}</span>
+      <ChevronRight className="h-4 w-4 text-[var(--muted)]" aria-hidden="true" />
+    </button>
+  );
+}
+
 export function MorePage() {
+  const navigate = useNavigate();
   const { user, currentGroup, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [confirmOut, setConfirmOut] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   return (
     <div className="space-y-5">
@@ -108,6 +142,26 @@ export function MorePage() {
         />
       </Card>
 
+      {/* Yonetim */}
+      {currentGroup ? (
+        <div className="space-y-2">
+          <h2 className="px-1 text-sm font-semibold text-[var(--muted)]">{tr.more.manage}</h2>
+          <Card padding="none" className="overflow-hidden">
+            <NavRow
+              first
+              icon={Tags}
+              label={tr.more.categories}
+              onClick={() => navigate('/kategoriler')}
+            />
+            <NavRow
+              icon={ActivityIcon}
+              label={tr.more.activity}
+              onClick={() => navigate('/akis')}
+            />
+          </Card>
+        </div>
+      ) : null}
+
       {/* Uyeler */}
       {currentGroup ? <MembersCard groupId={currentGroup.id} /> : null}
 
@@ -118,6 +172,7 @@ export function MorePage() {
           block
           size="lg"
           leftIcon={<UserPlus className="h-5 w-5" />}
+          onClick={() => setInviteOpen(true)}
         >
           {tr.groups.invite}
         </Button>
@@ -134,6 +189,13 @@ export function MorePage() {
       >
         {tr.auth.signOut}
       </Button>
+
+      <InviteSheet
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        groupId={currentGroup?.id ?? null}
+        groupName={currentGroup?.name}
+      />
 
       <Modal
         open={confirmOut}

@@ -144,6 +144,10 @@ export interface Task {
   assignee_ids?: Id[];
   subtasks?: Subtask[];
   comment_count?: number;
+  /** Detay yanitinda gomulu gelebilir; gelmezse ayri uctan cekilir. */
+  attachments?: TaskAttachment[];
+  /** Etiket adlari (varsa). */
+  tags?: string[];
 }
 
 // --- Tekrar serileri ------------------------------------------------------

@@ -6,6 +6,8 @@ import { TodayPage } from '@/routes/TodayPage';
 import { TasksPage } from '@/routes/TasksPage';
 import { ShoppingPage } from '@/routes/ShoppingPage';
 import { MorePage } from '@/routes/MorePage';
+import { CategoriesPage } from '@/routes/CategoriesPage';
+import { ActivityPage } from '@/routes/ActivityPage';
 import { InviteAcceptPage } from '@/routes/InviteAcceptPage';
 
 const router = createBrowserRouter([
@@ -39,6 +41,8 @@ const router = createBrowserRouter([
       { path: 'gorevler', element: <TasksPage /> },
       { path: 'alisveris', element: <ShoppingPage /> },
       { path: 'daha', element: <MorePage /> },
+      { path: 'kategoriler', element: <CategoriesPage /> },
+      { path: 'akis', element: <ActivityPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
