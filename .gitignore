@@ -11,6 +11,17 @@ node_modules/
 .env
 .env.*
 !.env.example
+# FTP / sunucu kimlik bilgileri ve her turlu yerel sir dosyasi
+*.local
+*.local.*
+**/credentials*
+**/*secret*
+!**/*secret*.example
+/deploy/credentials.txt
+/deploy/.secrets/
+
+# Dagitim ciktisi (build.sh uretir; commit edilmez)
+/deploy/output/
 
 # Yuklenen dosyalar
 /api/uploads/*
