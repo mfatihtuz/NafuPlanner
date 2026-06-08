@@ -88,11 +88,21 @@ jobs:
           KEY: ${{ secrets.CRON_SECRET }}
         run: |
           set -e
+          # Once FTPS (sifreli; Hostinger sertifikasi dogrulanamadigi icin -k),
+          # olmazsa duz FTP. Hizli connect-timeout + backoff'lu yeniden deneme:
+          # Hostinger gecici olarak baglantiyi dusurebiliyor (sik dagitim/fail2ban).
           ftp_put() {
-            # Once FTPS (sifreli; Hostinger sertifikasi dogrulanamadigi icin -k),
-            # olmazsa duz FTP'ye dus.
-            curl -fsS --ssl-reqd -k --ftp-pasv --ftp-create-dirs -T "$1" "ftp://${FTP_HOST}/$2" --user "${FTP_USER}:${FTP_PASS}" \
-              || curl -fsS --ftp-pasv --ftp-create-dirs -T "$1" "ftp://${FTP_HOST}/$2" --user "${FTP_USER}:${FTP_PASS}"
+            local src="$1" dst="$2" i
+            for i in 1 2 3 4; do
+              curl -fsS --connect-timeout 20 --max-time 150 --ssl-reqd -k --ftp-pasv --ftp-create-dirs \
+                -T "$src" "ftp://${FTP_HOST}/${dst}" --user "${FTP_USER}:${FTP_PASS}" && return 0
+              curl -fsS --connect-timeout 20 --max-time 150 --ftp-pasv --ftp-create-dirs \
+                -T "$src" "ftp://${FTP_HOST}/${dst}" --user "${FTP_USER}:${FTP_PASS}" && return 0
+              echo "FTP denemesi ${i}/4 basarisiz (${dst}); $((i * 15)) sn sonra tekrar..."
+              sleep $((i * 15))
+            done
+            echo "::error::FTP yuklemesi basarisiz: ${dst} (sunucuya baglanilamadi)."
+            return 1
           }
           echo "site.zip yukleniyor..."
           ftp_put deploy/output/upload/site.zip site.zip
@@ -100,7 +110,7 @@ jobs:
           ftp_put deploy/output/upload/_deploy.php _deploy.php
           echo "Sunucuda cikartiliyor (_deploy.php)..."
           sleep 3
-          out=$(curl -s -w "\nHTTP %{http_code}" "${APP_URL}/_deploy.php?key=${KEY}")
+          out=$(curl -s --connect-timeout 20 --max-time 120 -w "\nHTTP %{http_code}" "${APP_URL}/_deploy.php?key=${KEY}")
           echo "$out"
           echo "$out" | grep -q "HTTP 200" || { echo "::error::_deploy.php 200 donmedi. server kök/yol kontrolu gerekli."; exit 1; }
           echo "config.php api/'ye yukleniyor (zip disinda, gizli)..."
