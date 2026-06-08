@@ -54,6 +54,7 @@ if (!function_exists('bind_routes')) {
 
         // -- Sistem -------------------------------------------------------
         $r->get('/health', $h(HealthController::class, 'getHealth'));
+        $r->get('/config', $h(HealthController::class, 'getConfig'));
         $r->get('/cron/run', $h(CronController::class, 'run'));
 
         // -- Auth / Profil ------------------------------------------------

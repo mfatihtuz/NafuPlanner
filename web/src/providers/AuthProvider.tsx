@@ -10,10 +10,12 @@ import {
 } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '@/lib/api';
-import type { AuthResponse, Group, MeResponse, User } from '@/types/api';
+import type { AppConfig, AuthResponse, Group, MeResponse, User } from '@/types/api';
 import type { GoogleCredentialResponse } from '@/types/google';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+// Derleme aninda env ile gomulebilir; gomulmediyse sunucudan (acik /api/config)
+// calisma aninda okunur. Boylece tek config dosyasi (config.php) yeterli olur.
+const BUILD_TIME_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const CURRENT_GROUP_KEY = 'np-current-group';
 const GSI_SRC = 'https://accounts.google.com/gsi/client';
 
@@ -30,6 +32,8 @@ interface AuthContextValue {
   setCurrentGroupId: (id: string) => void;
   /** Google client id tanimli mi (giris ekraninda not gostermek icin). */
   isGoogleConfigured: boolean;
+  /** Acik yapilandirma (client id) sunucudan henuz yukleniyor mu. */
+  isAuthConfigLoading: boolean;
   /** Google ile giris akisini baslatir (One Tap / popup). */
   signInWithGoogle: () => void;
   signOut: () => Promise<void>;
@@ -66,8 +70,20 @@ function loadGoogleScript(): Promise<void> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const isGoogleConfigured = Boolean(GOOGLE_CLIENT_ID);
   const gsiInitialized = useRef(false);
+
+  // Google Client ID: derleme env'i varsa onu kullan; yoksa sunucudan oku.
+  const configQuery = useQuery<AppConfig>({
+    queryKey: ['app-config'],
+    queryFn: ({ signal }) => api.get<AppConfig>('/config', { signal }),
+    enabled: !BUILD_TIME_CLIENT_ID,
+    staleTime: Infinity,
+    retry: 1,
+  });
+  const clientId =
+    BUILD_TIME_CLIENT_ID ?? configQuery.data?.google_client_id ?? undefined;
+  const isGoogleConfigured = Boolean(clientId);
+  const isAuthConfigLoading = !BUILD_TIME_CLIENT_ID && configQuery.isLoading;
 
   const [currentGroupId, setCurrentGroupIdState] = useState<string | null>(() => {
     if (typeof localStorage === 'undefined') return null;
@@ -126,14 +142,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signInWithGoogle = useCallback(() => {
-    if (!GOOGLE_CLIENT_ID) return;
+    if (!clientId) return;
     void (async () => {
       await loadGoogleScript();
       const idApi = window.google?.accounts.id;
       if (!idApi) return;
       if (!gsiInitialized.current) {
         idApi.initialize({
-          client_id: GOOGLE_CLIENT_ID,
+          client_id: clientId,
           callback: (resp) => void handleCredential(resp),
           cancel_on_tap_outside: false,
           use_fedcm_for_prompt: true,
@@ -142,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       idApi.prompt();
     })();
-  }, [handleCredential]);
+  }, [handleCredential, clientId]);
 
   const signOut = useCallback(async () => {
     try {
@@ -174,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       currentGroup,
       setCurrentGroupId,
       isGoogleConfigured,
+      isAuthConfigLoading,
       signInWithGoogle,
       signOut,
       refresh,
@@ -186,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       currentGroup,
       setCurrentGroupId,
       isGoogleConfigured,
+      isAuthConfigLoading,
       signInWithGoogle,
       signOut,
       refresh,

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Sparkles, TriangleAlert } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { tr } from '@/i18n/tr';
-import { Button, Card } from '@/components/ui';
+import { Button, Card, Spinner } from '@/components/ui';
 
 /** Google logosu (resmi renkler). Tek kullanimlik oldugu icin yerinde tutulur. */
 function GoogleMark() {
@@ -30,7 +30,7 @@ function GoogleMark() {
 
 /** Giris ekrani: sicak kahraman metni ve Google girisi. Emoji yok. */
 export function LoginPage() {
-  const { isGoogleConfigured, signInWithGoogle } = useAuth();
+  const { isGoogleConfigured, isAuthConfigLoading, signInWithGoogle } = useAuth();
   const [busy, setBusy] = useState(false);
 
   const handleSignIn = () => {
@@ -58,7 +58,11 @@ export function LoginPage() {
         </header>
 
         <div className="space-y-3">
-          {isGoogleConfigured ? (
+          {isAuthConfigLoading ? (
+            <div className="flex justify-center py-2">
+              <Spinner className="h-6 w-6" label={tr.common.loading} />
+            </div>
+          ) : isGoogleConfigured ? (
             <>
               <Button
                 size="lg"

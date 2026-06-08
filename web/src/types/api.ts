@@ -262,6 +262,12 @@ export interface AuthResponse {
   user: User;
 }
 
+/** GET /api/config: istemcinin calisma aninda okudugu acik yapilandirma. */
+export interface AppConfig {
+  google_client_id: string | null;
+  app_url: string | null;
+}
+
 /** GET /api/invitations/{token} onizleme yaniti. */
 export interface InvitationPreview {
   group_name: string;
