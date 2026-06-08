@@ -76,7 +76,7 @@ final class CommentController extends Controller
             'comment_added',
             'task',
             $taskId,
-            sprintf('%s gorevine yorum ekledi', (string) $task['title']),
+            sprintf('%s görevine yorum ekledi', (string) $task['title']),
             ['title' => $task['title']]
         );
 
@@ -117,7 +117,7 @@ final class CommentController extends Controller
         $stmt->execute([':id' => $commentId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Yorum bulunamadi.');
+            throw ApiException::notFound('Yorum bulunamadı.');
         }
         return $this->shapeComment($row);
     }

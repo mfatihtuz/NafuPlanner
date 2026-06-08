@@ -157,7 +157,7 @@ final class CategoryController extends Controller
         $stmt->execute([':id' => $categoryId]);
         $cat = $stmt->fetch();
         if ($cat === false) {
-            throw ApiException::notFound('Kategori bulunamadi.');
+            throw ApiException::notFound('Kategori bulunamadı.');
         }
         $this->auth->requireGroupMember((int) $cat['group_id']);
         return $cat;
@@ -175,7 +175,7 @@ final class CategoryController extends Controller
         $stmt->execute([':id' => $categoryId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Kategori bulunamadi.');
+            throw ApiException::notFound('Kategori bulunamadı.');
         }
         return Serialize::row($row, Serialize::CATEGORY);
     }

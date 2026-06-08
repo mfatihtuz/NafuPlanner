@@ -53,7 +53,7 @@ final class AttachmentController extends Controller
             $file = is_array($all) && $all !== [] ? reset($all) : null;
         }
         if (!is_array($file) || !isset($file['error'])) {
-            throw ApiException::badRequest('Yuklenecek dosya bulunamadi.');
+            throw ApiException::badRequest('Yüklenecek dosya bulunamadı.');
         }
         if ((int) $file['error'] !== UPLOAD_ERR_OK) {
             throw ApiException::badRequest($this->uploadErrorMessage((int) $file['error']));
@@ -61,30 +61,30 @@ final class AttachmentController extends Controller
 
         $size = (int) ($file['size'] ?? 0);
         if ($size <= 0) {
-            throw ApiException::badRequest('Bos dosya yuklenemez.');
+            throw ApiException::badRequest('Boş dosya yüklenemez.');
         }
         if ($size > self::MAX_BYTES) {
-            throw ApiException::badRequest('Dosya cok buyuk (en fazla 8MB).');
+            throw ApiException::badRequest('Dosya çok büyük (en fazla 8MB).');
         }
 
         $tmp = (string) ($file['tmp_name'] ?? '');
         if ($tmp === '' || !is_uploaded_file($tmp)) {
             // Yerel/test ortaminda is_uploaded_file basarisiz olabilir; varligi kontrol et.
             if ($tmp === '' || !is_file($tmp)) {
-                throw ApiException::badRequest('Yukleme dogrulanamadi.');
+                throw ApiException::badRequest('Yükleme doğrulanamadı.');
             }
         }
 
         // Gercek MIME'i iceriginden belirle (istemci basligina guvenme).
         $mime = $this->detectMime($tmp);
         if (!isset(self::ALLOWED[$mime])) {
-            throw ApiException::badRequest('Yalnizca resim dosyalari yuklenebilir.');
+            throw ApiException::badRequest('Yalnızca resim dosyaları yüklenebilir.');
         }
         $ext = self::ALLOWED[$mime];
 
         $dir = $this->uploadDir();
         if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
-            throw new ApiException('server_error', 'Yukleme dizini olusturulamadi.', 500);
+            throw new ApiException('server_error', 'Yükleme dizini oluşturulamadı.', 500);
         }
 
         $basename = sprintf('%d_%s.%s', $taskId, bin2hex(random_bytes(16)), $ext);
@@ -131,7 +131,7 @@ final class AttachmentController extends Controller
         $stmt->execute([':id' => $attId]);
         $att = $stmt->fetch();
         if ($att === false) {
-            throw ApiException::notFound('Ek bulunamadi.');
+            throw ApiException::notFound('Ek bulunamadı.');
         }
         $this->auth->requireGroupMember((int) $att['group_id']);
 
@@ -203,10 +203,10 @@ final class AttachmentController extends Controller
     private function uploadErrorMessage(int $code): string
     {
         return match ($code) {
-            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Dosya cok buyuk.',
-            UPLOAD_ERR_PARTIAL => 'Dosya kismen yuklendi, tekrar deneyin.',
-            UPLOAD_ERR_NO_FILE => 'Dosya secilmedi.',
-            default => 'Dosya yuklenemedi.',
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Dosya çok büyük.',
+            UPLOAD_ERR_PARTIAL => 'Dosya kısmen yüklendi, tekrar deneyin.',
+            UPLOAD_ERR_NO_FILE => 'Dosya seçilmedi.',
+            default => 'Dosya yüklenemedi.',
         };
     }
 
@@ -222,7 +222,7 @@ final class AttachmentController extends Controller
         $stmt->execute([':id' => $attId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Ek bulunamadi.');
+            throw ApiException::notFound('Ek bulunamadı.');
         }
         return Serialize::row($row, Serialize::ATTACHMENT);
     }

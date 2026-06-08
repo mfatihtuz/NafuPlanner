@@ -38,7 +38,7 @@ final class InvitationController extends Controller
 
         $role = ($body['role'] ?? 'member') === 'owner' ? 'owner' : 'member';
         if ($role === 'owner' && ($member['role'] ?? '') !== 'owner') {
-            throw ApiException::forbidden('Yalnizca grup sahibi sahip yetkisiyle davet olusturabilir.');
+            throw ApiException::forbidden('Yalnızca grup sahibi sahip yetkisiyle davet oluşturabilir.');
         }
 
         $maxUses = isset($body['max_uses']) && $body['max_uses'] !== null
@@ -132,16 +132,16 @@ final class InvitationController extends Controller
             $inv = $stmt->fetch();
 
             if ($inv === false) {
-                throw ApiException::notFound('Davet bulunamadi.');
+                throw ApiException::notFound('Davet bulunamadı.');
             }
             if ($inv['revoked_at'] !== null) {
-                throw ApiException::badRequest('Bu davet iptal edilmis.');
+                throw ApiException::badRequest('Bu davet iptal edilmiş.');
             }
             if ($this->isExpired($inv)) {
-                throw ApiException::badRequest('Bu davetin suresi dolmus.');
+                throw ApiException::badRequest('Bu davetin süresi dolmuş.');
             }
             if ($this->isFull($inv)) {
-                throw ApiException::badRequest('Bu davet kullanim sinirina ulasmis.');
+                throw ApiException::badRequest('Bu davet kullanım sınırına ulaşmış.');
             }
 
             $groupId = (int) $inv['group_id'];
@@ -246,7 +246,7 @@ final class InvitationController extends Controller
         $stmt->execute([':gid' => $groupId, ':uid' => $userId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Grup bulunamadi.');
+            throw ApiException::notFound('Grup bulunamadı.');
         }
         return Serialize::row($row, Serialize::GROUP);
     }

@@ -81,7 +81,7 @@ final class TagController extends Controller
         $stmt->execute([':id' => $tagId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Etiket bulunamadi.');
+            throw ApiException::notFound('Etiket bulunamadı.');
         }
         return Serialize::row($row, Serialize::TAG);
     }

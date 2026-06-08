@@ -78,7 +78,7 @@ final class ShoppingController extends Controller
             'shopping_added',
             'shopping_item',
             $itemId,
-            sprintf('%s alisveris listesine ekledi: %s', $this->actorLabel($member['display_name'] ?? null, $userId), $name),
+            sprintf('%s alışveriş listesine ekledi: %s', $this->actorLabel($member['display_name'] ?? null, $userId), $name),
             ['name' => $name]
         );
 
@@ -170,7 +170,7 @@ final class ShoppingController extends Controller
             sprintf(
                 '%s %s',
                 (string) $item['name'],
-                $checked ? 'alindi olarak isaretlendi' : 'isareti kaldirildi'
+                $checked ? 'alındı olarak işaretlendi' : 'işareti kaldırıldı'
             ),
             ['name' => $item['name']]
         );
@@ -230,7 +230,7 @@ final class ShoppingController extends Controller
         $stmt->execute([':id' => $itemId]);
         $item = $stmt->fetch();
         if ($item === false) {
-            throw ApiException::notFound('Urun bulunamadi.');
+            throw ApiException::notFound('Ürün bulunamadı.');
         }
         $this->auth->requireGroupMember((int) $item['group_id']);
         return $item;
@@ -249,7 +249,7 @@ final class ShoppingController extends Controller
         $stmt->execute([':id' => $itemId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Urun bulunamadi.');
+            throw ApiException::notFound('Ürün bulunamadı.');
         }
         return Serialize::row($row, Serialize::SHOPPING);
     }

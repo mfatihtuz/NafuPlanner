@@ -36,32 +36,32 @@ class ApiException extends RuntimeException
 
     // --- Sik kullanilan kisayollar ----------------------------------------
 
-    public static function unauthorized(string $message = 'Oturum acmaniz gerekiyor.'): self
+    public static function unauthorized(string $message = 'Oturum açmanız gerekiyor.'): self
     {
         return new self('unauthorized', $message, 401);
     }
 
-    public static function forbidden(string $message = 'Bu islem icin yetkiniz yok.'): self
+    public static function forbidden(string $message = 'Bu işlem için yetkiniz yok.'): self
     {
         return new self('forbidden', $message, 403);
     }
 
-    public static function notFound(string $message = 'Kayit bulunamadi.'): self
+    public static function notFound(string $message = 'Kayıt bulunamadı.'): self
     {
         return new self('not_found', $message, 404);
     }
 
-    public static function conflict(string $message = 'Cakisma oldu.'): self
+    public static function conflict(string $message = 'Çakışma oldu.'): self
     {
         return new self('conflict', $message, 409);
     }
 
-    public static function badRequest(string $message = 'Gecersiz istek.'): self
+    public static function badRequest(string $message = 'Geçersiz istek.'): self
     {
         return new self('bad_request', $message, 400);
     }
 
-    public static function notImplemented(string $message = 'Bu uc nokta henuz hazir degil.'): self
+    public static function notImplemented(string $message = 'Bu uç nokta henüz hazır değil.'): self
     {
         return new self('not_implemented', $message, 501);
     }

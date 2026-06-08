@@ -141,7 +141,7 @@ final class TaskController extends Controller
 
         // Kategori grubun mu? (FK var ama yetki/tutarlilik icin acik dogrula.)
         if ($catId !== null && !$this->categoryBelongsToGroup($catId, $groupId)) {
-            throw ApiException::badRequest('Kategori bu gruba ait degil.');
+            throw ApiException::badRequest('Kategori bu gruba ait değil.');
         }
 
         $pdo->beginTransaction();
@@ -180,7 +180,7 @@ final class TaskController extends Controller
             'task_created',
             'task',
             $taskId,
-            sprintf('%s yeni bir gorev ekledi: %s', $this->actorLabel($member['display_name'] ?? null, $userId), $title),
+            sprintf('%s yeni bir görev ekledi: %s', $this->actorLabel($member['display_name'] ?? null, $userId), $title),
             ['title' => $title]
         );
 
@@ -233,7 +233,7 @@ final class TaskController extends Controller
         if (array_key_exists('category_id', $body)) {
             $catId = $this->nullableInt($body['category_id']);
             if ($catId !== null && !$this->categoryBelongsToGroup($catId, $groupId)) {
-                throw ApiException::badRequest('Kategori bu gruba ait degil.');
+                throw ApiException::badRequest('Kategori bu gruba ait değil.');
             }
             $fields[] = 'category_id = :cat';
             $args[':cat'] = $catId;
@@ -315,7 +315,7 @@ final class TaskController extends Controller
             'task_completed',
             'task',
             $taskId,
-            sprintf('%s gorevini tamamladi', (string) $task['title']),
+            sprintf('%s görevini tamamladı', (string) $task['title']),
             ['title' => $task['title']]
         );
 
@@ -347,7 +347,7 @@ final class TaskController extends Controller
             'task_uncompleted',
             'task',
             $taskId,
-            sprintf('%s gorevini yeniden acti', (string) $task['title']),
+            sprintf('%s görevini yeniden açtı', (string) $task['title']),
             ['title' => $task['title']]
         );
 
@@ -550,7 +550,7 @@ final class TaskController extends Controller
         $stmt->execute([':id' => $taskId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Gorev bulunamadi.');
+            throw ApiException::notFound('Görev bulunamadı.');
         }
         $hydrated = $this->hydrateTasks([$row]);
         $task = $hydrated[0];
@@ -742,7 +742,7 @@ final class TaskController extends Controller
             $dt = new DateTimeImmutable($value);
             return $dt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         } catch (\Throwable) {
-            throw ApiException::badRequest('Gecersiz tarih bicimi (due_at).');
+            throw ApiException::badRequest('Geçersiz tarih biçimi (due_at).');
         }
     }
 

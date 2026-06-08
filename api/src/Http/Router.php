@@ -95,11 +95,11 @@ final class Router
         if ($pathMatchedButMethodNot) {
             throw new ApiException(
                 'method_not_allowed',
-                'Bu adres icin kullanilan istek yontemi desteklenmiyor.',
+                'Bu adres için kullanılan istek yöntemi desteklenmiyor.',
                 405
             );
         }
 
-        throw ApiException::notFound('Aradiginiz adres bulunamadi.');
+        throw ApiException::notFound('Aradığınız adres bulunamadı.');
     }
 }

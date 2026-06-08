@@ -51,7 +51,7 @@ final class Validator
         }
         $len = mb_strlen(trim($value));
         if ($len < $min) {
-            $this->errors[$field] ??= sprintf('En az %d karakter olmali.', $min);
+            $this->errors[$field] ??= sprintf('En az %d karakter olmalı.', $min);
         } elseif ($len > $max) {
             $this->errors[$field] ??= sprintf('En fazla %d karakter olabilir.', $max);
         }
@@ -67,7 +67,7 @@ final class Validator
         }
         $value = $this->data[$field];
         if (!is_int($value) && !(is_string($value) && preg_match('/^-?\d+$/', $value))) {
-            $this->errors[$field] ??= 'Sayi bekleniyor.';
+            $this->errors[$field] ??= 'Sayı bekleniyor.';
         }
 
         return $this;
@@ -80,7 +80,7 @@ final class Validator
             return $this;
         }
         if (!in_array($this->data[$field], $allowed, true)) {
-            $this->errors[$field] ??= 'Gecersiz deger.';
+            $this->errors[$field] ??= 'Geçersiz değer.';
         }
 
         return $this;
@@ -93,7 +93,7 @@ final class Validator
             return $this;
         }
         if (!filter_var((string) $this->data[$field], FILTER_VALIDATE_EMAIL)) {
-            $this->errors[$field] ??= 'Gecerli bir e-posta adresi girin.';
+            $this->errors[$field] ??= 'Geçerli bir e-posta adresi girin.';
         }
 
         return $this;

@@ -48,7 +48,7 @@ abstract class Controller
         $stmt->execute([':id' => $taskId]);
         $task = $stmt->fetch();
         if ($task === false) {
-            throw ApiException::notFound('Gorev bulunamadi.');
+            throw ApiException::notFound('Görev bulunamadı.');
         }
         // Grup uyeligini dogrula (uye degilse zaten 403/forbidden firlar). Burada
         // tutarli olmak adina, uye olunmayan grubun gorevini "bulunamadi" gosteririz.
@@ -58,7 +58,7 @@ abstract class Controller
         );
         $member->execute([':gid' => (int) $task['group_id'], ':uid' => $userId]);
         if ($member->fetchColumn() === false) {
-            throw ApiException::notFound('Gorev bulunamadi.');
+            throw ApiException::notFound('Görev bulunamadı.');
         }
         return $task;
     }
@@ -76,7 +76,7 @@ abstract class Controller
         $stmt = $this->db()->prepare('SELECT name FROM np_users WHERE id = :id LIMIT 1');
         $stmt->execute([':id' => $userId]);
         $name = $stmt->fetchColumn();
-        return is_string($name) && trim($name) !== '' ? trim($name) : 'Bir uye';
+        return is_string($name) && trim($name) !== '' ? trim($name) : 'Bir üye';
     }
 
     /**

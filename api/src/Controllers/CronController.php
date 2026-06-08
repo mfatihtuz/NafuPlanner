@@ -27,7 +27,7 @@ final class CronController
         $provided = (string) ($request->query('key', '') ?? '');
 
         if ($expected === '' || !hash_equals($expected, $provided)) {
-            throw ApiException::forbidden('Cron anahtari gecersiz.');
+            throw ApiException::forbidden('Cron anahtarı geçersiz.');
         }
 
         // Anahtar dogru; gercek is mantigi henuz hazir degil.

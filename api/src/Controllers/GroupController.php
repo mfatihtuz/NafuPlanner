@@ -236,7 +236,7 @@ final class GroupController extends Controller
         $stmt->execute([':gid' => $groupId, ':uid' => $userId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Grup bulunamadi.');
+            throw ApiException::notFound('Grup bulunamadı.');
         }
         return Serialize::row($row, Serialize::GROUP);
     }

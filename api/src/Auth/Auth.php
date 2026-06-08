@@ -102,7 +102,7 @@ final class Auth
         $row = $stmt->fetch();
 
         if ($row === false) {
-            throw ApiException::forbidden('Bu gruba erisim yetkiniz yok.');
+            throw ApiException::forbidden('Bu gruba erişim yetkiniz yok.');
         }
 
         return $row;
@@ -117,7 +117,7 @@ final class Auth
     {
         $member = $this->requireGroupMember($groupId);
         if (($member['role'] ?? '') !== 'owner') {
-            throw ApiException::forbidden('Bu islem yalnizca grup sahibine acik.');
+            throw ApiException::forbidden('Bu işlem yalnızca grup sahibine açık.');
         }
         return $member;
     }

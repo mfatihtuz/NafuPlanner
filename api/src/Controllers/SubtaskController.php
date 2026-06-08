@@ -121,7 +121,7 @@ final class SubtaskController extends Controller
         $stmt->execute([':id' => $subtaskId]);
         $sub = $stmt->fetch();
         if ($sub === false) {
-            throw ApiException::notFound('Alt gorev bulunamadi.');
+            throw ApiException::notFound('Alt görev bulunamadı.');
         }
         $this->requireTaskAsMember((int) $sub['task_id']);
         return $sub;
@@ -139,7 +139,7 @@ final class SubtaskController extends Controller
         $stmt->execute([':id' => $subtaskId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Alt gorev bulunamadi.');
+            throw ApiException::notFound('Alt görev bulunamadı.');
         }
         return Serialize::row($row, Serialize::SUBTASK);
     }

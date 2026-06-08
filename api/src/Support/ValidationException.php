@@ -15,7 +15,7 @@ final class ValidationException extends ApiException
     /** @param array<string,string> $fields alan adi -> Turkce hata mesaji */
     public function __construct(
         private array $fields = [],
-        string $message = 'Girilen bilgiler gecersiz.'
+        string $message = 'Girilen bilgiler geçersiz.'
     ) {
         parent::__construct('validation_error', $message, 422);
     }

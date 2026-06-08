@@ -130,7 +130,7 @@ final class AuthController extends Controller
         if (array_key_exists('timezone', $body) && $body['timezone'] !== null) {
             $tz = trim((string) $body['timezone']);
             if (!in_array($tz, \DateTimeZone::listIdentifiers(), true)) {
-                throw new ApiException('validation_error', 'Gecersiz saat dilimi.', 422);
+                throw new ApiException('validation_error', 'Geçersiz saat dilimi.', 422);
             }
             $fields[] = 'timezone = :timezone';
             $args[':timezone'] = $tz;
@@ -161,7 +161,7 @@ final class AuthController extends Controller
         $stmt->execute([':id' => $userId]);
         $row = $stmt->fetch();
         if ($row === false) {
-            throw ApiException::notFound('Kullanici bulunamadi.');
+            throw ApiException::notFound('Kullanıcı bulunamadı.');
         }
         return Serialize::row($row, Serialize::USER);
     }

@@ -40,7 +40,7 @@ final class GoogleVerifier
     {
         $clientId = (string) Config::get('google_client_id', '');
         if ($clientId === '') {
-            throw new ApiException('config_error', 'Google istemci kimligi yapilandirilmamis.', 500);
+            throw new ApiException('config_error', 'Google istemci kimliği yapılandırılmamış.', 500);
         }
 
         $idToken = trim($idToken);
@@ -53,24 +53,24 @@ final class GoogleVerifier
             // firebase/php-jwt aud kontrolu yapmaz; iss/exp/imza dogrular.
             $decoded = (array) FirebaseJwt::decode($idToken, $keys);
         } catch (Throwable $e) {
-            throw ApiException::unauthorized('Google kimlik dogrulamasi basarisiz oldu.');
+            throw ApiException::unauthorized('Google kimlik doğrulaması başarısız oldu.');
         }
 
         // Issuer kontrolu
         $iss = (string) ($decoded['iss'] ?? '');
         if (!in_array($iss, self::ISSUERS, true)) {
-            throw ApiException::unauthorized('Kimlik jetonunun kaynagi gecersiz.');
+            throw ApiException::unauthorized('Kimlik jetonunun kaynağı geçersiz.');
         }
 
         // Audience kontrolu (jeton bu uygulama icin mi uretildi)
         $aud = (string) ($decoded['aud'] ?? '');
         if (!hash_equals($clientId, $aud)) {
-            throw ApiException::unauthorized('Kimlik jetonu bu uygulama icin gecerli degil.');
+            throw ApiException::unauthorized('Kimlik jetonu bu uygulama için geçerli değil.');
         }
 
         $sub = (string) ($decoded['sub'] ?? '');
         if ($sub === '') {
-            throw ApiException::unauthorized('Kimlik jetonu eksik bilgi iceriyor.');
+            throw ApiException::unauthorized('Kimlik jetonu eksik bilgi içeriyor.');
         }
 
         return [
@@ -110,7 +110,7 @@ final class GoogleVerifier
                     return $stale;
                 }
             }
-            throw ApiException::unauthorized('Google anahtarlari alinamadi.');
+            throw ApiException::unauthorized('Google anahtarları alınamadı.');
         }
 
         @file_put_contents($cacheFile, $json, LOCK_EX);
@@ -136,7 +136,7 @@ final class GoogleVerifier
             if (is_string($body) && $status >= 200 && $status < 300) {
                 return $body;
             }
-            throw ApiException::unauthorized('Google anahtar sunucusuna ulasilamadi.');
+            throw ApiException::unauthorized('Google anahtar sunucusuna ulaşılamadı.');
         }
 
         // curl yoksa akis sarmalayicisi ile dene.
@@ -145,7 +145,7 @@ final class GoogleVerifier
         ]);
         $body = @file_get_contents($url, false, $context);
         if ($body === false) {
-            throw ApiException::unauthorized('Google anahtar sunucusuna ulasilamadi.');
+            throw ApiException::unauthorized('Google anahtar sunucusuna ulaşılamadı.');
         }
         return $body;
     }
