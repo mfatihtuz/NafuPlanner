@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Nafu\Http\Request;
 use Nafu\Support\ApiException;
+use Nafu\Support\Gamification;
 use Nafu\Support\Serialize;
 use Nafu\Support\Validator;
 use PDO;
@@ -290,7 +291,8 @@ final class TaskController extends Controller
     }
 
     /**
-     * Gorevi tamamla: status=done, completed_by/at ayarla. Puan/streak YOK (Faz 3).
+     * Gorevi tamamla: status=done, completed_by/at ayarla; puan/seri/rozet isler.
+     * Donen gorev nesnesine kutlama icin 'reward' ozeti eklenir (yeni tamamlamada).
      *
      * @return array<string,mixed>
      */
@@ -300,30 +302,57 @@ final class TaskController extends Controller
         $task = $this->requireTaskAsMember($taskId);
         $userId = $this->auth->requireUserId();
         $groupId = (int) $task['group_id'];
+        $member = $this->auth->requireGroupMember($groupId);
 
-        $now = gmdate('Y-m-d H:i:s');
-        $stmt = $this->db()->prepare(
-            "UPDATE np_tasks
-                SET status = 'done', completed_by = :uid, completed_at = :now
-              WHERE id = :id"
-        );
-        $stmt->execute([':uid' => $userId, ':now' => $now, ':id' => $taskId]);
+        $alreadyDone = ((string) $task['status']) === 'done';
+        $reward = null;
 
-        $this->logActivity(
-            $groupId,
-            $userId,
-            'task_completed',
-            'task',
-            $taskId,
-            sprintf('%s görevini tamamladı', (string) $task['title']),
-            ['title' => $task['title']]
-        );
+        $pdo = $this->db();
+        $pdo->beginTransaction();
+        try {
+            $now = gmdate('Y-m-d H:i:s');
+            $pdo->prepare(
+                "UPDATE np_tasks
+                    SET status = 'done', completed_by = :uid, completed_at = :now
+                  WHERE id = :id"
+            )->execute([':uid' => $userId, ':now' => $now, ':id' => $taskId]);
 
-        return $this->loadTask($taskId);
+            if (!$alreadyDone) {
+                $reward = (new Gamification($pdo))->awardForCompletion(
+                    (int) $member['id'],
+                    $groupId,
+                    $userId,
+                    $task,
+                    $this->userTimezone($userId)
+                );
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+
+        if (!$alreadyDone) {
+            $this->logActivity(
+                $groupId,
+                $userId,
+                'task_completed',
+                'task',
+                $taskId,
+                sprintf('%s görevini tamamladı', (string) $task['title']),
+                ['title' => $task['title']]
+            );
+        }
+
+        $out = $this->loadTask($taskId);
+        if ($reward !== null) {
+            $out['reward'] = $reward;
+        }
+        return $out;
     }
 
     /**
-     * Tamamlamayi geri al: status=open, completed_by/at temizle.
+     * Tamamlamayi geri al: status=open, completed_by/at temizle; puanlari geri al.
      *
      * @return array<string,mixed>
      */
@@ -334,12 +363,34 @@ final class TaskController extends Controller
         $userId = $this->auth->requireUserId();
         $groupId = (int) $task['group_id'];
 
-        $stmt = $this->db()->prepare(
-            "UPDATE np_tasks
-                SET status = 'open', completed_by = NULL, completed_at = NULL
-              WHERE id = :id"
-        );
-        $stmt->execute([':id' => $taskId]);
+        $wasDone = ((string) $task['status']) === 'done';
+        $completedBy = $task['completed_by'] !== null ? (int) $task['completed_by'] : null;
+
+        $pdo = $this->db();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare(
+                "UPDATE np_tasks
+                    SET status = 'open', completed_by = NULL, completed_at = NULL
+                  WHERE id = :id"
+            )->execute([':id' => $taskId]);
+
+            if ($wasDone && $completedBy !== null) {
+                // Puanlari, gorevi tamamlayan kisinin uyeligi uzerinden geri al.
+                $mStmt = $pdo->prepare(
+                    'SELECT id FROM np_group_members WHERE group_id = :g AND user_id = :u LIMIT 1'
+                );
+                $mStmt->execute([':g' => $groupId, ':u' => $completedBy]);
+                $mid = $mStmt->fetchColumn();
+                if ($mid !== false) {
+                    (new Gamification($pdo))->revokeForCompletion((int) $mid, $completedBy, $taskId);
+                }
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
 
         $this->logActivity(
             $groupId,
