@@ -1,0 +1,24 @@
+# Bagimliliklar
+node_modules/
+/api/vendor/
+
+# Derleme ciktilari
+/web/dist/
+/web/dev-dist/
+
+# Sirlar ve yerel yapilandirma (asla commit edilmez)
+/api/config.php
+.env
+.env.*
+!.env.example
+
+# Yuklenen dosyalar
+/api/uploads/*
+!/api/uploads/.gitkeep
+
+# Sistem / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
