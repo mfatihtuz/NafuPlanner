@@ -34,6 +34,21 @@ export const tr = {
   'auth.configMissing':
     'Firebase yapılandırması eksik. Geliştirici notu: .env dosyasını doldurun.',
 
+  'auth.devSignInToggle': 'Test girişi (Expo Go)',
+  'auth.devSignInTitle': 'Hızlı test girişi',
+  'auth.devSignInHint':
+    'Google girişi yalnızca gerçek build’de çalışır. Expo Go’da denemek için ad, e-posta ve şifre (en az 6 karakter) gir. Hesap yoksa otomatik oluşturulur.',
+  'auth.devName': 'Adın',
+  'auth.devNamePlaceholder': 'örn. Fatih',
+  'auth.devEmail': 'E-posta',
+  'auth.devEmailPlaceholder': 'ornek@test.com',
+  'auth.devPassword': 'Şifre',
+  'auth.devPasswordPlaceholder': 'En az 6 karakter',
+  'auth.devSignInButton': 'Test girişi yap',
+  'auth.devSignInError':
+    'Giriş yapılamadı. Bilgileri kontrol et (şifre en az 6 karakter olmalı).',
+  'auth.devWrongPassword': 'Bu e-posta kayıtlı ama şifre yanlış görünüyor.',
+
   'tabs.today': 'Bugün',
   'tabs.tasks': 'Görevler',
   'tabs.shopping': 'Alışveriş',

@@ -1,10 +1,13 @@
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import {
+  createUserWithEmailAndPassword,
   GoogleAuthProvider,
   onAuthStateChanged,
   signInWithCredential,
+  signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  updateProfile,
   type User as FirebaseUser,
 } from 'firebase/auth';
 import {
@@ -33,6 +36,11 @@ interface AuthContextValue {
   /** Firebase + Google yapılandırması hazır mı? */
   canSignIn: boolean;
   signInWithGoogle: () => Promise<void>;
+  /**
+   * Expo Go'da test için e-posta/şifre girişi. Hesap yoksa oluşturur. Yalnızca
+   * geliştirme/test amaçlıdır; üretim akışı Google ile giriştir.
+   */
+  signInWithEmail: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -87,6 +95,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [canSignIn, promptAsync]);
 
+  const signInWithEmail = useCallback(
+    async (name: string, email: string, password: string) => {
+      if (!firebaseReady || !auth) {
+        Alert.alert(t('auth.configMissingTitle'), t('auth.configMissing'));
+        return;
+      }
+      const mail = email.trim().toLowerCase();
+      try {
+        setSigningIn(true);
+        try {
+          await signInWithEmailAndPassword(auth, mail, password);
+        } catch (error) {
+          const code = (error as { code?: string }).code;
+          // Hesap yoksa oluştur. (Yeni Firebase sürümleri kullanıcı yoksa da
+          // 'invalid-credential' döndürebilir.)
+          if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
+            try {
+              const cred = await createUserWithEmailAndPassword(auth, mail, password);
+              if (name.trim()) {
+                await updateProfile(cred.user, { displayName: name.trim() });
+                // Güncel adın oturuma yansıması için yeniden giriş yap.
+                await signInWithEmailAndPassword(auth, mail, password);
+              }
+            } catch (createError) {
+              if ((createError as { code?: string }).code === 'auth/email-already-in-use') {
+                Alert.alert(t('common.appName'), t('auth.devWrongPassword'));
+                return;
+              }
+              throw createError;
+            }
+          } else {
+            throw error;
+          }
+        }
+      } catch (error) {
+        console.warn('[auth] e-posta ile giriş başarısız', error);
+        Alert.alert(t('common.appName'), t('auth.devSignInError'));
+      } finally {
+        setSigningIn(false);
+      }
+    },
+    [],
+  );
+
   const signOut = useCallback(async () => {
     if (!auth) return;
     await firebaseSignOut(auth);
@@ -99,9 +151,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signingIn,
       canSignIn,
       signInWithGoogle,
+      signInWithEmail,
       signOut,
     }),
-    [user, initializing, signingIn, canSignIn, signInWithGoogle, signOut],
+    [user, initializing, signingIn, canSignIn, signInWithGoogle, signInWithEmail, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

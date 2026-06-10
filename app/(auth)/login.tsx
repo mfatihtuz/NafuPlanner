@@ -1,9 +1,12 @@
-import { View } from 'react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { isGoogleAuthConfigured } from '@/config/env';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
-import { Button, Nafu, Screen, Text, spacing } from '@/ui';
+import { Button, Card, Nafu, Screen, Text, TextField } from '@/ui';
+import { spacing } from '@/ui/theme/spacing';
 
 /** Çok renkli Google "G" markası. */
 function GoogleG({ size = 20 }: { size?: number }) {
@@ -29,37 +32,105 @@ function GoogleG({ size = 20 }: { size?: number }) {
   );
 }
 
+// Google girişi gerçek build gerektirir; Expo Go'da (ya da Google henüz
+// yapılandırılmadıysa) test girişini göster.
+const SHOW_DEV_SIGN_IN = __DEV__ || !isGoogleAuthConfigured();
+
 export default function LoginScreen() {
-  const { signInWithGoogle, signingIn } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signingIn } = useAuth();
+  const [showDev, setShowDev] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const devValid = name.trim().length > 0 && email.trim().length > 3 && password.length >= 6;
 
   return (
-    <Screen>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Nafu expression="wave" size={196} />
-        <Text variant="h1" center style={{ marginTop: spacing.xl }}>
-          {t('auth.welcomeTitle')}
-        </Text>
-        <Text
-          tone="secondary"
-          center
-          style={{ marginTop: spacing.md, maxWidth: 320 }}
+    <Screen scroll={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {t('auth.welcomeSubtitle')}
-        </Text>
-      </View>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl }}>
+            <Nafu expression="wave" size={172} />
+            <Text variant="h1" center style={{ marginTop: spacing.xl }}>
+              {t('auth.welcomeTitle')}
+            </Text>
+            <Text tone="secondary" center style={{ marginTop: spacing.md, maxWidth: 320 }}>
+              {t('auth.welcomeSubtitle')}
+            </Text>
+          </View>
 
-      <View style={{ paddingBottom: spacing.xl, gap: spacing.md }}>
-        <Button
-          title={signingIn ? t('auth.signingIn') : t('auth.googleButton')}
-          variant="secondary"
-          loading={signingIn}
-          onPress={signInWithGoogle}
-          leftSlot={<GoogleG />}
-        />
-        <Text variant="caption" tone="muted" center>
-          {t('common.appName')} · {t('common.tagline')}
-        </Text>
-      </View>
+          <View style={{ paddingBottom: spacing.xl, gap: spacing.md }}>
+            <Button
+              title={signingIn ? t('auth.signingIn') : t('auth.googleButton')}
+              variant="secondary"
+              loading={signingIn}
+              onPress={signInWithGoogle}
+              leftSlot={<GoogleG />}
+            />
+
+            {SHOW_DEV_SIGN_IN ? (
+              showDev ? (
+                <Card style={{ gap: spacing.sm }}>
+                  <Text variant="bodyStrong">{t('auth.devSignInTitle')}</Text>
+                  <Text variant="caption" tone="secondary">
+                    {t('auth.devSignInHint')}
+                  </Text>
+                  <TextField
+                    label={t('auth.devName')}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder={t('auth.devNamePlaceholder')}
+                    autoCapitalize="words"
+                  />
+                  <TextField
+                    label={t('auth.devEmail')}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder={t('auth.devEmailPlaceholder')}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                  />
+                  <TextField
+                    label={t('auth.devPassword')}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder={t('auth.devPasswordPlaceholder')}
+                    secureTextEntry
+                  />
+                  <Button
+                    title={t('auth.devSignInButton')}
+                    onPress={() => void signInWithEmail(name, email, password)}
+                    loading={signingIn}
+                    disabled={!devValid || signingIn}
+                  />
+                </Card>
+              ) : (
+                <Pressable
+                  onPress={() => setShowDev(true)}
+                  hitSlop={8}
+                  style={{ alignSelf: 'center' }}
+                >
+                  <Text variant="caption" tone="link">
+                    {t('auth.devSignInToggle')}
+                  </Text>
+                </Pressable>
+              )
+            ) : null}
+
+            <Text variant="caption" tone="muted" center style={{ marginTop: spacing.xs }}>
+              {t('common.appName')} · {t('common.tagline')}
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
