@@ -1,12 +1,14 @@
-// Nafu maskotunu ve giriş ekranı taslağını PNG olarak üretir.
-// Kaynak koordinatlar src/ui/mascot/Nafu.tsx ile birebir aynıdır (önizleme amaçlı).
+// Nafu maskotunu (statik PNG) ve hareket animasyonunu (GIF) üretir.
+// Koordinatlar src/ui/mascot/Nafu.tsx ile birebir aynıdır (önizleme amaçlı).
 //   node scripts/render-nafu.mjs
 import { Resvg } from '@resvg/resvg-js';
+import gifenc from 'gifenc';
 import { writeFileSync, mkdirSync } from 'node:fs';
+
+const { GIFEncoder, quantize, applyPalette } = gifenc;
 
 const C = {
   teal50: '#ECFBF8',
-  teal400: '#3FBEAE',
   teal500: '#1AA597',
   teal600: '#0E8A7F',
   teal700: '#0B6F66',
@@ -16,6 +18,7 @@ const C = {
   gold300: '#F6D679',
   gold500: '#F4B740',
   bg: '#F7FAF9',
+  card: '#F2FCFA',
   surface: '#FFFFFF',
   border: '#E3ECEA',
   primarySoft: '#CFF3EC',
@@ -24,91 +27,109 @@ const C = {
   textSecondary: '#566B67',
   textMuted: '#9DAFAB',
 };
-
 const FONT = 'DejaVu Sans';
 
 const openEye = (cx, cy) => `
   <ellipse cx="${cx}" cy="${cy}" rx="11" ry="14" fill="${C.ink}"/>
   <circle cx="${cx + 3.5}" cy="${cy - 4.5}" r="4.2" fill="#fff"/>
   <circle cx="${cx - 2.5}" cy="${cy + 3.5}" r="2" fill="#fff" opacity="0.85"/>`;
-
+const blinkEye = (cx, cy) =>
+  `<path d="M${cx - 9} ${cy} Q${cx} ${cy + 4} ${cx + 9} ${cy}" stroke="${C.ink}" stroke-width="4" stroke-linecap="round" fill="none"/>`;
 const happyArcEye = (cx, cy) =>
   `<path d="M${cx - 12} ${cy + 3} Q${cx} ${cy - 11} ${cx + 12} ${cy + 3}" stroke="${C.ink}" stroke-width="4.5" stroke-linecap="round" fill="none"/>`;
-
 const closedEye = (cx, cy) =>
   `<path d="M${cx - 11} ${cy - 2} Q${cx} ${cy + 8} ${cx + 11} ${cy - 2}" stroke="${C.ink}" stroke-width="4" stroke-linecap="round" fill="none"/>`;
-
 const star = (x, y, s, color) =>
   `<path d="M${x} ${y - s} L${x + s * 0.28} ${y - s * 0.28} L${x + s} ${y} L${x + s * 0.28} ${y + s * 0.28} L${x} ${y + s} L${x - s * 0.28} ${y + s * 0.28} L${x - s} ${y} L${x - s * 0.28} ${y - s * 0.28} Z" fill="${color}"/>`;
 
-function face(expression) {
+function face(expression, blink) {
   switch (expression) {
     case 'celebrate':
-      return `${happyArcEye(86, 116)}${happyArcEye(134, 116)}
-        <path d="M90 150 Q110 156 130 150 Q122 174 110 174 Q98 174 90 150 Z" fill="${C.ink}"/>
-        <ellipse cx="110" cy="170" rx="9" ry="5" fill="${C.cheek}"/>`;
+      return `${happyArcEye(86, 118)}${happyArcEye(134, 118)}
+        <path d="M90 152 Q110 158 130 152 Q122 176 110 176 Q98 176 90 152 Z" fill="${C.ink}"/>
+        <ellipse cx="110" cy="172" rx="9" ry="5" fill="${C.cheek}"/>`;
     case 'sleep':
-      return `${closedEye(86, 118)}${closedEye(134, 118)}
-        <path d="M100 152 Q110 158 120 152" stroke="${C.ink}" stroke-width="4" stroke-linecap="round" fill="none"/>`;
+      return `${closedEye(86, 120)}${closedEye(134, 120)}
+        <path d="M100 154 Q110 160 120 154" stroke="${C.ink}" stroke-width="4" stroke-linecap="round" fill="none"/>`;
     case 'remind':
-      return `<path d="M74 96 Q86 88 98 96" stroke="${C.ink}" stroke-width="4" stroke-linecap="round" fill="none"/>
-        <path d="M122 96 Q134 88 146 96" stroke="${C.ink}" stroke-width="4" stroke-linecap="round" fill="none"/>
-        ${openEye(86, 118)}${openEye(134, 118)}
-        <circle cx="110" cy="156" r="7" fill="${C.ink}"/>`;
+      return `<path d="M74 98 Q86 90 98 98" stroke="${C.ink}" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <path d="M122 98 Q134 90 146 98" stroke="${C.ink}" stroke-width="4" stroke-linecap="round" fill="none"/>
+        ${blink ? blinkEye(86, 120) + blinkEye(134, 120) : openEye(86, 120) + openEye(134, 120)}
+        <circle cx="110" cy="158" r="7" fill="${C.ink}"/>`;
     default: // happy, wave
-      return `${openEye(86, 116)}${openEye(134, 116)}
-        <path d="M92 150 Q110 166 128 150" stroke="${C.ink}" stroke-width="4.5" stroke-linecap="round" fill="none"/>`;
+      return `${blink ? blinkEye(86, 118) + blinkEye(134, 118) : openEye(86, 118) + openEye(134, 118)}
+        <path d="M92 152 Q110 168 128 152" stroke="${C.ink}" stroke-width="4.5" stroke-linecap="round" fill="none"/>`;
   }
 }
 
-function arms(expression) {
-  const raised = expression === 'wave' || expression === 'celebrate';
-  const pointing = expression === 'remind';
-  const leftCy = expression === 'celebrate' ? 92 : 150;
-  const leftRot = expression === 'celebrate' ? 'rotate(28 34 92)' : 'rotate(12 34 150)';
-  const rightCy = raised || pointing ? 92 : 150;
-  const rightRot = raised || pointing ? 'rotate(-28 186 92)' : 'rotate(-12 186 150)';
-  return `<ellipse cx="34" cy="${leftCy}" rx="13" ry="20" fill="${C.teal600}" transform="${leftRot}"/>
-    <ellipse cx="186" cy="${rightCy}" rx="13" ry="20" fill="${C.teal600}" transform="${rightRot}"/>`;
-}
+const arm = (sfx, sx, sy, px, py, rot, open) => {
+  const A = `url(#arm${sfx})`;
+  return `<path d="M${sx} ${sy} L${px} ${py}" stroke="${A}" stroke-width="15" stroke-linecap="round"/>
+    <ellipse cx="${px}" cy="${py}" rx="16" ry="18" fill="${A}" transform="rotate(${rot} ${px} ${py})"/>
+    <ellipse cx="${px - 4}" cy="${py - 7}" rx="5" ry="7" fill="#fff" opacity="${open ? 0.28 : 0.22}"/>`;
+};
 
-// Tek bir Nafu'yu (defs + şekiller) verir. id çakışmasını önlemek için suffix.
-function nafu(expression, sfx) {
+// Tek Nafu (defs + şekiller). id çakışmasını önlemek için sfx.
+function nafu(expression, sfx, blink = false) {
+  const arms =
+    expression === 'wave'
+      ? arm(sfx, 76, 160, 52, 178, -10, false) + arm(sfx, 146, 120, 184, 64, 14, true)
+      : arm(sfx, 76, 160, 52, 178, -10, false) + arm(sfx, 144, 160, 168, 178, 10, false);
   return `
   <defs>
-    <linearGradient id="body${sfx}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${C.teal400}"/><stop offset="1" stop-color="${C.teal600}"/>
-    </linearGradient>
-    <radialGradient id="shine${sfx}" cx="0.35" cy="0.3" r="0.7">
-      <stop offset="0" stop-color="#fff" stop-opacity="0.45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    <radialGradient id="body${sfx}" cx="0.4" cy="0.34" r="0.78">
+      <stop offset="0" stop-color="#54CFC1"/><stop offset="0.55" stop-color="${C.teal500}"/><stop offset="1" stop-color="#0A6A60"/>
     </radialGradient>
+    <linearGradient id="arm${sfx}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2BB6A8"/><stop offset="1" stop-color="#0C7A70"/>
+    </linearGradient>
     <linearGradient id="tuft${sfx}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="${C.teal500}"/><stop offset="1" stop-color="${C.teal700}"/>
     </linearGradient>
+    <linearGradient id="foot${sfx}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${C.teal600}"/><stop offset="1" stop-color="#0A625A"/>
+    </linearGradient>
+    <radialGradient id="gloss${sfx}" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <ellipse cx="90" cy="198" rx="15" ry="9" fill="${C.teal700}"/>
-  <ellipse cx="130" cy="198" rx="15" ry="9" fill="${C.teal700}"/>
-  ${arms(expression)}
-  <path d="M70 58 C58 28 86 22 90 50 C92 64 78 70 70 58 Z" fill="url(#tuft${sfx})"/>
-  <path d="M150 58 C162 28 134 22 130 50 C128 64 142 70 150 58 Z" fill="url(#tuft${sfx})"/>
-  <path d="M104 34 C104 18 116 18 116 32 C122 26 128 34 120 42 C114 48 106 46 104 34 Z" fill="url(#tuft${sfx})"/>
-  <ellipse cx="110" cy="122" rx="86" ry="80" fill="url(#body${sfx})"/>
-  <ellipse cx="110" cy="122" rx="86" ry="80" fill="url(#shine${sfx})"/>
-  <ellipse cx="110" cy="134" rx="60" ry="55" fill="${C.teal50}"/>
-  <ellipse cx="66" cy="146" rx="12" ry="8" fill="${C.cheek}" opacity="0.75"/>
-  <ellipse cx="154" cy="146" rx="12" ry="8" fill="${C.cheek}" opacity="0.75"/>
-  ${face(expression)}
-  ${expression === 'celebrate' ? star(40, 60, 9, C.gold500) + star(182, 78, 7, C.gold300) + star(58, 38, 6, C.coral500) + star(166, 44, 8, C.gold500) : ''}
-  ${expression === 'sleep' ? `<text x="168" y="70" fill="${C.teal600}" font-size="20" font-weight="bold" font-family="${FONT}">z</text><text x="182" y="54" fill="${C.teal500}" font-size="26" font-weight="bold" font-family="${FONT}">Z</text>` : ''}`;
+  <ellipse cx="110" cy="218" rx="66" ry="9" fill="#0A3A35" opacity="0.18"/>
+  <ellipse cx="92" cy="200" rx="16" ry="10" fill="url(#foot${sfx})"/>
+  <ellipse cx="128" cy="200" rx="16" ry="10" fill="url(#foot${sfx})"/>
+  <path d="M66 56 C52 24 84 18 90 48 C93 64 76 70 66 56 Z" fill="url(#tuft${sfx})"/>
+  <path d="M154 56 C168 24 136 18 130 48 C127 64 144 70 154 56 Z" fill="url(#tuft${sfx})"/>
+  <path d="M103 32 C103 15 117 15 117 30 C123 23 131 32 122 41 C115 47 105 46 103 32 Z" fill="url(#tuft${sfx})"/>
+  <ellipse cx="110" cy="120" rx="88" ry="82" fill="url(#body${sfx})"/>
+  <ellipse cx="110" cy="166" rx="72" ry="42" fill="#074F49" opacity="0.16"/>
+  <ellipse cx="84" cy="74" rx="30" ry="20" fill="url(#gloss${sfx})" transform="rotate(-18 84 74)"/>
+  <ellipse cx="72" cy="66" rx="7" ry="5" fill="#fff" opacity="0.5"/>
+  <ellipse cx="110" cy="132" rx="60" ry="55" fill="#0C7A70" opacity="0.28"/>
+  <ellipse cx="110" cy="136" rx="58" ry="53" fill="#F1FCFA"/>
+  <ellipse cx="68" cy="150" rx="12" ry="8" fill="${C.cheek}" opacity="0.8"/>
+  <ellipse cx="152" cy="150" rx="12" ry="8" fill="${C.cheek}" opacity="0.8"/>
+  ${face(expression, blink)}
+  ${arms}
+  ${expression === 'celebrate' ? star(38, 58, 9, C.gold500) + star(184, 76, 7, C.gold300) + star(56, 36, 6, C.coral500) + star(166, 42, 8, C.gold500) : ''}
+  ${expression === 'sleep' ? `<text x="170" y="72" fill="${C.teal600}" font-size="20" font-weight="bold" font-family="${FONT}">z</text><text x="184" y="54" fill="${C.teal500}" font-size="26" font-weight="bold" font-family="${FONT}">Z</text>` : ''}`;
 }
 
-function renderToPng(svg, outPath, width) {
+function renderPng(svg, outPath, width) {
   const r = new Resvg(svg, {
     fitTo: { mode: 'width', value: width },
     font: { loadSystemFonts: true, defaultFontFamily: FONT },
   });
   writeFileSync(outPath, r.render().asPng());
   console.log('yazıldı:', outPath);
+}
+
+function renderPixels(svg, width) {
+  const r = new Resvg(svg, {
+    fitTo: { mode: 'width', value: width },
+    background: C.card,
+    font: { loadSystemFonts: true, defaultFontFamily: FONT },
+  });
+  const img = r.render();
+  return { data: Uint8Array.from(img.pixels), width: img.width, height: img.height };
 }
 
 // --- 1) İfade vitrini ---------------------------------------------------------
@@ -124,22 +145,22 @@ function showcase() {
   const cells = items
     .map(([exp, label], i) => {
       const cx = i * cell + 120;
-      return `<g transform="translate(${i * cell + 26}, 84) scale(0.85)">${nafu(exp, i)}</g>
-        <text x="${cx}" y="312" text-anchor="middle" font-family="${FONT}" font-size="20" font-weight="bold" fill="${C.teal700}">${label}</text>`;
+      return `<g transform="translate(${i * cell + 24}, 70) scale(0.84)">${nafu(exp, i)}</g>
+        <text x="${cx}" y="322" text-anchor="middle" font-family="${FONT}" font-size="20" font-weight="bold" fill="${C.teal700}">${label}</text>`;
     })
     .join('\n');
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340">
-    <rect width="1200" height="340" rx="28" fill="${C.bg}"/>
-    <text x="600" y="46" text-anchor="middle" font-family="${FONT}" font-size="26" font-weight="bold" fill="${C.textPrimary}">Nafu — Nafu Planlayıcı maskotu</text>
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="350" viewBox="0 0 1200 350">
+    <rect width="1200" height="350" rx="28" fill="${C.bg}"/>
+    <text x="600" y="44" text-anchor="middle" font-family="${FONT}" font-size="26" font-weight="bold" fill="${C.textPrimary}">Nafu — Nafu Planlayıcı maskotu</text>
     ${cells}
   </svg>`;
-  renderToPng(svg, 'docs/preview/nafu-showcase.png', 2000);
+  renderPng(svg, 'docs/preview/nafu-showcase.png', 2000);
 }
 
 // --- 2) Giriş ekranı taslağı --------------------------------------------------
 function loginMockup() {
   const W = 430, H = 880, px = 20, py = 20, iw = 390, ih = 840;
-  const innerCx = px + iw / 2; // 215
+  const innerCx = px + iw / 2;
   const googleG = `
     <g transform="translate(${innerCx - 96}, 742) scale(0.46)">
       <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
@@ -150,7 +171,7 @@ function loginMockup() {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     <rect width="${W}" height="${H}" fill="${C.teal50}"/>
     <rect x="${px}" y="${py}" width="${iw}" height="${ih}" rx="46" fill="${C.bg}" stroke="${C.border}" stroke-width="2"/>
-    <g transform="translate(${innerCx - 110}, 190) scale(1.0)">${nafu('wave', 'L')}</g>
+    <g transform="translate(${innerCx - 110}, 178) scale(1.0)">${nafu('wave', 'L')}</g>
     <text x="${innerCx}" y="486" text-anchor="middle" font-family="${FONT}" font-size="27" font-weight="bold" fill="${C.textPrimary}">Merhaba, ben Nafu!</text>
     <text x="${innerCx}" y="524" text-anchor="middle" font-family="${FONT}" font-size="16" fill="${C.textSecondary}">Ev işlerini, alışverişi ve hatırlatmaları</text>
     <text x="${innerCx}" y="548" text-anchor="middle" font-family="${FONT}" font-size="16" fill="${C.textSecondary}">birlikte yönetelim. Hiçbir şey unutulmasın.</text>
@@ -159,10 +180,47 @@ function loginMockup() {
     <text x="${innerCx + 14}" y="759" text-anchor="middle" font-family="${FONT}" font-size="17" font-weight="bold" fill="${C.primaryDark}">Google ile devam et</text>
     <text x="${innerCx}" y="812" text-anchor="middle" font-family="${FONT}" font-size="13" fill="${C.textMuted}">Nafu Planlayıcı · Evi birlikte, tıkır tıkır yönetin</text>
   </svg>`;
-  renderToPng(svg, 'docs/preview/nafu-login-mockup.png', 860);
+  renderPng(svg, 'docs/preview/nafu-login-mockup.png', 860);
+}
+
+// --- 3) Hareket animasyonu (GIF) ---------------------------------------------
+// Sol: Selam (sallanma + nefes + göz kırpma). Sağ: Kutlama (zıplama).
+function animationGif() {
+  const W = 480, H = 270, FRAMES = 28, DELAY = 55;
+  const gif = GIFEncoder();
+  const TAU = Math.PI * 2;
+
+  for (let f = 0; f < FRAMES; f++) {
+    const t = f / FRAMES;
+    const bobY = -5 * (0.5 - 0.5 * Math.cos(TAU * t * 2)); // nefes (2 döngü)
+    const swayDeg = 7 * Math.sin(TAU * t * 4); // selam sallanması
+    const blink = f === 7 || f === 8 || f === 21;
+    const hop = Math.abs(Math.sin(Math.PI * t * 2)); // zıplama (2 kez)
+    const hopY = -16 * hop;
+    const hopS = 1 + 0.05 * hop;
+
+    const left = `<g transform="translate(70 78) scale(0.6) rotate(${swayDeg.toFixed(2)} 110 120) translate(0 ${bobY.toFixed(2)})">${nafu('wave', 'A', blink)}</g>`;
+    const right = `<g transform="translate(284 78) scale(${(0.6 * hopS).toFixed(3)}) translate(0 ${hopY.toFixed(2)})">${nafu('celebrate', 'B')}</g>`;
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+      <rect width="${W}" height="${H}" rx="24" fill="${C.card}"/>
+      <text x="130" y="252" text-anchor="middle" font-family="${FONT}" font-size="18" font-weight="bold" fill="${C.teal700}">Selam</text>
+      <text x="350" y="252" text-anchor="middle" font-family="${FONT}" font-size="18" font-weight="bold" fill="${C.teal700}">Kutlama</text>
+      ${left}${right}</svg>`;
+
+    const { data, width, height } = renderPixels(svg, W);
+    const palette = quantize(data, 256, { format: 'rgb565' });
+    const index = applyPalette(data, palette, 'rgb565');
+    gif.writeFrame(index, width, height, { palette, delay: DELAY });
+  }
+
+  gif.finish();
+  writeFileSync('docs/preview/nafu-animation.gif', Buffer.from(gif.bytes()));
+  console.log('yazıldı: docs/preview/nafu-animation.gif');
 }
 
 mkdirSync('docs/preview', { recursive: true });
 showcase();
 loginMockup();
+animationGif();
 console.log('Bitti.');
