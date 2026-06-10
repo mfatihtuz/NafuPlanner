@@ -49,3 +49,29 @@ export const WEEKDAY_LABELS_TR = [
   'Cum',
   'Cmt',
 ] as const;
+
+/** Takvim başlığı için Pazartesi ile başlayan kısa gün adları. */
+export const CALENDAR_WEEKDAYS_TR = [
+  'Pzt',
+  'Sal',
+  'Çar',
+  'Per',
+  'Cum',
+  'Cmt',
+  'Paz',
+] as const;
+
+export const MONTHS_TR = [
+  'Ocak',
+  'Şubat',
+  'Mart',
+  'Nisan',
+  'Mayıs',
+  'Haziran',
+  'Temmuz',
+  'Ağustos',
+  'Eylül',
+  'Ekim',
+  'Kasım',
+  'Aralık',
+] as const;

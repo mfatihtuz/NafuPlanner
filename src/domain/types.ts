@@ -28,6 +28,11 @@ export interface User {
   createdAtMs: Millis;
 }
 
+/** users/{uid} belgesi: profil + aktif hane bağlantısı. */
+export interface UserProfile extends User {
+  householdId: Id | null;
+}
+
 export type HouseholdRole = 'owner' | 'member';
 
 export interface Household {

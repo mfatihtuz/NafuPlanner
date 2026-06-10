@@ -1,0 +1,66 @@
+import { PRIORITY_META } from './constants';
+import { dayKeyFromMs } from './time';
+import type { Millis, Task } from './types';
+
+/**
+ * Saf görev gruplama/sıralama kuralları (liste ekranları için).
+ */
+
+export interface TaskSections {
+  overdue: Task[];
+  today: Task[];
+  upcoming: Task[];
+  noDate: Task[];
+  done: Task[];
+}
+
+const isOpen = (task: Task) => task.status === 'open' || task.status === 'in_progress';
+
+const byDueAsc = (a: Task, b: Task) => (a.dueAtMs ?? 0) - (b.dueAtMs ?? 0);
+const byPriorityDesc = (a: Task, b: Task) =>
+  PRIORITY_META[b.priority].weight - PRIORITY_META[a.priority].weight;
+const byCreatedDesc = (a: Task, b: Task) => b.createdAtMs - a.createdAtMs;
+const byCompletedDesc = (a: Task, b: Task) => (b.completedAtMs ?? 0) - (a.completedAtMs ?? 0);
+
+/** Görevleri ekran bölümlerine ayırır ve her bölümü anlamlı sıralar. */
+export function groupTasks(tasks: Task[], now: Millis): TaskSections {
+  const todayKey = dayKeyFromMs(now);
+  const sections: TaskSections = { overdue: [], today: [], upcoming: [], noDate: [], done: [] };
+
+  for (const task of tasks) {
+    if (task.status === 'archived') continue;
+    if (task.status === 'done') {
+      sections.done.push(task);
+      continue;
+    }
+    if (!isOpen(task)) continue;
+    if (task.dueAtMs == null) {
+      sections.noDate.push(task);
+      continue;
+    }
+    const dueKey = dayKeyFromMs(task.dueAtMs);
+    if (dueKey < todayKey) sections.overdue.push(task);
+    else if (dueKey === todayKey) sections.today.push(task);
+    else sections.upcoming.push(task);
+  }
+
+  sections.overdue.sort(byDueAsc);
+  // Bugün: saatli olanlar önce (saat sırasıyla), sonra öncelik.
+  sections.today.sort((a, b) => {
+    if (a.hasTime !== b.hasTime) return a.hasTime ? -1 : 1;
+    if (a.hasTime && b.hasTime) return byDueAsc(a, b);
+    return byPriorityDesc(a, b);
+  });
+  sections.upcoming.sort(byDueAsc);
+  sections.noDate.sort((a, b) => byPriorityDesc(a, b) || byCreatedDesc(a, b));
+  sections.done.sort(byCompletedDesc);
+
+  return sections;
+}
+
+/** Alt görev ilerlemesi: [tamamlanan, toplam]. */
+export function subtaskProgress(task: Task): [number, number] {
+  const total = task.subtasks.length;
+  const done = task.subtasks.filter((s) => s.done).length;
+  return [done, total];
+}

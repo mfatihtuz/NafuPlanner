@@ -72,14 +72,17 @@ Güvenlik: Firestore kuralları — veriye yalnızca o hanenin üyeleri erişir.
 
 ### Faz 1 — Çekirdek (ilk TestFlight)
 
-- [ ] Hane oluştur + davet linki/koduyla katıl (invitations)
-- [ ] Görev CRUD + atama (bir/çok kişi)
-- [ ] Bugün / Yaklaşan / Tamamlanan görünümleri
-- [ ] Kategoriler (varsayılan Türkçe set, düzenlenebilir)
-- [ ] Alt görevler (kontrol listesi)
-- [ ] Alışveriş listesi (anlık paylaşımlı)
-- [ ] Gerçek zamanlı senkron (Firestore)
-- [ ] Temel hatırlatma (zamanı gelince)
+- [x] Hane oluştur + davet koduyla katıl (invitations, 7 gün geçerli)
+- [x] Görev CRUD + atama (bir/çok kişi) — modal form + detay ekranı
+- [x] Bugün / Gecikmiş / Yaklaşan / Tarihsiz / Tamamlanan görünümleri
+- [x] Kategoriler (varsayılan Türkçe set + formdan yeni ekleme)
+- [x] Alt görevler (formda ekleme, detayda işaretleme)
+- [x] Alışveriş listesi (anlık paylaşımlı, alınanlar bölümü)
+- [x] Gerçek zamanlı senkron (Firestore onSnapshot)
+- [x] Temel hatırlatma (saatli görevlerde yerel bildirim)
+- [x] Firestore güvenlik kuralları (`firestore.rules`) + kurulum rehberi
+      (`docs/FIREBASE_KURULUM.md`)
+- [ ] Firebase projesi + `.env` (kullanıcı adımı — rehbere bak)
 - [ ] İlk TestFlight build'i (EAS) → ikiniz kullanmaya başlarsınız
 
 ### Faz 2 — Hatırlatma & Tekrar
