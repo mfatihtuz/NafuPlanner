@@ -62,26 +62,30 @@ function face(expression, blink) {
   }
 }
 
-const arm = (sfx, sx, sy, px, py, rot, open) => {
-  const A = `url(#arm${sfx})`;
-  return `<path d="M${sx} ${sy} L${px} ${py}" stroke="${A}" stroke-width="15" stroke-linecap="round"/>
-    <ellipse cx="${px}" cy="${py}" rx="16" ry="18" fill="${A}" transform="rotate(${rot} ${px} ${py})"/>
-    <ellipse cx="${px - 4}" cy="${py - 7}" rx="5" ry="7" fill="#fff" opacity="${open ? 0.28 : 0.22}"/>`;
-};
+const restPaw = (sfx, cx, cy, tilt) =>
+  `<ellipse cx="${cx}" cy="${cy}" rx="15" ry="18" fill="url(#arm${sfx})" transform="rotate(${tilt} ${cx} ${cy})"/>
+   <ellipse cx="${cx - 4}" cy="${cy - 6}" rx="5" ry="7" fill="#fff" opacity="0.22"/>`;
+const waveArm = (sfx) =>
+  `<ellipse cx="176" cy="96" rx="14" ry="23" fill="url(#arm${sfx})" transform="rotate(-33 176 96)"/>
+   <circle cx="193" cy="66" r="15" fill="url(#arm${sfx})"/>
+   <circle cx="184" cy="54" r="4.5" fill="url(#arm${sfx})"/>
+   <circle cx="193" cy="51" r="5" fill="url(#arm${sfx})"/>
+   <circle cx="202" cy="55" r="4.5" fill="url(#arm${sfx})"/>
+   <ellipse cx="189" cy="61" rx="5" ry="6" fill="#fff" opacity="0.28"/>`;
 
 // Tek Nafu (defs + şekiller). id çakışmasını önlemek için sfx.
 function nafu(expression, sfx, blink = false) {
   const arms =
     expression === 'wave'
-      ? arm(sfx, 76, 160, 52, 178, -10, false) + arm(sfx, 146, 120, 184, 64, 14, true)
-      : arm(sfx, 76, 160, 52, 178, -10, false) + arm(sfx, 144, 160, 168, 178, 10, false);
+      ? restPaw(sfx, 54, 173, -16) + waveArm(sfx)
+      : restPaw(sfx, 54, 173, -16) + restPaw(sfx, 166, 173, 16);
   return `
   <defs>
     <radialGradient id="body${sfx}" cx="0.4" cy="0.34" r="0.78">
       <stop offset="0" stop-color="#54CFC1"/><stop offset="0.55" stop-color="${C.teal500}"/><stop offset="1" stop-color="#0A6A60"/>
     </radialGradient>
     <linearGradient id="arm${sfx}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2BB6A8"/><stop offset="1" stop-color="#0C7A70"/>
+      <stop offset="0" stop-color="#3CC3B4"/><stop offset="1" stop-color="#0E8A7F"/>
     </linearGradient>
     <linearGradient id="tuft${sfx}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="${C.teal500}"/><stop offset="1" stop-color="${C.teal700}"/>

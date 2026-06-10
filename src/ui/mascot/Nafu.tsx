@@ -171,8 +171,8 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
             <Stop offset="1" stopColor="#0A6A60" />
           </RadialGradient>
           <LinearGradient id="nafuArm" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#2BB6A8" />
-            <Stop offset="1" stopColor="#0C7A70" />
+            <Stop offset="0" stopColor="#3CC3B4" />
+            <Stop offset="1" stopColor="#0E8A7F" />
           </LinearGradient>
           <LinearGradient id="nafuTuft" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={palette.teal[500]} />
@@ -229,13 +229,9 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
         {/* Yüz (gözler + ağız) */}
         {renderFace(expression, blink)}
 
-        {/* Kollar / patiler (önde, belirgin) */}
-        <Arm shoulder={[76, 160]} paw={[52, 178]} rot={-10} />
-        {expression === 'wave' ? (
-          <Arm shoulder={[146, 120]} paw={[184, 64]} rot={14} open />
-        ) : (
-          <Arm shoulder={[144, 160]} paw={[168, 178]} rot={10} />
-        )}
+        {/* Kollar / patiler (tek parça, tombul) */}
+        {restPaw(54, 173, -16)}
+        {expression === 'wave' ? waveArm() : restPaw(166, 173, 16)}
 
         {/* Kutlama parıltıları */}
         {expression === 'celebrate' ? renderSparkles() : null}
@@ -256,31 +252,26 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
   );
 }
 
-function Arm({
-  shoulder,
-  paw,
-  rot,
-  open = false,
-}: {
-  shoulder: [number, number];
-  paw: [number, number];
-  rot: number;
-  open?: boolean;
-}) {
-  const [sx, sy] = shoulder;
-  const [px, py] = paw;
+/** Dinlenen tombul pati (tek parça). */
+function restPaw(cx: number, cy: number, tilt: number) {
   return (
     <G>
-      <Path d={`M${sx} ${sy} L${px} ${py}`} stroke={ARM} strokeWidth={15} strokeLinecap="round" />
-      <Ellipse
-        cx={px}
-        cy={py}
-        rx={16}
-        ry={18}
-        fill={ARM}
-        transform={`rotate(${rot} ${px} ${py})`}
-      />
-      <Ellipse cx={px - 4} cy={py - 7} rx={5} ry={7} fill="#FFFFFF" opacity={open ? 0.28 : 0.22} />
+      <Ellipse cx={cx} cy={cy} rx={15} ry={18} fill={ARM} transform={`rotate(${tilt} ${cx} ${cy})`} />
+      <Ellipse cx={cx - 4} cy={cy - 6} rx={5} ry={7} fill="#FFFFFF" opacity={0.22} />
+    </G>
+  );
+}
+
+/** Selam veren kalkık kol: tombul ön kol + açık pati + minik parmaklar. */
+function waveArm() {
+  return (
+    <G>
+      <Ellipse cx={176} cy={96} rx={14} ry={23} fill={ARM} transform="rotate(-33 176 96)" />
+      <Circle cx={193} cy={66} r={15} fill={ARM} />
+      <Circle cx={184} cy={54} r={4.5} fill={ARM} />
+      <Circle cx={193} cy={51} r={5} fill={ARM} />
+      <Circle cx={202} cy={55} r={4.5} fill={ARM} />
+      <Ellipse cx={189} cy={61} rx={5} ry={6} fill="#FFFFFF" opacity={0.28} />
     </G>
   );
 }
