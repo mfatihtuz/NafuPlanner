@@ -7,12 +7,9 @@ import Svg, {
   G,
   LinearGradient,
   Path,
-  RadialGradient,
   Stop,
   Text as SvgText,
 } from 'react-native-svg';
-
-import { palette } from '../theme/colors';
 
 export type NafuExpression =
   | 'happy'
@@ -24,86 +21,89 @@ export type NafuExpression =
 export interface NafuProps {
   size?: number;
   expression?: NafuExpression;
-  /** İnce hareket + duygu animasyonu (nefes, zıplama, selam, göz kırpma). */
+  /** İnce hareket + duygu animasyonu (nefes, kol-only selam, göz kırpma). */
   animated?: boolean;
 }
 
-const VIEW_W = 220;
-const VIEW_H = 230;
-const INK = palette.gray[900];
-const CHEEK = palette.coral[300];
-const ARM = 'url(#nafuArm)';
+const AnimatedG = Animated.createAnimatedComponent(G);
 
-const OPEN_EYE_EXPRESSIONS: NafuExpression[] = ['happy', 'wave', 'remind'];
+const VIEW = 240;
+const BODY_BOT = '#0E8E82';
+const EAR = '#15A091';
+const ARM = '#13988B';
+const ARM_HI = '#3CC6B7';
+const BELLY = '#F3FBF9';
+const BELLY_SHADE = '#D7F0EB';
+const EYE = '#222B2D';
+const CHEEK = '#FFAE9E';
+const FOOT = '#0C8074';
+const CONTACT = '#08443E';
+
+const OPEN_EYE: NafuExpression[] = ['happy', 'wave', 'remind'];
 
 /**
  * Nafu — Nafu Planlayıcı'nın maskotu.
  *
- * Yuvarlak, yumuşak, tüylü özgün bir yaratık (teal tonlarında). Küresel 3B
- * gövde, öne gelen belirgin patiler ve duruma göre ifadeler. Yerleşik Animated
- * API'siyle ince nefes/zıplama/selam/göz kırpma animasyonları (ekstra bağımlılık
- * yok).
+ * Yuvarlak, sıcak, modern bir yaratık (teal). Tek parça akıcı kollar, temiz
+ * gölgeleme. Yerleşik Animated API'siyle ince animasyon: nefes, kol-only selam
+ * ve göz kırpma (ekstra bağımlılık yok).
  */
 export function Nafu({ size = 160, expression = 'happy', animated = true }: NafuProps) {
-  const height = (size * VIEW_H) / VIEW_W;
-
-  // Animated değerleri tembel olarak bir kez oluştur (kararlı referans).
-  const [bob] = useState(() => new Animated.Value(0));
-  const [sway] = useState(() => new Animated.Value(0));
+  const [breathe] = useState(() => new Animated.Value(0));
+  const [waveVal] = useState(() => new Animated.Value(0));
   const [bounce] = useState(() => new Animated.Value(0));
   const [blink, setBlink] = useState(false);
 
-  // Sürekli ince hareketler.
   useEffect(() => {
     if (!animated) return;
     const running: Animated.CompositeAnimation[] = [];
 
-    const breathe = Animated.loop(
+    const loopBreathe = Animated.loop(
       Animated.sequence([
-        Animated.timing(bob, {
+        Animated.timing(breathe, {
           toValue: 1,
-          duration: 1600,
+          duration: 1700,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-        Animated.timing(bob, {
+        Animated.timing(breathe, {
           toValue: 0,
-          duration: 1600,
+          duration: 1700,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
       ]),
     );
-    breathe.start();
-    running.push(breathe);
+    loopBreathe.start();
+    running.push(loopBreathe);
 
     if (expression === 'wave') {
-      const wave = Animated.loop(
+      const loopWave = Animated.loop(
         Animated.sequence([
-          Animated.timing(sway, {
+          Animated.timing(waveVal, {
             toValue: 1,
-            duration: 480,
+            duration: 420,
             easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
+            useNativeDriver: false,
           }),
-          Animated.timing(sway, {
-            toValue: -1,
-            duration: 480,
+          Animated.timing(waveVal, {
+            toValue: 0,
+            duration: 420,
             easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
+            useNativeDriver: false,
           }),
         ]),
       );
-      wave.start();
-      running.push(wave);
+      loopWave.start();
+      running.push(loopWave);
     }
 
     if (expression === 'celebrate') {
-      const hop = Animated.loop(
+      const loopHop = Animated.loop(
         Animated.sequence([
           Animated.timing(bounce, {
             toValue: 1,
-            duration: 360,
+            duration: 340,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
@@ -115,16 +115,15 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
           }),
         ]),
       );
-      hop.start();
-      running.push(hop);
+      loopHop.start();
+      running.push(loopHop);
     }
 
-    return () => running.forEach((animation) => animation.stop());
-  }, [animated, expression, bob, sway, bounce]);
+    return () => running.forEach((a) => a.stop());
+  }, [animated, expression, breathe, waveVal, bounce]);
 
-  // Periyodik göz kırpma (yalnızca gözleri açık ifadelerde).
   useEffect(() => {
-    if (!animated || !OPEN_EYE_EXPRESSIONS.includes(expression)) return;
+    if (!animated || !OPEN_EYE.includes(expression)) return;
     let blinkTimer: ReturnType<typeof setTimeout>;
     let openTimer: ReturnType<typeof setTimeout>;
     const schedule = () => {
@@ -136,7 +135,7 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
             schedule();
           }, 130);
         },
-        2600 + Math.random() * 2400,
+        2800 + Math.random() * 2400,
       );
     };
     schedule();
@@ -147,102 +146,65 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
   }, [animated, expression]);
 
   const translateY = Animated.add(
-    bob.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }),
-    bounce.interpolate({ inputRange: [0, 1], outputRange: [0, -12] }),
+    breathe.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }),
+    bounce.interpolate({ inputRange: [0, 1], outputRange: [0, -14] }),
   );
   const scale = Animated.multiply(
-    bob.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }),
-    bounce.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] }),
+    breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }),
+    bounce.interpolate({ inputRange: [0, 1], outputRange: [1, 1.04] }),
   );
-  const rotate = sway.interpolate({
-    inputRange: [-1, 1],
-    outputRange: ['-6deg', '6deg'],
-  });
+  const armRotation = waveVal.interpolate({ inputRange: [0, 1], outputRange: [-8, 16] });
 
   return (
-    <Animated.View
-      style={{ width: size, height, transform: [{ translateY }, { rotate }, { scale }] }}
-    >
-      <Svg width={size} height={height} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} accessibilityRole="image">
+    <Animated.View style={{ width: size, height: size, transform: [{ translateY }, { scale }] }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${VIEW} ${VIEW}`} accessibilityRole="image">
         <Defs>
-          <RadialGradient id="nafuBody" cx="0.4" cy="0.34" r="0.78">
-            <Stop offset="0" stopColor="#54CFC1" />
-            <Stop offset="0.55" stopColor={palette.teal[500]} />
-            <Stop offset="1" stopColor="#0A6A60" />
-          </RadialGradient>
-          <LinearGradient id="nafuArm" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#3CC3B4" />
-            <Stop offset="1" stopColor="#0E8A7F" />
+          <LinearGradient id="nafuBody" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#2DB9AB" />
+            <Stop offset="1" stopColor={BODY_BOT} />
           </LinearGradient>
-          <LinearGradient id="nafuTuft" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={palette.teal[500]} />
-            <Stop offset="1" stopColor={palette.teal[700]} />
-          </LinearGradient>
-          <LinearGradient id="nafuFoot" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={palette.teal[600]} />
-            <Stop offset="1" stopColor="#0A625A" />
-          </LinearGradient>
-          <RadialGradient id="nafuGloss" cx="0.5" cy="0.5" r="0.5">
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.55" />
-            <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
-          </RadialGradient>
         </Defs>
 
-        {/* Zemin gölgesi */}
-        <Ellipse cx="110" cy="218" rx="66" ry="9" fill="#0A3A35" opacity={0.18} />
+        <Ellipse cx="120" cy="226" rx="62" ry="8" fill={CONTACT} opacity={0.14} />
+        <Ellipse cx="104" cy="206" rx="15" ry="10" fill={FOOT} />
+        <Ellipse cx="136" cy="206" rx="15" ry="10" fill={FOOT} />
 
-        {/* Ayaklar (gövdenin arkasından) */}
-        <Ellipse cx="92" cy="200" rx="16" ry="10" fill="url(#nafuFoot)" />
-        <Ellipse cx="128" cy="200" rx="16" ry="10" fill="url(#nafuFoot)" />
+        {/* Kulaklar */}
+        <Path d="M86 54 C80 28 106 24 110 48 C112 62 96 68 86 54 Z" fill={EAR} />
+        <Path d="M154 54 C160 28 134 24 130 48 C128 62 144 68 154 54 Z" fill={EAR} />
 
-        {/* Kulak ve tepe tüyleri (gövdenin arkasından) */}
-        <Path d="M66 56 C52 24 84 18 90 48 C93 64 76 70 66 56 Z" fill="url(#nafuTuft)" />
-        <Path d="M154 56 C168 24 136 18 130 48 C127 64 144 70 154 56 Z" fill="url(#nafuTuft)" />
-        <Path
-          d="M103 32 C103 15 117 15 117 30 C123 23 131 32 122 41 C115 47 105 46 103 32 Z"
-          fill="url(#nafuTuft)"
-        />
+        {/* Gövde */}
+        <Ellipse cx="120" cy="126" rx="92" ry="86" fill="url(#nafuBody)" />
+        <Ellipse cx="94" cy="80" rx="40" ry="26" fill="#FFFFFF" opacity={0.12} transform="rotate(-16 94 80)" />
 
-        {/* Gövde (küresel 3B) */}
-        <Ellipse cx="110" cy="120" rx="88" ry="82" fill="url(#nafuBody)" />
-        {/* Alt hacim gölgesi */}
-        <Ellipse cx="110" cy="166" rx="72" ry="42" fill="#074F49" opacity={0.16} />
-        {/* Parlama */}
-        <Ellipse
-          cx="84"
-          cy="74"
-          rx="30"
-          ry="20"
-          fill="url(#nafuGloss)"
-          transform="rotate(-18 84 74)"
-        />
-        <Ellipse cx="72" cy="66" rx="7" ry="5" fill="#FFFFFF" opacity={0.5} />
-
-        {/* Yüz alanı (oturma gölgesi + açık alan) */}
-        <Ellipse cx="110" cy="132" rx="60" ry="55" fill="#0C7A70" opacity={0.28} />
-        <Ellipse cx="110" cy="136" rx="58" ry="53" fill="#F1FCFA" />
+        {/* Yüz alanı */}
+        <Ellipse cx="120" cy="146" rx="64" ry="58" fill={BELLY_SHADE} />
+        <Ellipse cx="120" cy="142" rx="62" ry="55" fill={BELLY} />
 
         {/* Yanaklar */}
-        <Ellipse cx="68" cy="150" rx="12" ry="8" fill={CHEEK} opacity={0.8} />
-        <Ellipse cx="152" cy="150" rx="12" ry="8" fill={CHEEK} opacity={0.8} />
+        <Ellipse cx="78" cy="156" rx="12" ry="7.5" fill={CHEEK} opacity={0.62} />
+        <Ellipse cx="162" cy="156" rx="12" ry="7.5" fill={CHEEK} opacity={0.62} />
 
-        {/* Yüz (gözler + ağız) */}
         {renderFace(expression, blink)}
 
-        {/* Kollar / patiler (tek parça, tombul) */}
-        {restPaw(54, 173, -16)}
-        {expression === 'wave' ? waveArm() : restPaw(166, 173, 16)}
+        {/* Kollar */}
+        <RestPaw side="left" />
+        {expression === 'wave' ? (
+          <AnimatedG rotation={armRotation} originX={150} originY={132}>
+            <WaveArm />
+          </AnimatedG>
+        ) : (
+          <RestPaw side="right" />
+        )}
 
-        {/* Kutlama parıltıları */}
         {expression === 'celebrate' ? renderSparkles() : null}
 
-        {/* Uyku Zzz */}
         {expression === 'sleep' ? (
           <G>
-            <SvgText x="170" y="72" fill={palette.teal[600]} fontSize="20" fontWeight="bold">
+            <SvgText x="184" y="74" fill="#0B6F66" fontSize="20" fontWeight="bold">
               z
             </SvgText>
-            <SvgText x="184" y="54" fill={palette.teal[500]} fontSize="26" fontWeight="bold">
+            <SvgText x="198" y="56" fill={EAR} fontSize="26" fontWeight="bold">
               Z
             </SvgText>
           </G>
@@ -252,74 +214,71 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
   );
 }
 
-/** Dinlenen tombul pati (tek parça). */
-function restPaw(cx: number, cy: number, tilt: number) {
+function RestPaw({ side }: { side: 'left' | 'right' }) {
+  if (side === 'left') {
+    return (
+      <G>
+        <Path
+          d="M74 150 C56 148 44 166 49 184 C53 197 70 200 80 189 C90 178 88 160 74 150 Z"
+          fill={ARM}
+        />
+        <Ellipse cx={62} cy={170} rx={6} ry={8} fill={ARM_HI} opacity={0.55} transform="rotate(-20 62 170)" />
+      </G>
+    );
+  }
   return (
     <G>
-      <Ellipse cx={cx} cy={cy} rx={15} ry={18} fill={ARM} transform={`rotate(${tilt} ${cx} ${cy})`} />
-      <Ellipse cx={cx - 4} cy={cy - 6} rx={5} ry={7} fill="#FFFFFF" opacity={0.22} />
+      <Path
+        d="M166 150 C184 148 196 166 191 184 C187 197 170 200 160 189 C150 178 152 160 166 150 Z"
+        fill={ARM}
+      />
+      <Ellipse cx={178} cy={170} rx={6} ry={8} fill={ARM_HI} opacity={0.55} transform="rotate(20 178 170)" />
     </G>
   );
 }
 
-/** Selam veren kalkık kol: tombul ön kol + açık pati + minik parmaklar. */
-function waveArm() {
+function WaveArm() {
   return (
     <G>
-      <Ellipse cx={176} cy={96} rx={14} ry={23} fill={ARM} transform="rotate(-33 176 96)" />
-      <Circle cx={193} cy={66} r={15} fill={ARM} />
-      <Circle cx={184} cy={54} r={4.5} fill={ARM} />
-      <Circle cx={193} cy={51} r={5} fill={ARM} />
-      <Circle cx={202} cy={55} r={4.5} fill={ARM} />
-      <Ellipse cx={189} cy={61} rx={5} ry={6} fill="#FFFFFF" opacity={0.28} />
+      <Path
+        d="M150 132 C146 108 156 82 176 64 C181 59 188 58 193 63 C197 56 205 57 208 65 C214 61 221 68 216 78 C208 98 190 118 174 130 C165 137 151 139 150 132 Z"
+        fill={ARM}
+      />
+      <Path d="M193 64 q4 5 2 12" stroke={BODY_BOT} strokeWidth={2.4} strokeLinecap="round" fill="none" opacity={0.5} />
+      <Path d="M205 67 q3 5 0 12" stroke={BODY_BOT} strokeWidth={2.4} strokeLinecap="round" fill="none" opacity={0.45} />
+      <Ellipse cx={196} cy={76} rx={7} ry={9} fill={ARM_HI} opacity={0.5} transform="rotate(28 196 76)" />
     </G>
   );
 }
 
 function renderFace(expression: NafuExpression, blink: boolean) {
+  const L = 96, R = 144, EY = 128;
   switch (expression) {
     case 'celebrate':
       return (
         <G>
-          {happyArcEye(86, 118)}
-          {happyArcEye(134, 118)}
-          {openMouth()}
+          {arcEye(L, EY)}
+          {arcEye(R, EY)}
+          <Path d="M104 160 Q120 166 136 160 Q128 184 120 184 Q112 184 104 160 Z" fill={EYE} />
+          <Ellipse cx="120" cy="180" rx="9" ry="5" fill={CHEEK} />
         </G>
       );
     case 'sleep':
       return (
         <G>
-          {closedEye(86, 120)}
-          {closedEye(134, 120)}
-          <Path
-            d="M100 154 Q110 160 120 154"
-            stroke={INK}
-            strokeWidth={4}
-            strokeLinecap="round"
-            fill="none"
-          />
+          {sleepEye(L, EY + 2)}
+          {sleepEye(R, EY + 2)}
+          <Path d="M110 162 Q120 168 130 162" stroke={EYE} strokeWidth={4.2} strokeLinecap="round" fill="none" />
         </G>
       );
     case 'remind':
       return (
         <G>
-          <Path
-            d="M74 98 Q86 90 98 98"
-            stroke={INK}
-            strokeWidth={4}
-            strokeLinecap="round"
-            fill="none"
-          />
-          <Path
-            d="M122 98 Q134 90 146 98"
-            stroke={INK}
-            strokeWidth={4}
-            strokeLinecap="round"
-            fill="none"
-          />
-          {blink ? blinkEye(86, 120) : openEye(86, 120)}
-          {blink ? blinkEye(134, 120) : openEye(134, 120)}
-          <Circle cx="110" cy="158" r="7" fill={INK} />
+          <Path d="M84 106 Q96 98 108 106" stroke={EYE} strokeWidth={4.2} strokeLinecap="round" fill="none" />
+          <Path d="M132 106 Q144 98 156 106" stroke={EYE} strokeWidth={4.2} strokeLinecap="round" fill="none" />
+          {blink ? blinkEye(L, EY + 2) : openEye(L, EY + 2)}
+          {blink ? blinkEye(R, EY + 2) : openEye(R, EY + 2)}
+          <Circle cx="120" cy="166" r="7" fill={EYE} />
         </G>
       );
     case 'wave':
@@ -327,15 +286,9 @@ function renderFace(expression: NafuExpression, blink: boolean) {
     default:
       return (
         <G>
-          {blink ? blinkEye(86, 118) : openEye(86, 118)}
-          {blink ? blinkEye(134, 118) : openEye(134, 118)}
-          <Path
-            d="M92 152 Q110 168 128 152"
-            stroke={INK}
-            strokeWidth={4.5}
-            strokeLinecap="round"
-            fill="none"
-          />
+          {blink ? blinkEye(L, EY) : openEye(L, EY)}
+          {blink ? blinkEye(R, EY) : openEye(R, EY)}
+          <Path d="M104 160 Q120 176 136 160" stroke={EYE} strokeWidth={5} strokeLinecap="round" fill="none" />
         </G>
       );
   }
@@ -344,55 +297,43 @@ function renderFace(expression: NafuExpression, blink: boolean) {
 function openEye(cx: number, cy: number) {
   return (
     <G>
-      <Ellipse cx={cx} cy={cy} rx={11} ry={14} fill={INK} />
-      <Circle cx={cx + 3.5} cy={cy - 4.5} r={4.2} fill="#FFFFFF" />
-      <Circle cx={cx - 2.5} cy={cy + 3.5} r={2} fill="#FFFFFF" opacity={0.85} />
+      <Ellipse cx={cx} cy={cy} rx={12} ry={15.5} fill={EYE} />
+      <Circle cx={cx + 4} cy={cy - 5} r={4.6} fill="#FFFFFF" />
+      <Circle cx={cx - 3} cy={cy + 4} r={2.1} fill="#FFFFFF" opacity={0.9} />
     </G>
   );
 }
-
 function blinkEye(cx: number, cy: number) {
   return (
     <Path
-      d={`M${cx - 9} ${cy} Q${cx} ${cy + 4} ${cx + 9} ${cy}`}
-      stroke={INK}
-      strokeWidth={4}
+      d={`M${cx - 10} ${cy} Q${cx} ${cy + 5} ${cx + 10} ${cy}`}
+      stroke={EYE}
+      strokeWidth={4.2}
       strokeLinecap="round"
       fill="none"
     />
   );
 }
-
-function happyArcEye(cx: number, cy: number) {
+function arcEye(cx: number, cy: number) {
   return (
     <Path
-      d={`M${cx - 12} ${cy + 3} Q${cx} ${cy - 11} ${cx + 12} ${cy + 3}`}
-      stroke={INK}
-      strokeWidth={4.5}
+      d={`M${cx - 13} ${cy + 3} Q${cx} ${cy - 12} ${cx + 13} ${cy + 3}`}
+      stroke={EYE}
+      strokeWidth={4.6}
       strokeLinecap="round"
       fill="none"
     />
   );
 }
-
-function closedEye(cx: number, cy: number) {
+function sleepEye(cx: number, cy: number) {
   return (
     <Path
-      d={`M${cx - 11} ${cy - 2} Q${cx} ${cy + 8} ${cx + 11} ${cy - 2}`}
-      stroke={INK}
-      strokeWidth={4}
+      d={`M${cx - 12} ${cy - 2} Q${cx} ${cy + 9} ${cx + 12} ${cy - 2}`}
+      stroke={EYE}
+      strokeWidth={4.2}
       strokeLinecap="round"
       fill="none"
     />
-  );
-}
-
-function openMouth() {
-  return (
-    <G>
-      <Path d="M90 152 Q110 158 130 152 Q122 176 110 176 Q98 176 90 152 Z" fill={INK} />
-      <Ellipse cx="110" cy="172" rx="9" ry="5" fill={CHEEK} />
-    </G>
   );
 }
 
@@ -405,10 +346,10 @@ function renderSparkles() {
   );
   return (
     <G>
-      {star(38, 58, 9, palette.gold[500])}
-      {star(184, 76, 7, palette.gold[300])}
-      {star(56, 36, 6, palette.coral[500])}
-      {star(166, 42, 8, palette.gold[500])}
+      {star(40, 58, 9, '#F4B740')}
+      {star(196, 78, 7, '#F6D679')}
+      {star(60, 34, 6, '#FF7A59')}
+      {star(176, 40, 8, '#F4B740')}
     </G>
   );
 }
