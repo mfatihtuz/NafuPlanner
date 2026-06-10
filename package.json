@@ -38,6 +38,7 @@
     "react-native-web": "~0.21.0"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "~56.0.14",
