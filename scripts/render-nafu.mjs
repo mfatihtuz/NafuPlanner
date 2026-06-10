@@ -75,15 +75,17 @@ const restLeft = `<path d="M74 150 C56 148 44 166 49 184 C53 197 70 200 80 189 C
 const restRight = `<path d="M166 150 C184 148 196 166 191 184 C187 197 170 200 160 189 C150 178 152 160 166 150 Z" fill="${C.arm}"/>
   <ellipse cx="178" cy="170" rx="6" ry="8" fill="${C.armHi}" opacity="0.55" transform="rotate(20 178 170)"/>`;
 
-// Selam veren kalkık kol: tek sürekli akıcı şekil, açık pati + parmak çentikleri.
-const waveArmShapes = `<path d="M150 132 C146 108 156 82 176 64 C181 59 188 58 193 63 C197 56 205 57 208 65 C214 61 221 68 216 78 C208 98 190 118 174 130 C165 137 151 139 150 132 Z" fill="${C.arm}"/>
-  <path d="M193 64 q4 5 2 12" stroke="${C.bodyBot}" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.5"/>
-  <path d="M205 67 q3 5 0 12" stroke="${C.bodyBot}" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.45"/>
-  <ellipse cx="196" cy="76" rx="7" ry="9" fill="${C.armHi}" opacity="0.5" transform="rotate(28 196 76)"/>`;
+// Selam veren kalkık kol: gövdenin SAĞ YANINDAN (omuzdan) çıkar, yüze değmez.
+// Tek sürekli akıcı şekil, açık pati + parmak çentikleri. Pivot: omuz (188,150).
+const WAVE_PIVOT = '188 150';
+const waveArmShapes = `<path d="M188 152 C178 130 184 100 202 80 C206 75 212 74 216 79 C219 72 227 73 228 82 C232 78 238 86 232 95 C223 113 206 134 192 146 C186 152 190 154 188 152 Z" fill="${C.arm}"/>
+  <path d="M214 80 q4 5 1 13" stroke="${C.bodyBot}" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M226 84 q3 6 -1 13" stroke="${C.bodyBot}" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.45"/>
+  <ellipse cx="206" cy="98" rx="7" ry="10" fill="${C.armHi}" opacity="0.5" transform="rotate(32 206 98)"/>`;
 
 function nafu(expression, sfx, opts = {}) {
-  const { blink = false, armAngle = 0 } = opts;
-  const waveArm = `<g transform="rotate(${armAngle} 150 132)">${waveArmShapes}</g>`;
+  const { blink = false, armAngle = 0, zzzPhase = 0 } = opts;
+  const waveArm = `<g transform="rotate(${armAngle} ${WAVE_PIVOT})">${waveArmShapes}</g>`;
   const arms = expression === 'wave' ? restLeft + waveArm : restLeft + restRight;
   return `
   <defs>
@@ -105,7 +107,7 @@ function nafu(expression, sfx, opts = {}) {
   ${face(expression, blink)}
   ${arms}
   ${expression === 'celebrate' ? star(40, 58, 9, C.gold500) + star(196, 78, 7, C.gold300) + star(60, 34, 6, C.coral500) + star(176, 40, 8, C.gold500) : ''}
-  ${expression === 'sleep' ? `<text x="184" y="74" fill="${C.teal700}" font-size="20" font-weight="bold" font-family="${FONT}">z</text><text x="198" y="56" fill="${C.ear}" font-size="26" font-weight="bold" font-family="${FONT}">Z</text>` : ''}`;
+  ${expression === 'sleep' ? `<text x="184" y="${(74 - zzzPhase * 8).toFixed(1)}" opacity="${(1 - zzzPhase * 0.6).toFixed(2)}" fill="${C.teal700}" font-size="20" font-weight="bold" font-family="${FONT}">z</text><text x="198" y="${(56 - zzzPhase * 10).toFixed(1)}" opacity="${(1 - zzzPhase * 0.7).toFixed(2)}" fill="${C.ear}" font-size="26" font-weight="bold" font-family="${FONT}">Z</text>` : ''}`;
 }
 
 function renderPng(svg, outPath, width) {
@@ -177,33 +179,39 @@ function loginMockup() {
   renderPng(svg, 'docs/preview/nafu-login-mockup.png', 860);
 }
 
-// --- 3) Hareket animasyonu (GIF): kol-only selam + nefes + göz kırpma ---
+// --- 3) Hareket animasyonu (GIF): TÜM ifadeler animasyonlu ---
 function animationGif() {
-  const W = 500, H = 280, FRAMES = 36, DELAY = 45;
+  const CELL = 210, COLS = 5, W = CELL * COLS, H = 250, FRAMES = 36, DELAY = 45;
+  const SCALE = 0.6;
+  const items = ['happy', 'wave', 'celebrate', 'remind', 'sleep'];
+  const labels = ['Mutlu', 'Selam', 'Kutlama', 'Hatırlatma', 'Uyku'];
+  const blinkWindow = { happy: [8, 9], wave: [16, 17], remind: [26, 27] };
   const gif = GIFEncoder();
   const TAU = Math.PI * 2;
-  const easeInOut = (x) => 0.5 - 0.5 * Math.cos(Math.PI * x);
 
   for (let f = 0; f < FRAMES; f++) {
     const t = f / FRAMES;
-    const breath = easeInOut((Math.sin(TAU * t) + 1) / 2); // 0..1..0 yumuşak
-    const bobY = -3 * breath;
-    const sc = (1 + 0.02 * breath).toFixed(4);
-    // kol salınımı (yumuşak): -8°..+16°
-    const armAngle = (4 + 12 * Math.sin(TAU * t * 2)).toFixed(2);
-    const blink = f === 9 || f === 10 || f === 27;
-    // kutlama: yumuşak zıplama
+    const breath = (Math.sin(TAU * t) + 1) / 2; // 0..1..0
+    const armAngle = 4 + 12 * Math.sin(TAU * t * 2);
     const hop = Math.abs(Math.sin(Math.PI * t * 2));
-    const hopY = (-14 * hop).toFixed(2);
-    const hopSc = (1 + 0.04 * hop).toFixed(4);
 
-    const left = `<g transform="translate(60 70) scale(${sc}) translate(0 ${bobY.toFixed(2)})">${nafu('wave', 'A', { blink, armAngle: Number(armAngle) })}</g>`;
-    const right = `<g transform="translate(300 70) scale(${hopSc}) translate(0 ${hopY})">${nafu('celebrate', 'B')}</g>`;
+    const cells = items
+      .map((exp, i) => {
+        const slow = exp === 'sleep';
+        const bobY = (slow ? -2 : -3) * breath - (exp === 'celebrate' ? 13 * hop : 0);
+        const sc = SCALE * (1 + (slow ? 0.018 : 0.02) * breath + (exp === 'celebrate' ? 0.04 * hop : 0));
+        const win = blinkWindow[exp];
+        const blink = win ? f >= win[0] && f <= win[1] : false;
+        const opts = { blink, armAngle, zzzPhase: slow ? t : 0 };
+        const cx = i * CELL + CELL / 2;
+        const tx = cx - 120 * sc;
+        return `<g transform="translate(${tx.toFixed(1)} ${(36 + bobY).toFixed(1)}) scale(${sc.toFixed(4)})">${nafu(exp, i, opts)}</g>
+          <text x="${cx}" y="238" text-anchor="middle" font-family="${FONT}" font-size="16" font-weight="bold" fill="${C.primaryDark}">${labels[i]}</text>`;
+      })
+      .join('\n');
+
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-      <rect width="${W}" height="${H}" rx="24" fill="${C.card}"/>
-      <text x="143" y="262" text-anchor="middle" font-family="${FONT}" font-size="18" font-weight="bold" fill="${C.primaryDark}">Selam</text>
-      <text x="383" y="262" text-anchor="middle" font-family="${FONT}" font-size="18" font-weight="bold" fill="${C.primaryDark}">Kutlama</text>
-      ${left}${right}</svg>`;
+      <rect width="${W}" height="${H}" rx="26" fill="${C.card}"/>${cells}</svg>`;
 
     const { data, width, height } = renderPixels(svg, W);
     const palette = quantize(data, 256, { format: 'rgb565' });

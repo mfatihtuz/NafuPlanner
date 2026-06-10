@@ -190,7 +190,7 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
         {/* Kollar */}
         <RestPaw side="left" />
         {expression === 'wave' ? (
-          <AnimatedG rotation={armRotation} originX={150} originY={132}>
+          <AnimatedG rotation={armRotation} originX={188} originY={150}>
             <WaveArm />
           </AnimatedG>
         ) : (
@@ -241,12 +241,12 @@ function WaveArm() {
   return (
     <G>
       <Path
-        d="M150 132 C146 108 156 82 176 64 C181 59 188 58 193 63 C197 56 205 57 208 65 C214 61 221 68 216 78 C208 98 190 118 174 130 C165 137 151 139 150 132 Z"
+        d="M188 152 C178 130 184 100 202 80 C206 75 212 74 216 79 C219 72 227 73 228 82 C232 78 238 86 232 95 C223 113 206 134 192 146 C186 152 190 154 188 152 Z"
         fill={ARM}
       />
-      <Path d="M193 64 q4 5 2 12" stroke={BODY_BOT} strokeWidth={2.4} strokeLinecap="round" fill="none" opacity={0.5} />
-      <Path d="M205 67 q3 5 0 12" stroke={BODY_BOT} strokeWidth={2.4} strokeLinecap="round" fill="none" opacity={0.45} />
-      <Ellipse cx={196} cy={76} rx={7} ry={9} fill={ARM_HI} opacity={0.5} transform="rotate(28 196 76)" />
+      <Path d="M214 80 q4 5 1 13" stroke={BODY_BOT} strokeWidth={2.4} strokeLinecap="round" fill="none" opacity={0.5} />
+      <Path d="M226 84 q3 6 -1 13" stroke={BODY_BOT} strokeWidth={2.4} strokeLinecap="round" fill="none" opacity={0.45} />
+      <Ellipse cx={206} cy={98} rx={7} ry={10} fill={ARM_HI} opacity={0.5} transform="rotate(32 206 98)" />
     </G>
   );
 }
