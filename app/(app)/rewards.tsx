@@ -16,6 +16,17 @@ const COST_STEP = 25;
 const COST_MIN = 25;
 const COST_MAX = 1000;
 
+/**
+ * Ödül işlemlerinde izin hatasını net mesaja çevirir. En sık sebep: Firestore
+ * kurallarının (rewards/points alt koleksiyonları) güncel sürümü Firebase
+ * Console'a yayınlanmamış olması.
+ */
+function rewardError(error: unknown): string {
+  return (error as { code?: string }).code === 'permission-denied'
+    ? t('common.errorRules')
+    : t('common.error');
+}
+
 export default function RewardsScreen() {
   const { user } = useAuth();
   const { household, members, myMember } = useHousehold();
@@ -37,7 +48,7 @@ export default function RewardsScreen() {
       setTitle('');
     } catch (error) {
       console.warn('[rewards] eklenemedi', error);
-      Alert.alert(t('common.appName'), t('common.error'));
+      Alert.alert(t('common.appName'), rewardError(error));
     } finally {
       setBusy(false);
     }
@@ -50,7 +61,7 @@ export default function RewardsScreen() {
       .then(() =>
         Alert.alert(t('common.appName'), t('rewards.redeemed', { reward: reward.title })),
       )
-      .catch(() => Alert.alert(t('common.appName'), t('common.error')));
+      .catch((error) => Alert.alert(t('common.appName'), rewardError(error)));
   };
 
   const onRemove = (reward: Reward) => {
@@ -61,8 +72,8 @@ export default function RewardsScreen() {
         text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
-          removeReward(gid, reward.id).catch(() =>
-            Alert.alert(t('common.appName'), t('common.error')),
+          removeReward(gid, reward.id).catch((error) =>
+            Alert.alert(t('common.appName'), rewardError(error)),
           );
         },
       },

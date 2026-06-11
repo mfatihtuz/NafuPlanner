@@ -95,15 +95,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setSigningIn(true);
       const result = await googlePrompt.run();
-      if (result.type !== 'success') return;
-
-      const idToken =
-        result.authentication?.idToken ??
-        (result.params?.id_token as string | undefined);
-      if (idToken) {
-        const credential = GoogleAuthProvider.credential(idToken);
-        await signInWithCredential(auth, credential);
+      if (result.type === 'cancel' || result.type === 'dismiss') return;
+      if (result.type !== 'success') {
+        Alert.alert(t('common.appName'), t('auth.signInError'));
+        return;
       }
+
+      // expo-auth-session yapılandırmaya göre id_token VEYA yalnızca
+      // access_token döndürebilir; Firebase ikisini de kabul eder. Daha önce
+      // sadece id_token aranıyordu; gelmeyince giriş sessizce düşüyordu
+      // (Google "oturum açıldı" maili gelir ama uygulama içeri almaz).
+      const idToken =
+        result.authentication?.idToken ?? (result.params?.id_token as string | undefined);
+      const accessToken =
+        result.authentication?.accessToken ?? (result.params?.access_token as string | undefined);
+
+      if (!idToken && !accessToken) {
+        console.warn('[auth] Google: token alınamadı', result.params);
+        Alert.alert(t('common.appName'), t('auth.signInError'));
+        return;
+      }
+
+      const credential = GoogleAuthProvider.credential(idToken ?? null, accessToken ?? null);
+      await signInWithCredential(auth, credential);
     } catch (error) {
       console.warn('[auth] Google ile giriş başarısız', error);
       Alert.alert(t('common.appName'), t('auth.signInError'));
@@ -268,6 +282,9 @@ function GoogleSignInBridge({ onReady }: { onReady: (run: GooglePrompt | null) =
     webClientId: googleAuthConfig.webClientId,
     iosClientId: googleAuthConfig.iosClientId,
     androidClientId: googleAuthConfig.androidClientId,
+    // openid + e-posta/profil: Google'ın kimlik (id_token) döndürmesini ve
+    // Firebase'in kullanıcı adını/e-postasını alabilmesini garanti eder.
+    scopes: ['openid', 'profile', 'email'],
   });
   useEffect(() => {
     onReady(request ? () => promptAsync() : null);
