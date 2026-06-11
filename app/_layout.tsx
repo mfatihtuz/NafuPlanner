@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/services/auth/AuthProvider';
+import { ErrorBoundary } from '@/ui/ErrorBoundary';
 import { ThemeProvider } from '@/ui/theme';
 
 // Oturum durumu çözülene kadar açılış ekranı görünür kalsın.
@@ -35,14 +36,16 @@ function AuthGate() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <StatusBar style="dark" />
-            <AuthGate />
-          </AuthProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <StatusBar style="dark" />
+              <AuthGate />
+            </AuthProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

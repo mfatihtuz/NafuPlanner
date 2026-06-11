@@ -13,11 +13,16 @@ import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { firebaseConfig, isFirebaseConfigured } from '@/config/env';
 
 // `getReactNativePersistence` bazı sürümlerin tip tanımlarında yer almıyor;
-// çalışma zamanında mevcut. Güvenli şekilde alıyoruz.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { getReactNativePersistence } = require('firebase/auth') as {
-  getReactNativePersistence: (storage: typeof AsyncStorage) => unknown;
-};
+// çalışma zamanında mevcut. require başarısız olsa bile açılış çökmemeli.
+let getReactNativePersistence:
+  | ((storage: typeof AsyncStorage) => unknown)
+  | undefined;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ({ getReactNativePersistence } = require('firebase/auth'));
+} catch {
+  // Yok sayılır; kalıcılık olmadan (in-memory) devam edilir.
+}
 
 export const firebaseReady = isFirebaseConfigured();
 
@@ -27,20 +32,28 @@ let dbInstance: Firestore | undefined;
 let storageInstance: FirebaseStorage | undefined;
 
 if (firebaseReady) {
-  app = getApps().length ? getApp() : initializeApp(firebaseConfig as Record<string, string>);
-
+  // Tüm başlatma korumalı: modül yükleme anında hiçbir hata uygulamayı
+  // çökertmemeli (instances undefined kalır, require* anlamlı hata verir).
   try {
-    authInstance = initializeAuth(app, {
-      // RN'de oturumun kalıcı olması için AsyncStorage tabanlı kalıcılık.
-      persistence: getReactNativePersistence(AsyncStorage) as never,
-    });
-  } catch {
-    // Hızlı yenilemede (Fast Refresh) zaten başlatılmış olabilir.
-    authInstance = getAuth(app);
-  }
+    app = getApps().length ? getApp() : initializeApp(firebaseConfig as Record<string, string>);
 
-  dbInstance = getFirestore(app);
-  storageInstance = getStorage(app);
+    try {
+      // RN'de oturumun kalıcı olması için AsyncStorage tabanlı kalıcılık.
+      authInstance = getReactNativePersistence
+        ? initializeAuth(app, {
+            persistence: getReactNativePersistence(AsyncStorage) as never,
+          })
+        : getAuth(app);
+    } catch {
+      // Hızlı yenilemede (Fast Refresh) zaten başlatılmış olabilir.
+      authInstance = getAuth(app);
+    }
+
+    dbInstance = getFirestore(app);
+    storageInstance = getStorage(app);
+  } catch (error) {
+    console.error('[firebase] başlatma hatası', error);
+  }
 }
 
 export const firebaseApp = app;

@@ -1,3 +1,4 @@
+import type { AuthSessionResult } from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import {
@@ -28,6 +29,8 @@ import { auth, firebaseReady } from '@/services/firebase/config';
 // OAuth yönlendirmesinden dönüşte tarayıcı oturumunu kapatır.
 WebBrowser.maybeCompleteAuthSession();
 
+type GooglePrompt = () => Promise<AuthSessionResult>;
+
 interface AuthContextValue {
   user: FirebaseUser | null;
   /** İlk oturum durumu çözülene kadar true. */
@@ -52,13 +55,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [initializing, setInitializing] = useState(firebaseReady);
   const [signingIn, setSigningIn] = useState(false);
 
-  const [request, , promptAsync] = Google.useAuthRequest({
-    webClientId: googleAuthConfig.webClientId,
-    iosClientId: googleAuthConfig.iosClientId,
-    androidClientId: googleAuthConfig.androidClientId,
-  });
+  // ÖNEMLİ: Google.useAuthRequest, platforma ait client id undefined ise
+  // render sırasında hata fırlatır (invariantClientId) ve release build'i
+  // açılışta çökertir. Bu yüzden hook'u yalnızca yapılandırma varken mount
+  // edilen GoogleSignInBridge'e taşıdık; prompt fonksiyonu state'e aktarılır.
+  const [googlePrompt, setGooglePrompt] = useState<{ run: GooglePrompt } | null>(null);
+  const handleGoogleReady = useCallback((run: GooglePrompt | null) => {
+    setGooglePrompt(run ? { run } : null);
+  }, []);
 
-  const canSignIn = firebaseReady && isGoogleAuthConfigured() && Boolean(request);
+  const canSignIn = firebaseReady && googlePrompt != null;
 
   // Firebase oturum durumunu dinle (yalnızca yapılandırma hazırsa).
   useEffect(() => {
@@ -71,19 +77,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    if (!canSignIn) {
+    if (!firebaseReady || !auth || !googlePrompt) {
       Alert.alert(t('auth.configMissingTitle'), t('auth.configMissing'));
       return;
     }
     try {
       setSigningIn(true);
-      const result = await promptAsync();
+      const result = await googlePrompt.run();
       if (result.type !== 'success') return;
 
       const idToken =
         result.authentication?.idToken ??
         (result.params?.id_token as string | undefined);
-      if (idToken && auth) {
+      if (idToken) {
         const credential = GoogleAuthProvider.credential(idToken);
         await signInWithCredential(auth, credential);
       }
@@ -93,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setSigningIn(false);
     }
-  }, [canSignIn, promptAsync]);
+  }, [googlePrompt]);
 
   const signInWithEmail = useCallback(
     async (name: string, email: string, password: string) => {
@@ -157,7 +163,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, initializing, signingIn, canSignIn, signInWithGoogle, signInWithEmail, signOut],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {isGoogleAuthConfigured() ? <GoogleSignInBridge onReady={handleGoogleReady} /> : null}
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+/**
+ * Google auth hook'unu izole eden köprü. Yalnızca yapılandırma mevcutken
+ * mount edilir; prompt fonksiyonunu üst bileşene geri verir. Böylece client id
+ * yokken useAuthRequest hiç çağrılmaz (açılış çökmesi engellenir).
+ */
+function GoogleSignInBridge({ onReady }: { onReady: (run: GooglePrompt | null) => void }) {
+  const [request, , promptAsync] = Google.useAuthRequest({
+    webClientId: googleAuthConfig.webClientId,
+    iosClientId: googleAuthConfig.iosClientId,
+    androidClientId: googleAuthConfig.androidClientId,
+  });
+  useEffect(() => {
+    onReady(request ? () => promptAsync() : null);
+    return () => onReady(null);
+  }, [request, promptAsync, onReady]);
+  return null;
 }
 
 export function useAuth(): AuthContextValue {

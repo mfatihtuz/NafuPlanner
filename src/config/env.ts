@@ -4,6 +4,7 @@
  * edilir; uygulama yapılandırma olmadan da açılır (giriş ekranı uygun uyarıyı
  * gösterir).
  */
+import { Platform } from 'react-native';
 
 export const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -28,11 +29,16 @@ export function isFirebaseConfigured(): boolean {
   );
 }
 
-/** Google girişi için en azından bir client ID var mı? */
+/**
+ * Google girişi BU platform için yapılandırılmış mı? expo-auth-session, geçerli
+ * platforma ait client id yoksa hata fırlatır; o yüzden platforma uygun id'yi
+ * kontrol ediyoruz (iOS → iosClientId, Android → androidClientId, web → web).
+ */
 export function isGoogleAuthConfigured(): boolean {
-  return Boolean(
-    googleAuthConfig.webClientId ||
-      googleAuthConfig.iosClientId ||
-      googleAuthConfig.androidClientId,
-  );
+  const id = Platform.select({
+    ios: googleAuthConfig.iosClientId,
+    android: googleAuthConfig.androidClientId,
+    default: googleAuthConfig.webClientId,
+  });
+  return Boolean(id && id.length > 0);
 }
