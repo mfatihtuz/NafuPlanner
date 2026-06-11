@@ -76,6 +76,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-notifications',
       {
         color: BRAND.notificationColor,
+        // Haftalık Nafu ödülü bildirimi için özel ses (diğer bildirimler
+        // varsayılan sesi kullanır).
+        sounds: ['./assets/sounds/nafu-reward.wav'],
       },
     ],
   ],

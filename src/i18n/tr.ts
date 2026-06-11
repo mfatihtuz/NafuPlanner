@@ -229,6 +229,12 @@ export const tr = {
   'rewards.redeemed': '"{{reward}}" kullanıldı! Afiyet olsun 🎁',
   'rewards.deleteTitle': 'Ödülü sil',
   'rewards.deleteBody': 'Bu ödül listeden kalkacak. Emin misin?',
+  'rewards.weeklyTitle': 'Nafu’nun haftalık ödülü',
+  'rewards.weeklyTag': 'Bu hafta',
+
+  'weeklyReward.notifTitle': 'Nafu’nun haftalık ödülü hazır! 🎁',
+  'weeklyReward.notifBody':
+    'Bu hafta seni güzel bir ödül bekliyor. Görevleri kapat, puanını topla ve kap!',
 
   'comments.title': 'Yorumlar',
   'comments.placeholder': 'Yorum yaz…',

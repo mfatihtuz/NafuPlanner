@@ -83,10 +83,8 @@ export function useNotificationScheduler(
           digestBody = buildDigestBody(openToday.map((task) => task.title));
         }
 
-        if (capped.length === 0 && digestAt == null) {
-          await Notifications.cancelAllScheduledNotificationsAsync();
-          return;
-        }
+        // İzin yoksa hiçbir şey kurulmaz. Haftalık Nafu ödülü bildirimi
+        // (aşağıda) daima kurulduğundan "hiç görev yok" diye erken çıkmıyoruz.
         if (!(await ensurePermission())) return;
 
         await Notifications.cancelAllScheduledNotificationsAsync();
@@ -114,6 +112,24 @@ export function useNotificationScheduler(
             }),
           );
         }
+
+        // Her pazartesi 10:00 — Nafu'nun haftalık ödülü, özel sesle.
+        schedule.push(
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: t('weeklyReward.notifTitle'),
+              body: t('weeklyReward.notifBody'),
+              sound: 'nafu-reward.wav',
+            },
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+              weekday: 2, // expo: 1=Pazar … 2=Pazartesi
+              hour: 10,
+              minute: 0,
+            },
+          }),
+        );
+
         await Promise.all(schedule);
       } catch (error) {
         console.warn('[notifications] zamanlama hatası', error);

@@ -17,6 +17,7 @@ import {
   watchHousehold,
   watchMembers,
 } from '@/services/firestore/households';
+import { ensureWeeklySystemReward } from '@/services/firestore/rewards';
 import { ensureUserDoc, watchUserDoc } from '@/services/firestore/users';
 import { useWatch } from '@/services/firestore/useWatch';
 import { registerPushToken } from '@/services/notifications/push';
@@ -68,6 +69,15 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     if (!uid || !householdId) return;
     void registerPushToken(householdId, uid);
   }, [uid, householdId]);
+
+  // Bu haftanın Nafu sistem ödülünü garanti et (deterministik kimlik →
+  // idempotent; her açılışta güvenli, sunucu/Cloud Functions gerektirmez).
+  useEffect(() => {
+    if (!householdId) return;
+    ensureWeeklySystemReward(householdId).catch((error) => {
+      console.warn('[household] haftalık ödül oluşturulamadı', error);
+    });
+  }, [householdId]);
 
   const createHousehold = useCallback(
     async (name: string) => {

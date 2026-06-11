@@ -136,13 +136,24 @@ export default function RewardsScreen() {
             {rewards.map((reward) => {
               const rewardCost = reward.costPoints ?? 0;
               const canRedeem = myPoints >= rewardCost;
+              const isWeekly = reward.createdBy === 'system';
               return (
                 <Card
                   key={reward.id}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.md,
+                    ...(isWeekly ? { borderWidth: 1.5, borderColor: colors.reward } : null),
+                  }}
                 >
-                  <Icon name="gift" size={24} color={colors.reward} />
+                  <Icon name={isWeekly ? 'sparkles' : 'gift'} size={24} color={colors.reward} />
                   <View style={{ flex: 1 }}>
+                    {isWeekly ? (
+                      <Text variant="caption" style={{ color: colors.reward, fontWeight: '700' }}>
+                        {t('rewards.weeklyTitle')}
+                      </Text>
+                    ) : null}
                     <Text variant="bodyStrong">{reward.title}</Text>
                     <Text variant="caption" tone="secondary">
                       {t('rewards.costPoints', { n: rewardCost })}
@@ -156,13 +167,16 @@ export default function RewardsScreen() {
                     disabled={!canRedeem}
                     onPress={() => onRedeem(reward)}
                   />
-                  <Pressable
-                    hitSlop={8}
-                    accessibilityLabel={t('common.delete')}
-                    onPress={() => onRemove(reward)}
-                  >
-                    <Icon name="x" size={18} color={colors.textMuted} />
-                  </Pressable>
+                  {/* Sistem ödülü silinemez (her hafta otomatik yenilenir). */}
+                  {isWeekly ? null : (
+                    <Pressable
+                      hitSlop={8}
+                      accessibilityLabel={t('common.delete')}
+                      onPress={() => onRemove(reward)}
+                    >
+                      <Icon name="x" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  )}
                 </Card>
               );
             })}
