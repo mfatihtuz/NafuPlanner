@@ -1,4 +1,12 @@
-import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
+import {
+  arrayRemove,
+  deleteDoc,
+  doc,
+  getDoc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 
 import type { UserProfile, UserSettings } from '@/domain/types';
 import { requireDb } from '@/services/firebase/config';
@@ -67,6 +75,21 @@ export async function saveUserSettings(
       { merge: true },
     );
   }
+}
+
+/**
+ * Hesap silme öncesi kullanıcı verisini temizler: hane üyeliği (varsa) ve
+ * profil belgesi. Sıra önemli: grup güncellemesi üyelik belgesi silinmeden
+ * yapılmalı (kurallar isMember ister). Hane içeriği (görevler vb.) ortak veri
+ * olduğu için kalır.
+ */
+export async function deleteUserData(uid: string, householdId: string | null): Promise<void> {
+  const db = requireDb();
+  if (householdId) {
+    await updateDoc(doc(db, 'groups', householdId), { memberIds: arrayRemove(uid) });
+    await deleteDoc(doc(db, 'groups', householdId, 'members', uid));
+  }
+  await deleteDoc(doc(db, 'users', uid));
 }
 
 export interface UserDocSnapshot {

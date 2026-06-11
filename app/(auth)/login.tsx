@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -6,6 +7,7 @@ import { isGoogleAuthConfigured } from '@/config/env';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { Button, Card, Nafu, Screen, Text, TextField } from '@/ui';
+import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
 
 /** Çok renkli Google "G" markası. */
@@ -37,11 +39,19 @@ function GoogleG({ size = 20 }: { size?: number }) {
 const SHOW_DEV_SIGN_IN = __DEV__ || !isGoogleAuthConfigured();
 
 export default function LoginScreen() {
-  const { signInWithGoogle, signInWithEmail, signingIn } = useAuth();
+  const { signInWithGoogle, signInWithApple, signInWithEmail, signingIn } = useAuth();
   const [showDev, setShowDev] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    AppleAuthentication.isAvailableAsync()
+      .then(setAppleAvailable)
+      .catch(() => setAppleAvailable(false));
+  }, []);
 
   const devValid = name.trim().length > 0 && email.trim().length > 3 && password.length >= 6;
 
@@ -67,6 +77,15 @@ export default function LoginScreen() {
           </View>
 
           <View style={{ paddingBottom: spacing.xl, gap: spacing.md }}>
+            {appleAvailable ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                cornerRadius={radii.pill}
+                style={{ height: 54 }}
+                onPress={() => void signInWithApple()}
+              />
+            ) : null}
             <Button
               title={signingIn ? t('auth.signingIn') : t('auth.googleButton')}
               variant="secondary"

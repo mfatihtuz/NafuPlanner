@@ -198,6 +198,15 @@ export const tr = {
   'settings.saved': 'Ayarlar kaydedildi',
   'settings.pushNote':
     'Cihazlar arası bildirimler (atama, tamamlanma, dürtme) TestFlight sürümünde çalışır.',
+  'settings.account': 'Hesap',
+  'settings.deleteAccount': 'Hesabı sil',
+  'settings.deleteAccountHint':
+    'Hesabın ve profil verilerin kalıcı silinir; hanedeki ortak görevler eşinde kalır.',
+  'settings.deleteAccountConfirmTitle': 'Hesabı kalıcı sil?',
+  'settings.deleteAccountConfirmBody':
+    'Bu işlem geri alınamaz. Hesabın, üyeliğin ve profilin silinecek.',
+  'settings.deleteAccountRecentLogin':
+    'Güvenlik gereği yakın zamanda giriş yapılmış olmalı. Çıkış yapıp tekrar girdikten sonra yeniden dene.',
 
   'activity.title': 'Son hareketler',
   'activity.empty': 'Henüz hareket yok.',

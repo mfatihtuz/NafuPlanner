@@ -5,7 +5,7 @@ import { Alert, Switch, View } from 'react-native';
 import type { ClockTime, UserSettings } from '@/domain/types';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
-import { saveUserSettings } from '@/services/firestore/users';
+import { deleteUserData, saveUserSettings } from '@/services/firestore/users';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Button, Card, Screen, Text, TimeWheel } from '@/ui';
 import { colors } from '@/ui/theme/colors';
@@ -46,8 +46,9 @@ function SettingRow({
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
   const { profile, household } = useHousehold();
+  const [deleting, setDeleting] = useState(false);
 
   const initial = profile?.settings;
   const [quietEnabled, setQuietEnabled] = useState(Boolean(initial?.quietHoursStart));
@@ -61,6 +62,41 @@ export default function SettingsScreen() {
   );
   const [nudgesEnabled, setNudgesEnabled] = useState(initial?.nudgesEnabled ?? true);
   const [saving, setSaving] = useState(false);
+
+  const onDeleteAccount = () => {
+    if (!user) return;
+    Alert.alert(
+      t('settings.deleteAccountConfirmTitle'),
+      t('settings.deleteAccountConfirmBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => {
+            setDeleting(true);
+            (async () => {
+              try {
+                await deleteUserData(user.uid, household?.id ?? null);
+                await deleteAccount();
+                // AuthGate, oturum düşünce giriş ekranına yönlendirir.
+              } catch (error) {
+                const code = (error as { code?: string }).code;
+                Alert.alert(
+                  t('common.appName'),
+                  code === 'auth/requires-recent-login'
+                    ? t('settings.deleteAccountRecentLogin')
+                    : t('common.error'),
+                );
+              } finally {
+                setDeleting(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
 
   const onSave = async () => {
     if (!user) return;
@@ -142,6 +178,24 @@ export default function SettingsScreen() {
         </Text>
 
         <Button title={t('common.save')} onPress={() => void onSave()} loading={saving} />
+
+        {/* Hesap silme (App Store 5.1.1 zorunluluğu) */}
+        <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
+          <Text variant="overline" tone="secondary">
+            {t('settings.account')}
+          </Text>
+          <Card style={{ gap: spacing.sm }}>
+            <Text variant="caption" tone="secondary">
+              {t('settings.deleteAccountHint')}
+            </Text>
+            <Button
+              title={t('settings.deleteAccount')}
+              variant="danger"
+              loading={deleting}
+              onPress={onDeleteAccount}
+            />
+          </Card>
+        </View>
       </View>
     </Screen>
   );

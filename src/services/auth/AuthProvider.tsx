@@ -1,9 +1,13 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
 import type { AuthSessionResult } from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
+import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   GoogleAuthProvider,
+  OAuthProvider,
   onAuthStateChanged,
   signInWithCredential,
   signInWithEmailAndPassword,
@@ -39,12 +43,19 @@ interface AuthContextValue {
   /** Firebase + Google yapılandırması hazır mı? */
   canSignIn: boolean;
   signInWithGoogle: () => Promise<void>;
+  /** Apple ile giriş (yalnızca iOS; App Store zorunluluğu). */
+  signInWithApple: () => Promise<void>;
   /**
    * Expo Go'da test için e-posta/şifre girişi. Hesap yoksa oluşturur. Yalnızca
-   * geliştirme/test amaçlıdır; üretim akışı Google ile giriştir.
+   * geliştirme/test amaçlıdır; üretim akışı Google/Apple ile giriştir.
    */
   signInWithEmail: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * Hesabı kalıcı siler (App Store 5.1.1 zorunluluğu). Yakın zamanda giriş
+   * gerekiyorsa 'requires-recent-login' fırlatır; arayüz yönlendirir.
+   */
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -100,6 +111,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSigningIn(false);
     }
   }, [googlePrompt]);
+
+  const signInWithApple = useCallback(async () => {
+    if (!firebaseReady || !auth) {
+      Alert.alert(t('auth.configMissingTitle'), t('auth.configMissing'));
+      return;
+    }
+    try {
+      setSigningIn(true);
+      // Tekrar-oynatma koruması: ham nonce Apple'a SHA256 özetiyle gider,
+      // Firebase'e ham hali verilir.
+      const rawNonce = Crypto.randomUUID();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce,
+      );
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+      if (!credential.identityToken) throw new Error('identityToken yok');
+
+      const provider = new OAuthProvider('apple.com');
+      const firebaseCredential = provider.credential({
+        idToken: credential.identityToken,
+        rawNonce,
+      });
+      const result = await signInWithCredential(auth, firebaseCredential);
+
+      // Apple ad bilgisini YALNIZCA ilk girişte verir; profilde yoksa yaz.
+      const fullName = credential.fullName;
+      const composedName = [fullName?.givenName, fullName?.familyName]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      if (composedName && !result.user.displayName) {
+        await updateProfile(result.user, { displayName: composedName });
+      }
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      if (code === 'ERR_REQUEST_CANCELED') return; // kullanıcı vazgeçti
+      console.warn('[auth] Apple ile giriş başarısız', error);
+      Alert.alert(t('common.appName'), t('auth.signInError'));
+    } finally {
+      setSigningIn(false);
+    }
+  }, []);
 
   const signInWithEmail = useCallback(
     async (name: string, email: string, password: string) => {
@@ -160,6 +220,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await firebaseSignOut(auth);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    if (!auth?.currentUser) return;
+    await deleteUser(auth.currentUser);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -167,10 +232,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signingIn,
       canSignIn,
       signInWithGoogle,
+      signInWithApple,
       signInWithEmail,
       signOut,
+      deleteAccount,
     }),
-    [user, initializing, signingIn, canSignIn, signInWithGoogle, signInWithEmail, signOut],
+    [
+      user,
+      initializing,
+      signingIn,
+      canSignIn,
+      signInWithGoogle,
+      signInWithApple,
+      signInWithEmail,
+      signOut,
+      deleteAccount,
+    ],
   );
 
   return (
