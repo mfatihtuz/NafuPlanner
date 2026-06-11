@@ -86,13 +86,15 @@ export default function LoginScreen() {
                 onPress={() => void signInWithApple()}
               />
             ) : null}
-            <Button
-              title={signingIn ? t('auth.signingIn') : t('auth.googleButton')}
-              variant="secondary"
-              loading={signingIn}
-              onPress={signInWithGoogle}
-              leftSlot={<GoogleG />}
-            />
+            {isGoogleAuthConfigured() ? (
+              <Button
+                title={signingIn ? t('auth.signingIn') : t('auth.googleButton')}
+                variant="secondary"
+                loading={signingIn}
+                onPress={signInWithGoogle}
+                leftSlot={<GoogleG />}
+              />
+            ) : null}
 
             {SHOW_DEV_SIGN_IN ? (
               showDev ? (

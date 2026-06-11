@@ -4,7 +4,7 @@ const BRAND = {
   name: 'Nafu Planlayıcı',
   slug: 'nafu-planlayici',
   scheme: 'nafu',
-  bundleId: 'com.nafugroup.nafuplanlayici',
+  bundleId: 'com.nafuplanner.app',
   splashBackground: '#FFFFFF',
   notificationColor: '#0E9F9A',
 };
