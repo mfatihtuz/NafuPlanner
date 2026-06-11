@@ -19,6 +19,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: BRAND.name,
   slug: BRAND.slug,
+  owner: 'mfatihtuz',
   scheme: BRAND.scheme,
   version: '0.1.0',
   orientation: 'portrait',
@@ -81,7 +82,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     eas: {
-      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? '',
+      // EAS proje kimliği (eas init ile üretildi). Build + push token bunu
+      // kullanır; gizli değildir.
+      projectId: 'cda55d2a-1823-4010-8506-d481310b66cd',
     },
   },
 });
