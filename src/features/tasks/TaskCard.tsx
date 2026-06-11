@@ -6,7 +6,7 @@ import { subtaskProgress } from '@/domain/tasks';
 import type { Category, Member, Task } from '@/domain/types';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
-import { Avatar, Checkbox, Text } from '@/ui';
+import { Avatar, Checkbox, Icon, Text } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { radii } from '@/ui/theme/radii';
 import { shadows } from '@/ui/theme/shadows';
@@ -92,6 +92,15 @@ export function TaskCard({ task, category, assignees = [], onToggleComplete, onP
               {PRIORITY_META[task.priority].labelTr}
             </Text>
           </View>
+
+          {task.recurrenceId ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xxs }}>
+              <Icon name="repeat" size={12} color={colors.textMuted} />
+              <Text variant="caption" tone="muted">
+                {t('tasks.recurrenceBadge')}
+              </Text>
+            </View>
+          ) : null}
 
           {subTotal > 0 ? (
             <Text variant="caption" tone="muted">

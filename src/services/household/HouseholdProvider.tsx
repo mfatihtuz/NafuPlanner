@@ -9,6 +9,7 @@ import {
 
 import type { Household, Member, UserProfile } from '@/domain/types';
 import { useAuth } from '@/services/auth/AuthProvider';
+import { addActivity } from '@/services/firestore/activity';
 import {
   createHousehold as createHouseholdSvc,
   createInvitation,
@@ -18,6 +19,7 @@ import {
 } from '@/services/firestore/households';
 import { ensureUserDoc, watchUserDoc } from '@/services/firestore/users';
 import { useWatch } from '@/services/firestore/useWatch';
+import { registerPushToken } from '@/services/notifications/push';
 
 interface HouseholdContextValue {
   /** users/{uid} profili; null = yükleniyor ya da oluşturuluyor. */
@@ -60,6 +62,13 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     [members, uid],
   );
 
+  // Cihazın push token'ını üyelik belgesine kaydet (TestFlight build'inde
+  // çalışır; Expo Go/simülatörde sessizce atlanır).
+  useEffect(() => {
+    if (!uid || !householdId) return;
+    void registerPushToken(householdId, uid);
+  }, [uid, householdId]);
+
   const createHousehold = useCallback(
     async (name: string) => {
       if (!user) throw new Error('Oturum yok');
@@ -71,7 +80,13 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const joinHousehold = useCallback(
     async (code: string) => {
       if (!user) throw new Error('Oturum yok');
-      await joinHouseholdSvc(user, code);
+      const gid = await joinHouseholdSvc(user, code);
+      void addActivity({
+        householdId: gid,
+        type: 'member_joined',
+        actorId: user.uid,
+        actorName: user.displayName ?? 'Üye',
+      });
     },
     [user],
   );

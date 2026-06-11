@@ -69,6 +69,14 @@ service cloud.firestore {
       match /shopping/{iid} {
         allow read, write: if isMember(gid);
       }
+
+      match /recurrences/{rid} {
+        allow read, write: if isMember(gid);
+      }
+
+      match /activity/{aid} {
+        allow read, write: if isMember(gid);
+      }
     }
   }
 }

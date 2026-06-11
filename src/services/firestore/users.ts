@@ -1,6 +1,6 @@
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 
-import type { UserProfile } from '@/domain/types';
+import type { UserProfile, UserSettings } from '@/domain/types';
 import { requireDb } from '@/services/firebase/config';
 
 import { docData, omitUndefined } from './utils';
@@ -34,6 +34,30 @@ export async function ensureUserDoc(user: AuthUserLike): Promise<void> {
     }),
     { merge: true },
   );
+}
+
+/**
+ * Bildirim ayarlarını kaydeder: ana kopya users/{uid}.settings; push kararları
+ * için sessiz saat + dürtme izni üyelik belgesine denormalize edilir.
+ */
+export async function saveUserSettings(
+  uid: string,
+  householdId: string | null,
+  settings: UserSettings,
+): Promise<void> {
+  const db = requireDb();
+  await setDoc(doc(db, 'users', uid), { settings }, { merge: true });
+  if (householdId) {
+    await setDoc(
+      doc(db, 'groups', householdId, 'members', uid),
+      {
+        quietHoursStart: settings.quietHoursStart ?? null,
+        quietHoursEnd: settings.quietHoursEnd ?? null,
+        nudgesEnabled: settings.nudgesEnabled,
+      },
+      { merge: true },
+    );
+  }
 }
 
 export interface UserDocSnapshot {

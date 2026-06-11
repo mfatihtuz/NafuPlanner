@@ -28,9 +28,19 @@ export interface User {
   createdAtMs: Millis;
 }
 
+/** Kullanıcının bildirim tercihleri (users/{uid}.settings altında gömülü). */
+export interface UserSettings {
+  quietHoursStart?: ClockTime;
+  quietHoursEnd?: ClockTime;
+  dailyDigestEnabled: boolean;
+  dailyDigestTime?: ClockTime;
+  nudgesEnabled: boolean;
+}
+
 /** users/{uid} belgesi: profil + aktif hane bağlantısı. */
 export interface UserProfile extends User {
   householdId: Id | null;
+  settings?: UserSettings;
 }
 
 export type HouseholdRole = 'owner' | 'member';
@@ -55,6 +65,16 @@ export interface Member {
   streakCount: number;
   lastActiveDayKey?: DayKey;
   joinedAtMs: Millis;
+  /**
+   * Cihazlar arası bildirim için denormalize alanlar: kullanıcı ayarları
+   * users/{uid} altında durur (yalnızca sahibi okur); push gönderebilmek için
+   * token + sessiz saat + dürtme izni üyelik belgesine kopyalanır.
+   */
+  pushToken?: string;
+  pushTokenUpdatedAtMs?: Millis;
+  quietHoursStart?: ClockTime;
+  quietHoursEnd?: ClockTime;
+  nudgesEnabled?: boolean;
 }
 
 export type InvitationStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
@@ -178,6 +198,31 @@ export interface RecurrenceRule {
     'title' | 'description' | 'categoryId' | 'priority' | 'assigneeIds' | 'points'
   >;
   active: boolean;
+  createdBy: Id;
+  createdAtMs: Millis;
+  /** Üretilen en son örneğin günü (idempotent ilerletme için). */
+  lastSpawnedDayKey?: DayKey;
+}
+
+// --- Aktivite akışı -----------------------------------------------------------
+
+export type ActivityType =
+  | 'task_created'
+  | 'task_completed'
+  | 'task_nudged'
+  | 'member_joined';
+
+export interface ActivityEntry {
+  id: Id;
+  householdId: Id;
+  type: ActivityType;
+  actorId: Id;
+  actorName: string;
+  taskId?: Id;
+  taskTitle?: string;
+  /** Dürtmede hedef kişiler (görüntüleme için adlar). */
+  targetNames?: string[];
+  atMs: Millis;
 }
 
 // --- Hatırlatma & Bildirim ----------------------------------------------------

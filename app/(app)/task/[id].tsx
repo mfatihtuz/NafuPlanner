@@ -10,13 +10,13 @@ import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
-import {
-  completeTask,
-  deleteTask,
-  reopenTask,
-  setSubtasks,
-} from '@/services/firestore/tasks';
+import { deleteTask, setSubtasks } from '@/services/firestore/tasks';
 import { useHousehold } from '@/services/household/HouseholdProvider';
+import {
+  completeTaskFlow,
+  nudgeTaskFlow,
+  reopenTaskFlow,
+} from '@/services/workflows/taskWorkflows';
 import { Avatar, Button, Card, Checkbox, EmptyState, Icon, Screen, Text } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { spacing } from '@/ui/theme/spacing';
@@ -67,8 +67,17 @@ export default function TaskDetailScreen() {
 
   const onToggleComplete = () => {
     if (!user) return;
-    const action = done ? reopenTask(gid, task.id) : completeTask(gid, task.id, user.uid);
+    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    const action = done ? reopenTaskFlow(task) : completeTaskFlow({ task, actor, members });
     action.catch((error) => console.warn('[task] durum değiştirilemedi', error));
+  };
+
+  const onNudge = () => {
+    if (!user) return;
+    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    nudgeTaskFlow({ task, actor, members })
+      .then(() => Alert.alert(t('common.appName'), t('tasks.nudgeSent')))
+      .catch(() => Alert.alert(t('common.appName'), t('common.error')));
   };
 
   const onToggleSubtask = (subtask: Subtask) => {
@@ -236,14 +245,21 @@ export default function TaskDetailScreen() {
 
         <View style={{ flex: 1 }} />
 
-        <Button
-          title={done ? t('tasks.reopen') : t('tasks.complete')}
-          variant={done ? 'secondary' : 'primary'}
-          onPress={onToggleComplete}
-          leftSlot={
-            done ? undefined : <Icon name="check" size={20} color={colors.onPrimary} strokeWidth={3} />
-          }
-        />
+        <View style={{ gap: spacing.sm }}>
+          {!done && members.length > 1 ? (
+            <Button title={t('tasks.nudge')} variant="ghost" onPress={onNudge} />
+          ) : null}
+          <Button
+            title={done ? t('tasks.reopen') : t('tasks.complete')}
+            variant={done ? 'secondary' : 'primary'}
+            onPress={onToggleComplete}
+            leftSlot={
+              done ? undefined : (
+                <Icon name="check" size={20} color={colors.onPrimary} strokeWidth={3} />
+              )
+            }
+          />
+        </View>
       </ScrollView>
     </Screen>
   );

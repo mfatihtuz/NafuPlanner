@@ -11,9 +11,9 @@ import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t, type TranslationKey } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
-import { completeTask, reopenTask } from '@/services/firestore/tasks';
 import { useHousehold } from '@/services/household/HouseholdProvider';
-import { useTaskReminders } from '@/services/notifications/useTaskReminders';
+import { completeTaskFlow, reopenTaskFlow } from '@/services/workflows/taskWorkflows';
+import { useNotificationScheduler } from '@/services/notifications/useNotificationScheduler';
 import { EmptyState, FAB, Screen, Text } from '@/ui';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -37,11 +37,11 @@ export default function TodayScreen() {
 function TodayContent() {
   const router = useRouter();
   const { user } = useAuth();
-  const { household, members } = useHousehold();
+  const { household, members, profile } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
   const categories = useCategories(household?.id ?? null);
 
-  useTaskReminders(tasks);
+  useNotificationScheduler(tasks, profile?.settings, user?.uid ?? null);
 
   const now = useNow();
   const sections = useMemo(() => (tasks ? groupTasks(tasks, now) : null), [tasks, now]);
@@ -55,10 +55,11 @@ function TodayContent() {
 
   const onToggle = (task: Task) => {
     if (!household || !user) return;
+    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
     const action =
       task.status === 'done'
-        ? reopenTask(household.id, task.id)
-        : completeTask(household.id, task.id, user.uid);
+        ? reopenTaskFlow(task)
+        : completeTaskFlow({ task, actor, members });
     action.catch((error) => console.warn('[today] görev güncellenemedi', error));
   };
 

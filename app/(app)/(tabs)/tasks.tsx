@@ -11,8 +11,8 @@ import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t, type TranslationKey } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
-import { completeTask, reopenTask } from '@/services/firestore/tasks';
 import { useHousehold } from '@/services/household/HouseholdProvider';
+import { completeTaskFlow, reopenTaskFlow } from '@/services/workflows/taskWorkflows';
 import { EmptyState, FAB, Screen, Text } from '@/ui';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -53,10 +53,11 @@ function TasksContent() {
 
   const onToggle = (task: Task) => {
     if (!household || !user) return;
+    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
     const action =
       task.status === 'done'
-        ? reopenTask(household.id, task.id)
-        : completeTask(household.id, task.id, user.uid);
+        ? reopenTaskFlow(task)
+        : completeTaskFlow({ task, actor, members });
     action.catch((error) => console.warn('[tasks] görev güncellenemedi', error));
   };
 

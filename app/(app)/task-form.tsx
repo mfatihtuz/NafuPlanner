@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
-import { PRIORITY_META } from '@/domain/constants';
+import { CALENDAR_WEEKDAYS_TR, PRIORITY_META } from '@/domain/constants';
 import { formatDayKey } from '@/domain/format';
 import { pointsForTask } from '@/domain/gamification';
 import { dayKeyFromMs } from '@/domain/time';
@@ -14,8 +14,9 @@ import { useTasks } from '@/features/tasks/useTasks';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { addCategory } from '@/services/firestore/categories';
-import { createTask, updateTask } from '@/services/firestore/tasks';
+import { updateTask, type NewTaskInput } from '@/services/firestore/tasks';
 import { useHousehold } from '@/services/household/HouseholdProvider';
+import { createTaskFlow } from '@/services/workflows/taskWorkflows';
 import {
   Avatar,
   Button,
@@ -25,10 +26,16 @@ import {
   Screen,
   Text,
   TextField,
+  TimeWheel,
 } from '@/ui';
 import { colors, palette } from '@/ui/theme/colors';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
+
+type RecurrenceChoice = 'none' | 'daily' | 'weekdays' | 'weekly' | 'interval' | 'monthly';
+
+/** Haftalık gün seçimi: görüntü sırası Pzt..Paz, değerler JS getDay (0=Paz). */
+const WEEKDAY_VALUES = [1, 2, 3, 4, 5, 6, 0] as const;
 
 const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent'];
 const NEW_CATEGORY_COLORS = [
@@ -80,6 +87,9 @@ function TaskFormInner({ editing }: { editing: Task | null }) {
       : null,
   );
   const [showCalendar, setShowCalendar] = useState(false);
+  const [recurrence, setRecurrence] = useState<RecurrenceChoice>('none');
+  const [weeklyDays, setWeeklyDays] = useState<number[]>([]);
+  const [intervalN, setIntervalN] = useState(2);
   const [assigneeIds, setAssigneeIds] = useState<string[]>(editing?.assigneeIds ?? []);
   const [subtasks, setSubtasks] = useState<Subtask[]>(editing?.subtasks ?? []);
   const [subtaskDraft, setSubtaskDraft] = useState('');
@@ -123,12 +133,10 @@ function TaskFormInner({ editing }: { editing: Task | null }) {
     }
   };
 
-  const stepTime = (field: 'hour' | 'minute', delta: number) => {
-    setTime((prev) => {
-      const base = prev ?? { hour: 9, minute: 0 };
-      if (field === 'hour') return { ...base, hour: (base.hour + delta + 24) % 24 };
-      return { ...base, minute: (base.minute + delta + 60) % 60 };
-    });
+  const toggleWeeklyDay = (day: number) => {
+    setWeeklyDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+    );
   };
 
   const onSave = async () => {
@@ -169,7 +177,7 @@ function TaskFormInner({ editing }: { editing: Task | null }) {
           points: pointsForTask(priority),
         });
       } else {
-        await createTask({
+        const input: NewTaskInput = {
           householdId: household.id,
           title: trimmed,
           description: description.trim() || undefined,
@@ -182,6 +190,36 @@ function TaskFormInner({ editing }: { editing: Task | null }) {
           subtasks,
           points: pointsForTask(priority),
           createdBy: user.uid,
+        };
+
+        const startDayKey = dayKey ?? today;
+        const recurrenceBase = { startDayKey, time: time ?? undefined, active: true };
+        const recurrenceInput =
+          recurrence === 'none'
+            ? null
+            : recurrence === 'daily'
+              ? { frequency: 'daily' as const, ...recurrenceBase }
+              : recurrence === 'weekdays'
+                ? { frequency: 'weekly' as const, weekdays: [1, 2, 3, 4, 5], ...recurrenceBase }
+                : recurrence === 'weekly'
+                  ? {
+                      frequency: 'weekly' as const,
+                      weekdays: weeklyDays.length > 0 ? weeklyDays : undefined,
+                      ...recurrenceBase,
+                    }
+                  : recurrence === 'interval'
+                    ? { frequency: 'interval' as const, interval: intervalN, ...recurrenceBase }
+                    : {
+                        frequency: 'monthly' as const,
+                        monthDay: Number(startDayKey.slice(-2)),
+                        ...recurrenceBase,
+                      };
+
+        await createTaskFlow({
+          task: input,
+          recurrence: recurrenceInput,
+          actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+          members,
         });
       }
       router.back();
@@ -326,36 +364,92 @@ function TaskFormInner({ editing }: { editing: Task | null }) {
                   onPress={() => setTime((prev) => (prev ? null : { hour: 9, minute: 0 }))}
                 />
               </View>
-              {time ? (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: spacing.lg,
-                    backgroundColor: colors.surface,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: radii.md,
-                    padding: spacing.md,
-                  }}
-                >
-                  <TimeStepper
-                    value={String(time.hour).padStart(2, '0')}
-                    onUp={() => stepTime('hour', 1)}
-                    onDown={() => stepTime('hour', -1)}
-                  />
-                  <Text variant="h2">:</Text>
-                  <TimeStepper
-                    value={String(time.minute).padStart(2, '0')}
-                    onUp={() => stepTime('minute', 15)}
-                    onDown={() => stepTime('minute', -15)}
-                  />
-                </View>
-              ) : null}
+              {time ? <TimeWheel value={time} onChange={setTime} /> : null}
             </View>
           ) : null}
         </View>
+
+        {/* Tekrar (yalnızca yeni görevde; kural düzenleme sonraki aşamada) */}
+        {!editing ? (
+          <View style={{ gap: spacing.sm }}>
+            <Text variant="overline" tone="secondary">
+              {t('tasks.recurrence')}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              <Chip
+                label={t('tasks.recurrenceNone')}
+                selected={recurrence === 'none'}
+                onPress={() => setRecurrence('none')}
+              />
+              <Chip
+                label={t('tasks.recurrenceDaily')}
+                selected={recurrence === 'daily'}
+                onPress={() => setRecurrence('daily')}
+              />
+              <Chip
+                label={t('tasks.recurrenceWeekdays')}
+                selected={recurrence === 'weekdays'}
+                onPress={() => setRecurrence('weekdays')}
+              />
+              <Chip
+                label={t('tasks.recurrenceWeekly')}
+                selected={recurrence === 'weekly'}
+                onPress={() => setRecurrence('weekly')}
+              />
+              <Chip
+                label={t('tasks.recurrenceEveryN', { n: intervalN })}
+                selected={recurrence === 'interval'}
+                onPress={() => setRecurrence('interval')}
+              />
+              <Chip
+                label={t('tasks.recurrenceMonthly')}
+                selected={recurrence === 'monthly'}
+                onPress={() => setRecurrence('monthly')}
+              />
+            </View>
+
+            {recurrence === 'weekly' ? (
+              <View style={{ gap: spacing.xs }}>
+                <Text variant="caption" tone="muted">
+                  {t('tasks.recurrenceWeeklyHint')}
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                  {WEEKDAY_VALUES.map((day, index) => (
+                    <Chip
+                      key={day}
+                      label={CALENDAR_WEEKDAYS_TR[index]}
+                      selected={weeklyDays.includes(day)}
+                      onPress={() => toggleWeeklyDay(day)}
+                    />
+                  ))}
+                </View>
+              </View>
+            ) : null}
+
+            {recurrence === 'interval' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                <Pressable
+                  hitSlop={8}
+                  accessibilityLabel="-"
+                  onPress={() => setIntervalN((n) => Math.max(2, n - 1))}
+                >
+                  <Icon name="minus" size={22} color={colors.primaryDark} />
+                </Pressable>
+                <Text variant="h2">{intervalN}</Text>
+                <Pressable
+                  hitSlop={8}
+                  accessibilityLabel="+"
+                  onPress={() => setIntervalN((n) => Math.min(30, n + 1))}
+                >
+                  <Icon name="plus" size={22} color={colors.primaryDark} />
+                </Pressable>
+                <Text variant="small" tone="secondary">
+                  {t('tasks.recurrenceIntervalSuffix')}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Atananlar */}
         <View style={{ gap: spacing.sm }}>
@@ -439,24 +533,3 @@ function TaskFormInner({ editing }: { editing: Task | null }) {
   );
 }
 
-function TimeStepper({
-  value,
-  onUp,
-  onDown,
-}: {
-  value: string;
-  onUp: () => void;
-  onDown: () => void;
-}) {
-  return (
-    <View style={{ alignItems: 'center', gap: spacing.xs }}>
-      <Pressable hitSlop={8} onPress={onUp} accessibilityLabel="+">
-        <Icon name="plus" size={20} color={colors.primaryDark} />
-      </Pressable>
-      <Text variant="h2">{value}</Text>
-      <Pressable hitSlop={8} onPress={onDown} accessibilityLabel="-">
-        <Icon name="minus" size={20} color={colors.primaryDark} />
-      </Pressable>
-    </View>
-  );
-}

@@ -1,14 +1,38 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Share, View } from 'react-native';
 
-import { InviteError } from '@/services/firestore/households';
+import { formatDueLabel } from '@/domain/format';
+import type { ActivityEntry } from '@/domain/types';
+import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
+import { watchActivity } from '@/services/firestore/activity';
+import { InviteError } from '@/services/firestore/households';
+import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Avatar, Button, Card, Icon, Nafu, Screen, Text, TextField } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
+
+function activityLine(entry: ActivityEntry): string {
+  const name = entry.actorName.split(' ')[0];
+  switch (entry.type) {
+    case 'task_created':
+      return t('activity.taskCreated', { name, task: entry.taskTitle ?? '' });
+    case 'task_completed':
+      return t('activity.taskCompleted', { name, task: entry.taskTitle ?? '' });
+    case 'task_nudged':
+      return t('activity.taskNudged', {
+        name,
+        targets: (entry.targetNames ?? []).join(', '),
+        task: entry.taskTitle ?? '',
+      });
+    case 'member_joined':
+      return t('activity.memberJoined', { name });
+  }
+}
 
 export default function HouseholdScreen() {
   const { profileLoaded, household, householdLoaded } = useHousehold();
@@ -120,12 +144,15 @@ function SetupView() {
   );
 }
 
-/** Hane varken: üyeler, davet, profil, çıkış. */
+/** Hane varken: üyeler, davet, aktivite, profil, ayarlar, çıkış. */
 function HouseholdView() {
+  const router = useRouter();
+  const now = useNow();
   const { user, signOut } = useAuth();
   const { household, members, myMember, createInvite } = useHousehold();
   const [invite, setInvite] = useState<{ code: string } | null>(null);
   const [creating, setCreating] = useState(false);
+  const activity = useWatch(household?.id ?? null, watchActivity);
 
   if (!household) return null;
 
@@ -229,6 +256,24 @@ function HouseholdView() {
         )}
       </Card>
 
+      {activity && activity.length > 0 ? (
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="overline" tone="secondary">
+            {t('activity.title')}
+          </Text>
+          <Card style={{ gap: spacing.md }}>
+            {activity.map((entry) => (
+              <View key={entry.id} style={{ gap: 2 }}>
+                <Text variant="small">{activityLine(entry)}</Text>
+                <Text variant="caption" tone="muted">
+                  {formatDueLabel(entry.atMs, true, now)}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        </View>
+      ) : null}
+
       <View style={{ flex: 1 }} />
 
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
@@ -251,6 +296,12 @@ function HouseholdView() {
         </View>
       </Card>
 
+      <Button
+        title={t('settings.title')}
+        variant="ghost"
+        leftSlot={<Icon name="sliders" size={20} color={colors.primaryDark} />}
+        onPress={() => router.push('/settings')}
+      />
       <Button
         title={t('common.logout')}
         variant="ghost"

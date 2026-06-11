@@ -87,11 +87,23 @@ Güvenlik: Firestore kuralları — veriye yalnızca o hanenin üyeleri erişir.
 
 ### Faz 2 — Hatırlatma & Tekrar
 
-- [ ] Esnek tekrar + zamanlı örnek üretimi (Cloud Function)
-- [ ] Akıllı-kademeli bildirim (gecikme → dürtme → eşe haber → özet)
-- [ ] Sessiz saat / günlük özet ayarları
-- [ ] Push token yönetimi (FCM/Expo Push)
-- [ ] Aktivite akışı + "dürtme"
+> Mimari not: Cloud Functions yerine **sunucusuz** kuruldu — tekrar örnekleri
+> istemcide deterministik kimlikle (`{ruleId}_{dayKey}`) üretilir (idempotent),
+> cihazlar-arası bildirimler doğrudan **Expo Push API** ile gönderilir. İki
+> kişilik hane için Blaze planı/deploy gerektirmeyen en sağlam yol; sunucu
+> tarafı zamanlama gerekirse Faz 5'te eklenebilir.
+
+- [x] Esnek tekrar (her gün / hafta içi / haftalık günler / her N günde / aylık)
+      + tamamlanınca sıradaki örneğin üretimi
+- [x] Kademeli yerel hatırlatma (son tarih → 30 dk sonra "hâlâ bekliyor";
+      sessiz saatte sabaha kayar)
+- [x] Cihazlar-arası push: atama, tamamlanma, "dürtme" (Expo Push, alıcının
+      sessiz saatine ve dürtme iznine saygılı)
+- [x] Sessiz saat / günlük özet / dürtme ayarları (Ayarlar ekranı)
+- [x] Push token yönetimi (üyelik belgesinde, TestFlight build'inde otomatik)
+- [x] Aktivite akışı (görev eklendi/tamamlandı/dürtüldü/katıldı) + Dürt düğmesi
+- [ ] Gecikmiş görevde eşe otomatik eskalasyon (sunucu zamanlayıcı ister —
+      Faz 5 değerlendirmesi)
 
 ### Faz 3 — Oyunlaştırma
 

@@ -136,6 +136,50 @@ export const tr = {
   'profile.streak': 'Seri',
 
   'notifications.taskDueTitle': 'Görev zamanı geldi',
+  'notifications.taskStillWaiting': 'Hâlâ bekliyor 👀',
+  'notifications.digestTitle': 'Günaydın! Nafu özetin hazır',
+
+  'push.assignedTitle': 'Yeni görev sana atandı',
+  'push.assignedBody': '{{name}}: {{task}}',
+  'push.completedTitle': 'Görev tamamlandı ✓',
+  'push.completedBody': '{{name}}, "{{task}}" görevini tamamladı',
+  'push.nudgeTitle': 'Nafu dürtüyor 👉',
+  'push.nudgeBody': '{{name}} hatırlatıyor: {{task}}',
+
+  'tasks.recurrence': 'Tekrar',
+  'tasks.recurrenceNone': 'Yok',
+  'tasks.recurrenceDaily': 'Her gün',
+  'tasks.recurrenceWeekdays': 'Hafta içi',
+  'tasks.recurrenceWeekly': 'Haftalık',
+  'tasks.recurrenceEveryN': 'Her {{n}} günde',
+  'tasks.recurrenceMonthly': 'Aylık',
+  'tasks.recurrenceWeeklyHint': 'Günleri seç:',
+  'tasks.recurrenceIntervalSuffix': 'günde bir',
+  'tasks.recurrenceBadge': 'Tekrarlı',
+  'tasks.nudge': 'Dürt 👉',
+  'tasks.nudgeSent': 'Dürtme gönderildi!',
+
+  'settings.title': 'Ayarlar',
+  'settings.notifications': 'Bildirimler',
+  'settings.quietHours': 'Sessiz saatler',
+  'settings.quietHoursHint': 'Bu aralıkta bildirim gelmez; sabaha ertelenir.',
+  'settings.quietStart': 'Başlangıç',
+  'settings.quietEnd': 'Bitiş',
+  'settings.dailyDigest': 'Günlük özet',
+  'settings.dailyDigestHint': 'Her sabah günün görevlerini tek bildirimde al.',
+  'settings.digestTime': 'Özet saati',
+  'settings.nudges': 'Dürtmeler',
+  'settings.nudgesHint': 'Eşin sana "hatırlatsana" dürtmesi gönderebilsin.',
+  'settings.saved': 'Ayarlar kaydedildi',
+  'settings.pushNote':
+    'Cihazlar arası bildirimler (atama, tamamlanma, dürtme) TestFlight sürümünde çalışır.',
+
+  'activity.title': 'Son hareketler',
+  'activity.empty': 'Henüz hareket yok.',
+  'activity.taskCreated': '{{name}}, "{{task}}" görevini ekledi',
+  'activity.taskCompleted': '{{name}}, "{{task}}" görevini tamamladı ✓',
+  'activity.taskNudged': '{{name}}, {{targets}} kişisini dürttü: {{task}}',
+  'activity.memberJoined': '{{name}} haneye katıldı 🎉',
 } as const;
 
 export type TranslationKey = keyof typeof tr;

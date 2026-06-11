@@ -4,7 +4,22 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "base": {
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAkW7jXYXu0p24mG0V-D6d9Fcq8f-c9SxU",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "nafuplanner.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "nafuplanner",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "nafuplanner.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "1053559906829",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:1053559906829:web:eaa1a2f199c1a5a0002b44",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-WZKCM353R3",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": ""
+      }
+    },
     "development": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
@@ -13,6 +28,7 @@
       "channel": "development"
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
       "ios": {
         "simulator": false
@@ -20,6 +36,7 @@
       "channel": "preview"
     },
     "production": {
+      "extends": "base",
       "autoIncrement": true,
       "channel": "production"
     }

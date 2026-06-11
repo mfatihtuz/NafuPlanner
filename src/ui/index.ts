@@ -9,6 +9,7 @@ export { Checkbox, type CheckboxProps } from './components/Checkbox';
 export { Avatar, type AvatarProps } from './components/Avatar';
 export { FAB, type FABProps } from './components/FAB';
 export { Calendar, type CalendarProps } from './components/Calendar';
+export { TimeWheel, type TimeWheelProps } from './components/TimeWheel';
 export { Nafu, type NafuExpression, type NafuProps } from './mascot/Nafu';
 export { Icon, type IconName, type IconProps } from './icons';
 export * from './theme';
