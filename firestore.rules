@@ -64,6 +64,10 @@ service cloud.firestore {
 
       match /tasks/{tid} {
         allow read, write: if isMember(gid);
+
+        match /comments/{cid} {
+          allow read, write: if isMember(gid);
+        }
       }
 
       match /shopping/{iid} {

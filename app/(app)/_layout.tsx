@@ -36,6 +36,10 @@ export default function AppLayout() {
             name="profile"
             options={{ presentation: 'modal', title: t('profile.title') }}
           />
+          <Stack.Screen
+            name="stats"
+            options={{ presentation: 'modal', title: t('stats.title') }}
+          />
         </Stack>
       </CelebrationProvider>
     </HouseholdProvider>

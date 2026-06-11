@@ -107,6 +107,15 @@ export function TaskCard({ task, category, assignees = [], onToggleComplete, onP
               {t('tasks.subtaskProgress', { done: subDone, total: subTotal })}
             </Text>
           ) : null}
+
+          {task.commentsCount > 0 ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xxs }}>
+              <Icon name="message" size={12} color={colors.textMuted} />
+              <Text variant="caption" tone="muted">
+                {task.commentsCount}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
 

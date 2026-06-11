@@ -164,6 +164,8 @@ export const tr = {
   'push.completedBody': '{{name}}, "{{task}}" görevini tamamladı',
   'push.nudgeTitle': 'Nafu dürtüyor 👉',
   'push.nudgeBody': '{{name}} hatırlatıyor: {{task}}',
+  'push.commentTitle': 'Yorum: {{task}}',
+  'push.commentBody': '{{name}}: {{text}}',
 
   'tasks.recurrence': 'Tekrar',
   'tasks.recurrenceNone': 'Yok',
@@ -198,7 +200,20 @@ export const tr = {
   'activity.taskCreated': '{{name}}, "{{task}}" görevini ekledi',
   'activity.taskCompleted': '{{name}}, "{{task}}" görevini tamamladı ✓',
   'activity.taskNudged': '{{name}}, {{targets}} kişisini dürttü: {{task}}',
+  'activity.taskCommented': '{{name}}, "{{task}}" görevine yorum yaptı',
   'activity.memberJoined': '{{name}} haneye katıldı 🎉',
+
+  'comments.title': 'Yorumlar',
+  'comments.placeholder': 'Yorum yaz…',
+  'comments.empty': 'Henüz yorum yok. İlk notu sen bırak.',
+
+  'stats.title': 'İstatistikler',
+  'stats.thisWeek': 'Bu hafta (puan)',
+  'stats.last7days': 'Son 7 gün (tamamlanan görev)',
+  'stats.categories': 'Kategoriler (son 30 gün)',
+  'stats.totalDone': '{{n}} görev',
+  'stats.empty': 'Henüz veri yok — birkaç görev tamamlayınca burası şenlenecek.',
+  'stats.uncategorized': 'Kategorisiz',
 } as const;
 
 export type TranslationKey = keyof typeof tr;

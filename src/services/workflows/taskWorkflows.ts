@@ -8,6 +8,7 @@ import { dayKeyFromMs } from '@/domain/time';
 import type { Member, RecurrenceRule, Task } from '@/domain/types';
 import { t } from '@/i18n';
 import { addActivity } from '@/services/firestore/activity';
+import { addComment } from '@/services/firestore/comments';
 import { applyCompletionRewards, revertCompletionRewards } from '@/services/firestore/members';
 import {
   createRecurrence,
@@ -234,5 +235,34 @@ export async function nudgeTaskFlow(input: NudgeFlowInput): Promise<void> {
     taskId: task.id,
     taskTitle: task.title,
     targetNames,
+  });
+}
+
+export interface CommentFlowInput {
+  task: Task;
+  body: string;
+  actor: Actor;
+  members: Member[];
+}
+
+/** Göreve yorum ekler; aktiviteye işler ve diğer üyelere haber verir. */
+export async function commentTaskFlow(input: CommentFlowInput): Promise<void> {
+  const { task, body, actor, members } = input;
+  await addComment(task.householdId, task.id, actor.uid, body);
+
+  void addActivity({
+    householdId: task.householdId,
+    type: 'task_commented',
+    actorId: actor.uid,
+    actorName: actor.name,
+    taskId: task.id,
+    taskTitle: task.title,
+  });
+
+  void notifyMembers({
+    members,
+    excludeUid: actor.uid,
+    title: t('push.commentTitle', { task: task.title }),
+    body: t('push.commentBody', { name: actor.name, text: body.trim().slice(0, 80) }),
   });
 }

@@ -118,8 +118,11 @@ Güvenlik: Firestore kuralları — veriye yalnızca o hanenin üyeleri erişir.
 
 ### Faz 4 — Cila
 
-- [ ] Fotoğraf ekleri (Storage), yorumlar
-- [ ] İstatistik / haftalık özet ekranı
+- [x] Yorumlar (görev detayında canlı yorum + push + aktivite + kart rozeti)
+- [x] İstatistik ekranı (haftalık üye karşılaştırması, son 7 gün grafiği,
+      30 günlük kategori dağılımı)
+- [ ] Fotoğraf ekleri (Storage — konsoldan Storage açma adımı gerektirir)
+- [ ] Gerçek ödüller (kullanıcı tanımlı)
 - [ ] Mikro-animasyonlar, onboarding ciladı, erişilebilirlik
 - [ ] Android temel doğrulama
 

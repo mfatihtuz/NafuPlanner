@@ -31,6 +31,8 @@ function activityLine(entry: ActivityEntry): string {
         targets: (entry.targetNames ?? []).join(', '),
         task: entry.taskTitle ?? '',
       });
+    case 'task_commented':
+      return t('activity.taskCommented', { name, task: entry.taskTitle ?? '' });
     case 'member_joined':
       return t('activity.memberJoined', { name });
   }
@@ -366,6 +368,12 @@ function HouseholdView() {
         )}
       </Pressable>
 
+      <Button
+        title={t('stats.title')}
+        variant="ghost"
+        leftSlot={<Icon name="chart" size={20} color={colors.primaryDark} />}
+        onPress={() => router.push('/stats')}
+      />
       <Button
         title={t('settings.title')}
         variant="ghost"

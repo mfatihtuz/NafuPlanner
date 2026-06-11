@@ -1,6 +1,14 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+} from 'react-native';
 
 import { PRIORITY_META } from '@/domain/constants';
 import { formatDueLabel } from '@/domain/format';
@@ -11,15 +19,19 @@ import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
+import { watchComments } from '@/services/firestore/comments';
 import { deleteTask, setSubtasks } from '@/services/firestore/tasks';
+import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import {
+  commentTaskFlow,
   completeTaskFlow,
   nudgeTaskFlow,
   reopenTaskFlow,
 } from '@/services/workflows/taskWorkflows';
-import { Avatar, Button, Card, Checkbox, EmptyState, Icon, Screen, Text } from '@/ui';
+import { Avatar, Button, Card, Checkbox, EmptyState, Icon, Screen, Text, TextField } from '@/ui';
 import { colors } from '@/ui/theme/colors';
+import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
 
 export default function TaskDetailScreen() {
@@ -33,6 +45,11 @@ export default function TaskDetailScreen() {
   const categories = useCategories(household?.id ?? null);
 
   const task = useMemo(() => (tasks ?? []).find((item) => item.id === id) ?? null, [tasks, id]);
+  const commentsKey = household && id ? `${household.id}/${id}` : null;
+  const comments = useWatch(commentsKey, watchComments);
+  const memberMap = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [sendingComment, setSendingComment] = useState(false);
   const category = useMemo(
     () => (task?.categoryId ? (categories ?? []).find((c) => c.id === task.categoryId) : null),
     [categories, task],
@@ -89,6 +106,20 @@ export default function TaskDetailScreen() {
       .catch(() => Alert.alert(t('common.appName'), t('common.error')));
   };
 
+  const onSendComment = () => {
+    const body = commentDraft.trim();
+    if (!body || !user || sendingComment) return;
+    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    setSendingComment(true);
+    setCommentDraft('');
+    commentTaskFlow({ task, body, actor, members })
+      .catch(() => {
+        setCommentDraft(body);
+        Alert.alert(t('common.appName'), t('common.error'));
+      })
+      .finally(() => setSendingComment(false));
+  };
+
   const onToggleSubtask = (subtask: Subtask) => {
     const next = task.subtasks.map((s) =>
       s.id === subtask.id ? { ...s, done: !s.done } : s,
@@ -135,9 +166,15 @@ export default function TaskDetailScreen() {
         }}
       />
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 96 : 0}
+      >
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={{ gap: spacing.sm }}>
           <Text
@@ -252,6 +289,86 @@ export default function TaskDetailScreen() {
           </View>
         ) : null}
 
+        {/* Yorumlar */}
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="overline" tone="secondary">
+            {t('comments.title')}
+            {comments && comments.length > 0 ? ` (${comments.length})` : ''}
+          </Text>
+
+          {comments == null ? null : comments.length === 0 ? (
+            <Text variant="caption" tone="muted">
+              {t('comments.empty')}
+            </Text>
+          ) : (
+            comments.map((comment) => {
+              const author = memberMap.get(comment.authorId);
+              return (
+                <View
+                  key={comment.id}
+                  style={{
+                    flexDirection: 'row',
+                    gap: spacing.sm,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: radii.md,
+                    padding: spacing.md,
+                  }}
+                >
+                  <Avatar
+                    name={author?.displayName ?? '?'}
+                    photoUrl={author?.photoUrl}
+                    seed={comment.authorId}
+                    size={28}
+                  />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                      <Text variant="small" style={{ fontWeight: '700' }}>
+                        {(author?.displayName ?? 'Üye').split(' ')[0]}
+                      </Text>
+                      <Text variant="caption" tone="muted">
+                        {formatDueLabel(comment.createdAtMs, true, now)}
+                      </Text>
+                    </View>
+                    <Text variant="small">{comment.body}</Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+
+          <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+            <View style={{ flex: 1 }}>
+              <TextField
+                value={commentDraft}
+                onChangeText={setCommentDraft}
+                placeholder={t('comments.placeholder')}
+                returnKeyType="send"
+                onSubmitEditing={onSendComment}
+              />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('common.add')}
+              onPress={onSendComment}
+              disabled={commentDraft.trim().length === 0 || sendingComment}
+              style={({ pressed }) => ({
+                width: 50,
+                height: 50,
+                borderRadius: 25,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor:
+                  commentDraft.trim().length === 0 ? colors.border : colors.primary,
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <Icon name="send" size={20} color={colors.onPrimary} />
+            </Pressable>
+          </View>
+        </View>
+
         <View style={{ flex: 1 }} />
 
         <View style={{ gap: spacing.sm }}>
@@ -270,6 +387,7 @@ export default function TaskDetailScreen() {
           />
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
