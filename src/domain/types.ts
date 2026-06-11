@@ -64,6 +64,10 @@ export interface Member {
   level: number;
   streakCount: number;
   lastActiveDayKey?: DayKey;
+  /** Toplam tamamlanan görev (rozetler için sayaç). */
+  tasksCompleted?: number;
+  /** Kazanılan rozet anahtarları (kalıcı; bkz. domain/gamification BADGES). */
+  earnedBadgeKeys?: string[];
   joinedAtMs: Millis;
   /**
    * Cihazlar arası bildirim için denormalize alanlar: kullanıcı ayarları

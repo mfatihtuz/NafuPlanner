@@ -134,6 +134,21 @@ export const tr = {
   'profile.title': 'Profil',
   'profile.points': 'Puan',
   'profile.streak': 'Seri',
+  'profile.level': 'Seviye {{n}}',
+  'profile.tasksDone': 'Tamamlanan',
+  'profile.nextLevel': 'Sonraki seviyeye {{n}} puan',
+  'profile.badges': 'Rozetler',
+  'profile.streakDays': '{{n}} gün',
+
+  'leaderboard.title': 'Bu hafta',
+  'leaderboard.points': '{{n}} puan',
+  'leaderboard.empty': 'Bu hafta henüz görev tamamlanmadı. İlk puanı kapan önde başlar!',
+
+  'celebration.title': 'Harikasın!',
+  'celebration.points': '+{{n}} puan',
+  'celebration.levelUp': 'Seviye {{n}} oldun! 🎉',
+  'celebration.newBadge': 'Yeni rozet: {{name}}',
+  'celebration.streak': '{{n}} günlük seri 🔥',
 
   'notifications.taskDueTitle': 'Görev zamanı geldi',
   'notifications.taskStillWaiting': 'Hâlâ bekliyor 👀',

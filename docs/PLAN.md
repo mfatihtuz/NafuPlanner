@@ -107,11 +107,14 @@ Güvenlik: Firestore kuralları — veriye yalnızca o hanenin üyeleri erişir.
 
 ### Faz 3 — Oyunlaştırma
 
-- [ ] Puan/seviye, seri (streak)
-- [ ] Haftalık lider tablosu (tatlı rekabet)
-- [ ] Rozetler / başarımlar
-- [ ] Gerçek ödüller (kullanıcı tanımlı)
-- [ ] Nafu'nun kutlama tepkileri/animasyonları
+- [x] Puan/seviye, seri (streak) — tamamlamada increment ile çakışma güvenli;
+      geri açmada puan iade (seri ve rozetler kalıcı); puan defteri (points)
+- [x] Haftalık lider tablosu (Pazartesi başlangıçlı, hane sekmesinde)
+- [x] Rozetler / başarımlar (8 rozetlik eşik kataloğu; profil vitrini)
+- [x] Nafu'nun kutlama tepkileri (görev bitince konfetili kutlama kartı:
+      +puan, seri, seviye atlama, yeni rozet)
+- [x] Profil ekranı (seviye ilerleme çubuğu + istatistikler + rozetler)
+- [ ] Gerçek ödüller (kullanıcı tanımlı) — Faz 4'e ertelendi
 
 ### Faz 4 — Cila
 

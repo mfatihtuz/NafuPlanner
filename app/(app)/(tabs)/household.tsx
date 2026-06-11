@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Share, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, View } from 'react-native';
 
 import { formatDueLabel } from '@/domain/format';
+import { weeklyPoints } from '@/domain/gamification';
 import type { ActivityEntry } from '@/domain/types';
+import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
@@ -153,6 +155,16 @@ function HouseholdView() {
   const [invite, setInvite] = useState<{ code: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const activity = useWatch(household?.id ?? null, watchActivity);
+  const tasks = useTasks(household?.id ?? null);
+  const weekly = useMemo(() => weeklyPoints(tasks ?? [], now), [tasks, now]);
+  const rankedMembers = useMemo(
+    () => [...members].sort((a, b) => (weekly.get(b.userId) ?? 0) - (weekly.get(a.userId) ?? 0)),
+    [members, weekly],
+  );
+  const weekTotal = useMemo(
+    () => [...weekly.values()].reduce((sum, n) => sum + n, 0),
+    [weekly],
+  );
 
   if (!household) return null;
 
@@ -190,6 +202,48 @@ function HouseholdView() {
           </Text>
         </View>
       </Card>
+
+      {/* Haftalık lider tablosu */}
+      <View style={{ gap: spacing.sm }}>
+        <Text variant="overline" tone="secondary">
+          {t('leaderboard.title')}
+        </Text>
+        <Card style={{ gap: spacing.md }}>
+          {weekTotal === 0 ? (
+            <Text variant="small" tone="secondary">
+              {t('leaderboard.empty')}
+            </Text>
+          ) : (
+            rankedMembers.map((member, index) => {
+              const pts = weekly.get(member.userId) ?? 0;
+              const leader = index === 0 && pts > 0;
+              return (
+                <View
+                  key={member.userId}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}
+                >
+                  <Avatar
+                    name={member.displayName}
+                    photoUrl={member.photoUrl}
+                    seed={member.userId}
+                    size={32}
+                  />
+                  <Text variant="bodyStrong" style={{ flex: 1 }}>
+                    {member.displayName.split(' ')[0]}
+                  </Text>
+                  {leader ? <Icon name="trophy" size={18} color={colors.reward} /> : null}
+                  <Text
+                    variant="small"
+                    style={{ color: leader ? colors.reward : colors.textSecondary, fontWeight: '700' }}
+                  >
+                    {t('leaderboard.points', { n: pts })}
+                  </Text>
+                </View>
+              );
+            })
+          )}
+        </Card>
+      </View>
 
       <View style={{ gap: spacing.sm }}>
         <Text variant="overline" tone="secondary">
@@ -276,25 +330,41 @@ function HouseholdView() {
 
       <View style={{ flex: 1 }} />
 
-      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <Avatar
-          name={user?.displayName ?? '?'}
-          photoUrl={user?.photoURL}
-          seed={user?.uid}
-          size={48}
-        />
-        <View style={{ flex: 1 }}>
-          <Text variant="bodyStrong">{user?.displayName}</Text>
-          <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xxs }}>
-            <Text variant="caption" tone="secondary">
-              {t('profile.points')}: {myMember?.points ?? 0}
-            </Text>
-            <Text variant="caption" tone="secondary">
-              {t('profile.streak')}: {myMember?.streakCount ?? 0}
-            </Text>
-          </View>
-        </View>
-      </Card>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('profile.title')}
+        onPress={() => router.push('/profile')}
+      >
+        {({ pressed }) => (
+          <Card
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.md,
+              opacity: pressed ? 0.9 : 1,
+            }}
+          >
+            <Avatar
+              name={user?.displayName ?? '?'}
+              photoUrl={user?.photoURL}
+              seed={user?.uid}
+              size={48}
+            />
+            <View style={{ flex: 1 }}>
+              <Text variant="bodyStrong">{user?.displayName}</Text>
+              <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xxs }}>
+                <Text variant="caption" tone="secondary">
+                  {t('profile.points')}: {myMember?.points ?? 0}
+                </Text>
+                <Text variant="caption" tone="secondary">
+                  {t('profile.streak')}: {myMember?.streakCount ?? 0}
+                </Text>
+              </View>
+            </View>
+            <Icon name="chevronRight" size={20} color={colors.textMuted} />
+          </Card>
+        )}
+      </Pressable>
 
       <Button
         title={t('settings.title')}

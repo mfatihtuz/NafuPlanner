@@ -5,6 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { groupTasks } from '@/domain/tasks';
 import type { Task } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
+import { useCelebration } from '@/features/celebration/CelebrationProvider';
 import { RequireHousehold } from '@/features/household/NoHousehold';
 import { TaskCard } from '@/features/tasks/TaskCard';
 import { useTasks } from '@/features/tasks/useTasks';
@@ -37,6 +38,7 @@ export default function TodayScreen() {
 function TodayContent() {
   const router = useRouter();
   const { user } = useAuth();
+  const { celebrate } = useCelebration();
   const { household, members, profile } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
   const categories = useCategories(household?.id ?? null);
@@ -56,11 +58,15 @@ function TodayContent() {
   const onToggle = (task: Task) => {
     if (!household || !user) return;
     const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
-    const action =
-      task.status === 'done'
-        ? reopenTaskFlow(task)
-        : completeTaskFlow({ task, actor, members });
-    action.catch((error) => console.warn('[today] görev güncellenemedi', error));
+    if (task.status === 'done') {
+      reopenTaskFlow(task).catch((error) =>
+        console.warn('[today] görev güncellenemedi', error),
+      );
+    } else {
+      completeTaskFlow({ task, actor, members })
+        .then(celebrate)
+        .catch((error) => console.warn('[today] görev güncellenemedi', error));
+    }
   };
 
   const renderTask = (task: Task) => (

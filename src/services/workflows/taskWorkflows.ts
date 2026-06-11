@@ -1,7 +1,14 @@
+import {
+  advanceStreak,
+  levelForPoints,
+  newlyEarnedBadges,
+  type BadgeDef,
+} from '@/domain/gamification';
 import { dayKeyFromMs } from '@/domain/time';
 import type { Member, RecurrenceRule, Task } from '@/domain/types';
 import { t } from '@/i18n';
 import { addActivity } from '@/services/firestore/activity';
+import { applyCompletionRewards, revertCompletionRewards } from '@/services/firestore/members';
 import {
   createRecurrence,
   getRecurrence,
@@ -89,10 +96,54 @@ export interface CompleteTaskFlowInput {
   members: Member[];
 }
 
-/** Görevi tamamlar; tekrar kuralı varsa sıradaki örneği üretir; eşe haber verir. */
-export async function completeTaskFlow(input: CompleteTaskFlowInput): Promise<void> {
+/** Kutlama ekranı için tamamlanma sonucu. */
+export interface CompletionReward {
+  pointsAwarded: number;
+  newLevel: number | null;
+  newBadges: BadgeDef[];
+  streakCount: number;
+}
+
+/**
+ * Görevi tamamlar; puan/seri/rozet ödüllerini işler; tekrar kuralı varsa
+ * sıradaki örneği üretir; eşe haber verir. Kutlama için ödül özetini döndürür.
+ */
+export async function completeTaskFlow(input: CompleteTaskFlowInput): Promise<CompletionReward> {
   const { task, actor, members } = input;
   await completeTask(task.householdId, task.id, actor.uid);
+
+  // Ödüller: mevcut üyelik durumundan saf kurallarla hesapla, tek seferde yaz.
+  const me = members.find((m) => m.userId === actor.uid);
+  const beforePoints = me?.points ?? 0;
+  const afterPoints = beforePoints + task.points;
+  const streak = advanceStreak(
+    { streakCount: me?.streakCount ?? 0, lastActiveDayKey: me?.lastActiveDayKey },
+    dayKeyFromMs(Date.now()),
+  );
+  const newBadges = newlyEarnedBadges(
+    {
+      tasksCompleted: (me?.tasksCompleted ?? 0) + 1,
+      points: afterPoints,
+      streakCount: streak.streakCount,
+    },
+    me?.earnedBadgeKeys ?? [],
+  );
+  const levelBefore = levelForPoints(beforePoints);
+  const levelAfter = levelForPoints(afterPoints);
+
+  try {
+    await applyCompletionRewards({
+      householdId: task.householdId,
+      userId: actor.uid,
+      taskId: task.id,
+      pointsDelta: task.points,
+      level: levelAfter,
+      streak,
+      newBadgeKeys: newBadges.map((b) => b.key),
+    });
+  } catch (error) {
+    console.warn('[workflow] ödüller işlenemedi', error);
+  }
 
   void addActivity({
     householdId: task.householdId,
@@ -121,10 +172,31 @@ export async function completeTaskFlow(input: CompleteTaskFlowInput): Promise<vo
       console.warn('[workflow] tekrar ilerletilemedi', error);
     }
   }
+
+  return {
+    pointsAwarded: task.points,
+    newLevel: levelAfter > levelBefore ? levelAfter : null,
+    newBadges,
+    streakCount: streak.streakCount,
+  };
 }
 
+/** Görevi geri açar ve puanı tamamlayandan geri alır (rozetler kalıcıdır). */
 export async function reopenTaskFlow(task: Task): Promise<void> {
+  const completedBy = task.completedBy;
   await reopenTask(task.householdId, task.id);
+  if (completedBy) {
+    try {
+      await revertCompletionRewards({
+        householdId: task.householdId,
+        userId: completedBy,
+        taskId: task.id,
+        pointsDelta: task.points,
+      });
+    } catch (error) {
+      console.warn('[workflow] puan geri alınamadı', error);
+    }
+  }
 }
 
 export interface NudgeFlowInput {

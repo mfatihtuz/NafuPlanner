@@ -6,6 +6,7 @@ import { PRIORITY_META } from '@/domain/constants';
 import { formatDueLabel } from '@/domain/format';
 import type { Subtask } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
+import { useCelebration } from '@/features/celebration/CelebrationProvider';
 import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
@@ -26,6 +27,7 @@ export default function TaskDetailScreen() {
   const router = useRouter();
   const now = useNow();
   const { user } = useAuth();
+  const { celebrate } = useCelebration();
   const { household, members } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
   const categories = useCategories(household?.id ?? null);
@@ -68,8 +70,15 @@ export default function TaskDetailScreen() {
   const onToggleComplete = () => {
     if (!user) return;
     const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
-    const action = done ? reopenTaskFlow(task) : completeTaskFlow({ task, actor, members });
-    action.catch((error) => console.warn('[task] durum değiştirilemedi', error));
+    if (done) {
+      reopenTaskFlow(task).catch((error) =>
+        console.warn('[task] durum değiştirilemedi', error),
+      );
+    } else {
+      completeTaskFlow({ task, actor, members })
+        .then(celebrate)
+        .catch((error) => console.warn('[task] durum değiştirilemedi', error));
+    }
   };
 
   const onNudge = () => {
