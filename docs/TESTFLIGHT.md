@@ -76,7 +76,7 @@ Google** → paneli aç → **Web SDK configuration** → **Web client ID**'yi k
 + Create Credentials → OAuth client ID**:
 
 - Application type: **iOS**
-- Bundle ID: `com.nafuplanner.app`
+- Bundle ID: `com.nafugroup.nafuplanlayici`
 - **Create** → **Client ID**'yi kopyala. Aynı ekranda **iOS URL scheme** da
   görünür (`com.googleusercontent.apps.…` biçiminde) — onu da kopyala.
 

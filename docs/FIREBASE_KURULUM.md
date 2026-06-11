@@ -64,7 +64,7 @@ Google ile girişin iOS'ta native çalışması için bir iOS OAuth client gerek
    Firebase projenle aynı projeyi seç.
 2. **APIs & Services → Credentials** → **+ Create credentials → OAuth client ID**.
 3. Application type: **iOS**.
-4. Bundle ID: `com.nafuplanner.app`
+4. Bundle ID: `com.nafugroup.nafuplanlayici`
 5. **Create** → çıkan **Client ID**'yi ve **iOS URL scheme**'i kopyala.
 
 `.env`'e ekle:
