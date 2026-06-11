@@ -43,17 +43,20 @@ export function useNotificationScheduler(
   const running = useRef(false);
 
   useEffect(() => {
-    if (!tasks || !myUid) return;
+    if (!myUid) return;
     if (running.current) return;
     running.current = true;
 
     (async () => {
       try {
         const now = Date.now();
+        // tasks henüz yüklenmemiş olsa (null) bile haftalık ödül bildirimi
+        // kurulabilsin diye boş listeyle devam ederiz.
+        const list = tasks ?? [];
 
         // Görev hatırlatmaları (zaman + içerik)
         const reminders: { atMs: number; title: string; body: string }[] = [];
-        for (const task of tasks) {
+        for (const task of list) {
           if (!isOpen(task) || !isMine(task, myUid)) continue;
           const times = buildTaskReminderTimes(task, settings, now);
           times.forEach((atMs, index) => {
@@ -73,7 +76,7 @@ export function useNotificationScheduler(
         let digestBody: string | null = null;
         if (digestAt != null) {
           const digestDay = dayKeyFromMs(digestAt);
-          const openToday = tasks.filter(
+          const openToday = list.filter(
             (task) =>
               isOpen(task) &&
               isMine(task, myUid) &&
@@ -83,8 +86,17 @@ export function useNotificationScheduler(
           digestBody = buildDigestBody(openToday.map((task) => task.title));
         }
 
-        // İzin yoksa hiçbir şey kurulmaz. Haftalık Nafu ödülü bildirimi
-        // (aşağıda) daima kurulduğundan "hiç görev yok" diye erken çıkmıyoruz.
+        // Kendi bildirimi (görev/özet) olmayan kullanıcıyı SIRF haftalık ödül
+        // için erkenden izin istemeye zorlamayız (yeni kullanıcıya görev yokken
+        // izin penceresi açılması istenmez). İzin zaten verilmişse haftalık
+        // ödül yine de kurulur.
+        const hasUserNotifications =
+          capped.length > 0 || (digestAt != null && digestBody != null);
+        const perm = await Notifications.getPermissionsAsync();
+        if (!perm.granted && !hasUserNotifications) {
+          await Notifications.cancelAllScheduledNotificationsAsync();
+          return;
+        }
         if (!(await ensurePermission())) return;
 
         await Notifications.cancelAllScheduledNotificationsAsync();
@@ -126,6 +138,7 @@ export function useNotificationScheduler(
               weekday: 2, // expo: 1=Pazar … 2=Pazartesi
               hour: 10,
               minute: 0,
+              channelId: 'weekly-reward', // Android: özel ses bu kanaldan çalar
             },
           }),
         );

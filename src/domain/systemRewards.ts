@@ -7,8 +7,6 @@
  * uygulama açılışında deterministik kimlikle (haftaya sabit) idempotent olarak
  * oluşturulur; Cloud Functions gerekmez.
  */
-import { startOfWeekMs } from './gamification';
-import { dayKeyFromMs } from './time';
 import type { Millis } from './types';
 
 export interface WeeklyRewardTemplate {
@@ -38,22 +36,35 @@ export const WEEKLY_SYSTEM_REWARDS: readonly WeeklyRewardTemplate[] = [
 export interface WeeklySystemReward {
   /** Deterministik belge kimliği (aynı hafta = tek ödül, idempotent). */
   id: string;
-  /** O haftanın Pazartesi gün anahtarı (YYYY-MM-DD). */
-  weekStartDayKey: string;
+  /** UTC hafta indeksi (rotasyon + tanılama için). */
+  weekIndex: number;
   title: string;
   costPoints: number;
 }
 
+const DAY_MS = 86_400_000;
+const WEEK_MS = 7 * DAY_MS;
+// 1970-01-01 bir Perşembe; ilk Pazartesi 1970-01-05'tir (epoch+4 gün). Hafta
+// sınırını buna göre Pazartesi 00:00 UTC'ye hizalarız.
+const FIRST_MONDAY_MS = 4 * DAY_MS;
+
+/**
+ * UTC tabanlı hafta indeksi. Saat diliminden BAĞIMSIZDIR: farklı saat
+ * dilimindeki hane üyeleri aynı gerçek anda aynı indeksi (dolayısıyla aynı
+ * ödül kimliğini) üretir. Yerel hafta sınırı kişiden kişiye kayar ve Pazar/
+ * Pazartesi geçişinde mükerrer ödül doğururdu.
+ */
+export function weekIndexUtc(now: Millis): number {
+  return Math.floor((now - FIRST_MONDAY_MS) / WEEK_MS);
+}
+
 /** Verilen ana ait haftanın sistem ödülünü deterministik olarak seçer. */
 export function weeklySystemReward(now: Millis): WeeklySystemReward {
-  const weekStart = startOfWeekMs(now);
-  // Hafta indeksi (epoch'tan beri tam hafta sayısı) → havuzda sabit rotasyon.
-  const weekIndex = Math.floor(weekStart / (7 * 86_400_000));
+  const weekIndex = weekIndexUtc(now);
   const template = WEEKLY_SYSTEM_REWARDS[weekIndex % WEEKLY_SYSTEM_REWARDS.length];
-  const weekStartDayKey = dayKeyFromMs(weekStart);
   return {
-    id: `system-${weekStartDayKey}`,
-    weekStartDayKey,
+    id: `system-w${weekIndex}`,
+    weekIndex,
     title: template.title,
     costPoints: template.costPoints,
   };

@@ -230,7 +230,7 @@ export const tr = {
   'rewards.deleteTitle': 'Ödülü sil',
   'rewards.deleteBody': 'Bu ödül listeden kalkacak. Emin misin?',
   'rewards.weeklyTitle': 'Nafu’nun haftalık ödülü',
-  'rewards.weeklyTag': 'Bu hafta',
+  'rewards.weeklyWon': 'Bu hafta kazanıldı ✓',
 
   'weeklyReward.notifTitle': 'Nafu’nun haftalık ödülü hazır! 🎁',
   'weeklyReward.notifBody':

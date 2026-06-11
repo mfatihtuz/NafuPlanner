@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
+import { SYSTEM_REWARD_AUTHOR } from '@/domain/systemRewards';
 import type { Reward } from '@/domain/types';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { addReward, removeReward, watchRewards } from '@/services/firestore/rewards';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
@@ -15,17 +17,6 @@ import { spacing } from '@/ui/theme/spacing';
 const COST_STEP = 25;
 const COST_MIN = 25;
 const COST_MAX = 1000;
-
-/**
- * Ödül işlemlerinde izin hatasını net mesaja çevirir. En sık sebep: Firestore
- * kurallarının (rewards/points alt koleksiyonları) güncel sürümü Firebase
- * Console'a yayınlanmamış olması.
- */
-function rewardError(error: unknown): string {
-  return (error as { code?: string }).code === 'permission-denied'
-    ? t('common.errorRules')
-    : t('common.error');
-}
 
 export default function RewardsScreen() {
   const { user } = useAuth();
@@ -48,7 +39,7 @@ export default function RewardsScreen() {
       setTitle('');
     } catch (error) {
       console.warn('[rewards] eklenemedi', error);
-      Alert.alert(t('common.appName'), rewardError(error));
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
     } finally {
       setBusy(false);
     }
@@ -61,7 +52,7 @@ export default function RewardsScreen() {
       .then(() =>
         Alert.alert(t('common.appName'), t('rewards.redeemed', { reward: reward.title })),
       )
-      .catch((error) => Alert.alert(t('common.appName'), rewardError(error)));
+      .catch((error) => Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))));
   };
 
   const onRemove = (reward: Reward) => {
@@ -73,7 +64,7 @@ export default function RewardsScreen() {
         style: 'destructive',
         onPress: () => {
           removeReward(gid, reward.id).catch((error) =>
-            Alert.alert(t('common.appName'), rewardError(error)),
+            Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))),
           );
         },
       },
@@ -136,7 +127,8 @@ export default function RewardsScreen() {
             {rewards.map((reward) => {
               const rewardCost = reward.costPoints ?? 0;
               const canRedeem = myPoints >= rewardCost;
-              const isWeekly = reward.createdBy === 'system';
+              const isWeekly = reward.createdBy === SYSTEM_REWARD_AUTHOR;
+              const isWon = reward.status === 'won';
               return (
                 <Card
                   key={reward.id}
@@ -160,11 +152,17 @@ export default function RewardsScreen() {
                     </Text>
                   </View>
                   <Button
-                    title={canRedeem ? t('rewards.redeem') : t('rewards.notEnough')}
+                    title={
+                      isWon
+                        ? t('rewards.weeklyWon')
+                        : canRedeem
+                          ? t('rewards.redeem')
+                          : t('rewards.notEnough')
+                    }
                     size="md"
                     fullWidth={false}
-                    variant={canRedeem ? 'primary' : 'ghost'}
-                    disabled={!canRedeem}
+                    variant={canRedeem && !isWon ? 'primary' : 'ghost'}
+                    disabled={!canRedeem || isWon}
                     onPress={() => onRedeem(reward)}
                   />
                   {/* Sistem ödülü silinemez (her hafta otomatik yenilenir). */}

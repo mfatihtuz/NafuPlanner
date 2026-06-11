@@ -10,6 +10,7 @@ import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { watchActivity } from '@/services/firestore/activity';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { InviteError } from '@/services/firestore/households';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
@@ -72,11 +73,7 @@ function SetupView() {
       await createHousehold(name);
     } catch (error) {
       console.warn('[household] oluşturma hatası', error);
-      const code = (error as { code?: string }).code;
-      Alert.alert(
-        t('common.appName'),
-        code === 'permission-denied' ? t('common.errorRules') : t('household.errorCreate'),
-      );
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('household.errorCreate')));
     } finally {
       setBusy(null);
     }
@@ -88,15 +85,12 @@ function SetupView() {
     try {
       await joinHousehold(code);
     } catch (error) {
-      const code = (error as { code?: string }).code;
       const message =
         error instanceof InviteError
           ? error.reason === 'notFound'
             ? t('household.errorInviteNotFound')
             : t('household.errorInviteExpired')
-          : code === 'permission-denied'
-            ? t('common.errorRules')
-            : t('household.errorJoin');
+          : firestoreErrorMessage(error, t('household.errorJoin'));
       Alert.alert(t('common.appName'), message);
     } finally {
       setBusy(null);

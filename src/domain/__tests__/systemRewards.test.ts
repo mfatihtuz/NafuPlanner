@@ -10,7 +10,7 @@ describe('weeklySystemReward', () => {
     const b = weeklySystemReward(wednesday);
     expect(a.id).toBe(b.id);
     expect(a.title).toBe(b.title);
-    expect(a.id).toMatch(/^system-\d{4}-\d{2}-\d{2}$/);
+    expect(a.id).toMatch(/^system-w\d+$/);
   });
 
   it('farklı haftalarda farklı kimlik verir', () => {

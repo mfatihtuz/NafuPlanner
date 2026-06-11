@@ -83,6 +83,14 @@ export async function redeemReward(
     rewardId: reward.id,
     createdAtMs: Date.now(),
   });
+  // Haftalık sistem ödülü tek kullanımlıktır: kullanılınca "kazanıldı" olur ve
+  // o hafta tekrar bozdurulamaz. (Kullanıcının kendi ödülleri tekrar kullanılır.)
+  if (reward.createdBy === SYSTEM_REWARD_AUTHOR) {
+    await updateDoc(doc(db, 'groups', gid, 'rewards', reward.id), {
+      status: 'won',
+      winnerId: uid,
+    });
+  }
 }
 
 /** Hane ödüllerini canlı dinler (yeni → eski). */

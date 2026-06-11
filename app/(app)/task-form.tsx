@@ -14,6 +14,7 @@ import { useTasks } from '@/features/tasks/useTasks';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { addCategory } from '@/services/firestore/categories';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { updateTask, type NewTaskInput } from '@/services/firestore/tasks';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { createTaskFlow } from '@/services/workflows/taskWorkflows';
@@ -225,11 +226,7 @@ function TaskFormInner({ editing }: { editing: Task | null }) {
       router.back();
     } catch (error) {
       console.warn('[task-form] kaydedilemedi', error);
-      const code = (error as { code?: string }).code;
-      Alert.alert(
-        t('common.appName'),
-        code === 'permission-denied' ? t('common.errorRules') : t('common.error'),
-      );
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
     } finally {
       setSaving(false);
     }
