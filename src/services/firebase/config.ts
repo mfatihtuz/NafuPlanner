@@ -7,7 +7,7 @@ import {
   // çalışma zamanında 'firebase/auth' içinden gelir. Aşağıda güvenli erişim.
   type Auth,
 } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 import { firebaseConfig, isFirebaseConfigured } from '@/config/env';
@@ -49,7 +49,14 @@ if (firebaseReady) {
       authInstance = getAuth(app);
     }
 
-    dbInstance = getFirestore(app);
+    try {
+      // undefined alanlar yazımı patlatmasın (örn. fotoğrafsız e-posta
+      // hesabında photoUrl) — Firestore bunları sessizce atlar.
+      dbInstance = initializeFirestore(app, { ignoreUndefinedProperties: true });
+    } catch {
+      // Zaten başlatılmışsa (Fast Refresh) mevcut örneği kullan.
+      dbInstance = getFirestore(app);
+    }
     storageInstance = getStorage(app);
   } catch (error) {
     console.error('[firebase] başlatma hatası', error);

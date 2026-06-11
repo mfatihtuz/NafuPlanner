@@ -72,7 +72,11 @@ function SetupView() {
       await createHousehold(name);
     } catch (error) {
       console.warn('[household] oluşturma hatası', error);
-      Alert.alert(t('common.appName'), t('household.errorCreate'));
+      const code = (error as { code?: string }).code;
+      Alert.alert(
+        t('common.appName'),
+        code === 'permission-denied' ? t('common.errorRules') : t('household.errorCreate'),
+      );
     } finally {
       setBusy(null);
     }
@@ -84,12 +88,15 @@ function SetupView() {
     try {
       await joinHousehold(code);
     } catch (error) {
+      const code = (error as { code?: string }).code;
       const message =
         error instanceof InviteError
           ? error.reason === 'notFound'
             ? t('household.errorInviteNotFound')
             : t('household.errorInviteExpired')
-          : t('household.errorJoin');
+          : code === 'permission-denied'
+            ? t('common.errorRules')
+            : t('household.errorJoin');
       Alert.alert(t('common.appName'), message);
     } finally {
       setBusy(null);

@@ -225,7 +225,11 @@ function TaskFormInner({ editing }: { editing: Task | null }) {
       router.back();
     } catch (error) {
       console.warn('[task-form] kaydedilemedi', error);
-      Alert.alert(t('common.appName'), t('common.error'));
+      const code = (error as { code?: string }).code;
+      Alert.alert(
+        t('common.appName'),
+        code === 'permission-denied' ? t('common.errorRules') : t('common.error'),
+      );
     } finally {
       setSaving(false);
     }

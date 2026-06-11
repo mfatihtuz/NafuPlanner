@@ -46,7 +46,16 @@ export async function saveUserSettings(
   settings: UserSettings,
 ): Promise<void> {
   const db = requireDb();
-  await setDoc(doc(db, 'users', uid), { settings }, { merge: true });
+  // Kapatılan alanlar açıkça null yazılır; undefined bırakmak merge'de eski
+  // değeri silmez (sessiz saat "kapalı" görünüp etkili kalırdı).
+  const normalized = {
+    quietHoursStart: settings.quietHoursStart ?? null,
+    quietHoursEnd: settings.quietHoursEnd ?? null,
+    dailyDigestEnabled: settings.dailyDigestEnabled,
+    dailyDigestTime: settings.dailyDigestTime ?? null,
+    nudgesEnabled: settings.nudgesEnabled,
+  };
+  await setDoc(doc(db, 'users', uid), { settings: normalized }, { merge: true });
   if (householdId) {
     await setDoc(
       doc(db, 'groups', householdId, 'members', uid),

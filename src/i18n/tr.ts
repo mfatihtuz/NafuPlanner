@@ -23,6 +23,8 @@ export const tr = {
   'common.logout': 'Çıkış yap',
   'common.comingSoon': 'Çok yakında',
   'common.error': 'Bir şeyler ters gitti. Lütfen tekrar dene.',
+  'common.errorRules':
+    'Sunucu izni reddetti. Firestore güvenlik kuralları eski olabilir: Firebase Console → Firestore → Rules bölümüne repodaki firestore.rules dosyasının SON halini yapıştırıp Publish deyin.',
 
   'auth.welcomeTitle': 'Merhaba, ben Nafu!',
   'auth.welcomeSubtitle':

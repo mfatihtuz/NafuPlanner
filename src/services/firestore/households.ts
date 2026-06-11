@@ -21,7 +21,7 @@ import type { Household, Invitation, Member } from '@/domain/types';
 import { requireDb } from '@/services/firebase/config';
 
 import type { AuthUserLike } from './users';
-import { docData } from './utils';
+import { docData, omitUndefined } from './utils';
 
 export class InviteError extends Error {
   constructor(public readonly reason: 'notFound' | 'expired') {
@@ -62,7 +62,8 @@ export async function createHousehold(user: AuthUserLike, name: string): Promise
 
   const member = memberDoc(user, gid, 'owner');
   const { userId, ...memberData } = member;
-  await setDoc(doc(db, 'groups', gid, 'members', userId), memberData);
+  // photoUrl e-posta hesaplarında olmayabilir; undefined alanlar ayıklanır.
+  await setDoc(doc(db, 'groups', gid, 'members', userId), omitUndefined(memberData));
 
   await Promise.all(
     DEFAULT_CATEGORIES.map((cat, index) =>
@@ -97,7 +98,7 @@ export async function joinHousehold(user: AuthUserLike, rawCode: string): Promis
   const { userId, ...memberData } = member;
   // inviteCode alanı güvenlik kurallarının davet doğrulaması için gerekli.
   await setDoc(doc(db, 'groups', gid, 'members', userId), {
-    ...memberData,
+    ...omitUndefined(memberData),
     inviteCode: code,
   });
   await updateDoc(doc(db, 'groups', gid), { memberIds: arrayUnion(user.uid) });

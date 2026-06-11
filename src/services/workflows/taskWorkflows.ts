@@ -18,6 +18,7 @@ import {
   type NewRecurrenceInput,
 } from '@/services/firestore/recurrences';
 import { completeTask, createTask, reopenTask, type NewTaskInput } from '@/services/firestore/tasks';
+import { omitUndefined } from '@/services/firestore/utils';
 import { notifyMembers } from '@/services/notifications/push';
 
 /**
@@ -47,14 +48,15 @@ export async function createTaskFlow(input: CreateTaskFlowInput): Promise<void> 
       ...recurrence,
       householdId: task.householdId,
       createdBy: actor.uid,
-      template: {
+      // İç içe undefined (açıklamasız/kategorisiz görev) yazımı bozmasın.
+      template: omitUndefined({
         title: task.title,
         description: task.description,
         categoryId: task.categoryId,
         priority: task.priority,
         assigneeIds: task.assigneeIds,
         points: task.points,
-      },
+      }),
     };
     const ruleId = await createRecurrence(rule);
     // İlk örnek: başlangıç gününün bir önceki gününden ilerletilir.
