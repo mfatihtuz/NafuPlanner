@@ -215,6 +215,7 @@ export type ActivityType =
   | 'task_completed'
   | 'task_nudged'
   | 'task_commented'
+  | 'reward_redeemed'
   | 'member_joined';
 
 export interface ActivityEntry {

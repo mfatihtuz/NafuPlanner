@@ -166,6 +166,8 @@ export const tr = {
   'push.nudgeBody': '{{name}} hatırlatıyor: {{task}}',
   'push.commentTitle': 'Yorum: {{task}}',
   'push.commentBody': '{{name}}: {{text}}',
+  'push.rewardTitle': 'Ödül kullanıldı 🎁',
+  'push.rewardBody': '{{name}}: "{{reward}}" (−{{cost}} puan)',
 
   'tasks.recurrence': 'Tekrar',
   'tasks.recurrenceNone': 'Yok',
@@ -201,7 +203,21 @@ export const tr = {
   'activity.taskCompleted': '{{name}}, "{{task}}" görevini tamamladı ✓',
   'activity.taskNudged': '{{name}}, {{targets}} kişisini dürttü: {{task}}',
   'activity.taskCommented': '{{name}}, "{{task}}" görevine yorum yaptı',
+  'activity.rewardRedeemed': '{{name}}, "{{task}}" ödülünü kullandı 🎁',
   'activity.memberJoined': '{{name}} haneye katıldı 🎉',
+
+  'rewards.title': 'Ödüller',
+  'rewards.hint':
+    'Puanlarınızla bozdurabileceğiniz, kendi koyduğunuz gerçek ödüller — örn. "Kazanan filmi seçer".',
+  'rewards.titlePlaceholder': 'Ödül (örn. Filmi ben seçerim)',
+  'rewards.cost': 'Bedel',
+  'rewards.costPoints': '{{n}} puan',
+  'rewards.redeem': 'Kullan',
+  'rewards.notEnough': 'Puanın yetmiyor',
+  'rewards.empty': 'Henüz ödül yok. İlk ödülü tanımlayın!',
+  'rewards.redeemed': '"{{reward}}" kullanıldı! Afiyet olsun 🎁',
+  'rewards.deleteTitle': 'Ödülü sil',
+  'rewards.deleteBody': 'Bu ödül listeden kalkacak. Emin misin?',
 
   'comments.title': 'Yorumlar',
   'comments.placeholder': 'Yorum yaz…',

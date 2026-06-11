@@ -33,6 +33,8 @@ function activityLine(entry: ActivityEntry): string {
       });
     case 'task_commented':
       return t('activity.taskCommented', { name, task: entry.taskTitle ?? '' });
+    case 'reward_redeemed':
+      return t('activity.rewardRedeemed', { name, task: entry.taskTitle ?? '' });
     case 'member_joined':
       return t('activity.memberJoined', { name });
   }
@@ -368,6 +370,12 @@ function HouseholdView() {
         )}
       </Pressable>
 
+      <Button
+        title={t('rewards.title')}
+        variant="ghost"
+        leftSlot={<Icon name="gift" size={20} color={colors.primaryDark} />}
+        onPress={() => router.push('/rewards')}
+      />
       <Button
         title={t('stats.title')}
         variant="ghost"

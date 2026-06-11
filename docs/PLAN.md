@@ -121,8 +121,8 @@ Güvenlik: Firestore kuralları — veriye yalnızca o hanenin üyeleri erişir.
 - [x] Yorumlar (görev detayında canlı yorum + push + aktivite + kart rozeti)
 - [x] İstatistik ekranı (haftalık üye karşılaştırması, son 7 gün grafiği,
       30 günlük kategori dağılımı)
+- [x] Gerçek ödüller (kullanıcı tanımlı; puanla kullan, eşe push + aktivite)
 - [ ] Fotoğraf ekleri (Storage — konsoldan Storage açma adımı gerektirir)
-- [ ] Gerçek ödüller (kullanıcı tanımlı)
 - [ ] Mikro-animasyonlar, onboarding ciladı, erişilebilirlik
 - [ ] Android temel doğrulama
 

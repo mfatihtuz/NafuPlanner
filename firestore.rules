@@ -85,6 +85,10 @@ service cloud.firestore {
       match /points/{pid} {
         allow read, write: if isMember(gid);
       }
+
+      match /rewards/{rid} {
+        allow read, write: if isMember(gid);
+      }
     }
   }
 }
