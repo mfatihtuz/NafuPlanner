@@ -42,20 +42,30 @@ eas init
 ```
 
 - "Create a new project?" → **Yes**.
-- Komut bittiğinde bir **projectId** üretir. Bunu görmek için: `eas project:info`
+- Komut bitince bir **Project ID** (uuid biçiminde) yazar; örn.
+  `Project ID: 1a2b3c4d-….`. **Bu ID'yi bana yapıştırırsan** `eas.json` ve
+  `.env`'e ben işlerim (push edip), sen sadece `git pull` yaparsın — JSON ile
+  uğraşmana gerek kalmaz.
 
-`projectId`'yi `.env` dosyana ekle (push bildirimlerinin çalışması için gerekli):
+Kendin yapmak istersen: ID'yi `eas.json` içinde `build.base.env` bloğuna ekle
+(build sırasında gerekli) ve ayrıca `.env`'e ekle (yerel push token'ı için):
 
 ```bash
 echo "EXPO_PUBLIC_EAS_PROJECT_ID=BURAYA_PROJECT_ID" >> .env
 ```
 
-> Not: `eas init` `app.config.ts`/`app.json`'a kendisi de yazabilir; sorun değil.
-> Önemli olan `extra.eas.projectId`'nin dolu olması.
+> Önemli: `.env` build'e gönderilmez; bu yüzden Project ID'nin **`eas.json`**
+> içinde de durması gerekir.
 
-## 4. Google ile Giriş için client ID'ler (bir kez, ~5 dk)
+## 4. Google ile Giriş için client ID'ler (İSTEĞE BAĞLI — ilk build'de atlanabilir)
 
-TestFlight sürümünde Google girişi native çalışır; iki kimlik gerekir:
+> **İlk build için bu adımı atlayabilirsin.** Google yapılandırılmadığında
+> giriş ekranında **"Test girişi"** (e-posta/şifre) otomatik görünür ve
+> TestFlight'ta uygulamanın tamamını bununla deneyebilirsiniz. Google'ı sonra
+> ekleyip yeni bir build alırsın. Şimdi hızlıca çalışan sürüm istiyorsan
+> doğrudan **5. adıma** geç.
+
+TestFlight'ta **gerçek Google girişi** istediğinde iki kimlik gerekir:
 
 **a) Web Client ID** — Firebase Console → **Authentication → Sign-in method →
 Google** → paneli aç → **Web SDK configuration** → **Web client ID**'yi kopyala
@@ -70,13 +80,15 @@ Google** → paneli aç → **Web SDK configuration** → **Web client ID**'yi k
 - **Create** → **Client ID**'yi kopyala. Aynı ekranda **iOS URL scheme** da
   görünür (`com.googleusercontent.apps.…` biçiminde) — onu da kopyala.
 
-**c) Değerleri `eas.json`'a yaz** — repo kökündeki `eas.json` içinde
-`build.base.env` altındaki üç boş alanı doldur:
+**c) Değerleri `eas.json`'a ekle** — repo kökündeki `eas.json` içinde
+`build.base.env` bloğunun sonuna (son Firebase satırından sonra **virgül**
+koyup) şu üç satırı **ekle**:
 
 ```json
-"EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1053559906829-XXXX.apps.googleusercontent.com",
-"EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1053559906829-YYYY.apps.googleusercontent.com",
-"EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.1053559906829-YYYY"
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-WZKCM353R3",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1053559906829-XXXX.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1053559906829-YYYY.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.1053559906829-YYYY"
 ```
 
 Sonra commit'le ki kaybolmasın: `git add eas.json && git commit -m "Google client ID'leri"`
