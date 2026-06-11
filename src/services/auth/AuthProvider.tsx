@@ -137,7 +137,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.warn('[auth] e-posta ile giriş başarısız', error);
-        Alert.alert(t('common.appName'), t('auth.devSignInError'));
+        // Sık karşılaşılan hataları net mesajlara çevir (tahmin gerektirmesin).
+        const code = (error as { code?: string }).code;
+        const message =
+          code === 'auth/operation-not-allowed'
+            ? t('auth.errEmailNotEnabled')
+            : code === 'auth/weak-password'
+              ? t('auth.errWeakPassword')
+              : code === 'auth/invalid-email'
+                ? t('auth.errInvalidEmail')
+                : t('auth.devSignInError');
+        Alert.alert(t('common.appName'), message);
       } finally {
         setSigningIn(false);
       }

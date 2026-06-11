@@ -48,6 +48,10 @@ export const tr = {
   'auth.devSignInError':
     'Giriş yapılamadı. Bilgileri kontrol et (şifre en az 6 karakter olmalı).',
   'auth.devWrongPassword': 'Bu e-posta kayıtlı ama şifre yanlış görünüyor.',
+  'auth.errEmailNotEnabled':
+    'E-posta girişi Firebase projesinde kapalı. Firebase Console → Authentication → Sign-in method → Email/Password → Enable yapın.',
+  'auth.errWeakPassword': 'Şifre en az 6 karakter olmalı.',
+  'auth.errInvalidEmail': 'E-posta adresi geçersiz görünüyor.',
 
   'tabs.today': 'Bugün',
   'tabs.tasks': 'Görevler',

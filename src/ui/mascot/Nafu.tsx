@@ -25,9 +25,11 @@ export interface NafuProps {
   animated?: boolean;
 }
 
-const AnimatedG = Animated.createAnimatedComponent(G);
-
 const VIEW = 240;
+/** Selam kolu omuz pivotu ve döndürme penceresi (viewBox birimi). */
+const WAVE_PIVOT_X = 188;
+const WAVE_PIVOT_Y = 150;
+const WAVE_WIN = 92;
 const BODY_BOT = '#0E8E82';
 const EAR = '#15A091';
 const ARM = '#13988B';
@@ -84,13 +86,13 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
             toValue: 1,
             duration: 420,
             easing: Easing.inOut(Easing.ease),
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
           Animated.timing(waveVal, {
             toValue: 0,
             duration: 420,
             easing: Easing.inOut(Easing.ease),
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
         ]),
       );
@@ -153,10 +155,23 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
     breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }),
     bounce.interpolate({ inputRange: [0, 1], outputRange: [1, 1.04] }),
   );
-  const armRotation = waveVal.interpolate({ inputRange: [0, 1], outputRange: [-8, 16] });
+  // SVG prop'larını Animated ile sürmek yeni mimaride (Fabric) güvenilir
+  // değildir; kol bu yüzden normal bir Animated.View döndürmesiyle sallanır.
+  const armRotation = waveVal.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-8deg', '16deg'],
+  });
+  const u = size / VIEW; // viewBox birimi → piksel
 
   return (
-    <Animated.View style={{ width: size, height: size, transform: [{ translateY }, { scale }] }}>
+    <Animated.View
+      style={{
+        width: size,
+        height: size,
+        overflow: 'visible',
+        transform: [{ translateY }, { scale }],
+      }}
+    >
       <Svg width={size} height={size} viewBox={`0 0 ${VIEW} ${VIEW}`} accessibilityRole="image">
         <Defs>
           <LinearGradient id="nafuBody" x1="0" y1="0" x2="0" y2="1">
@@ -187,15 +202,9 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
 
         {renderFace(expression, blink)}
 
-        {/* Kollar */}
+        {/* Kollar (selam kolu ayrı katmanda döner; aşağıya bakın) */}
         <RestPaw side="left" />
-        {expression === 'wave' ? (
-          <AnimatedG rotation={armRotation} originX={188} originY={150}>
-            <WaveArm />
-          </AnimatedG>
-        ) : (
-          <RestPaw side="right" />
-        )}
+        {expression !== 'wave' ? <RestPaw side="right" /> : null}
 
         {expression === 'celebrate' ? renderSparkles() : null}
 
@@ -210,6 +219,30 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
           </G>
         ) : null}
       </Svg>
+
+      {/* Selam kolu: omuz (188,150) merkezli pencere; Animated.View döndürmesi
+          pencere merkezinde olduğundan kol tam omuzdan sallanır. */}
+      {expression === 'wave' ? (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: (WAVE_PIVOT_X - WAVE_WIN) * u,
+            top: (WAVE_PIVOT_Y - WAVE_WIN) * u,
+            width: WAVE_WIN * 2 * u,
+            height: WAVE_WIN * 2 * u,
+            transform: [{ rotate: animated ? armRotation : '0deg' }],
+          }}
+        >
+          <Svg
+            width="100%"
+            height="100%"
+            viewBox={`${WAVE_PIVOT_X - WAVE_WIN} ${WAVE_PIVOT_Y - WAVE_WIN} ${WAVE_WIN * 2} ${WAVE_WIN * 2}`}
+          >
+            <WaveArm />
+          </Svg>
+        </Animated.View>
+      ) : null}
     </Animated.View>
   );
 }
