@@ -86,6 +86,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         sounds: ['./assets/sounds/nafu-reward.wav'],
       },
     ],
+    // GoogleSignIn'in Swift bağımlılıklarının (AppCheckCore vb.) statik kütüphane
+    // modunda derlenebilmesi için Podfile'a global `use_modular_headers!` ekler;
+    // aksi halde "Swift pods cannot be integrated as static libraries" ile pod
+    // install kırılır.
+    './plugins/withModularHeaders',
   ],
   experiments: {
     typedRoutes: true,
