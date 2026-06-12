@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Nafu Planlayıcı — Firebase Storage güvenlik kuralları.
+// Görev fotoğrafları yalnızca o hanenin üyelerine açıktır (üyelik Firestore'dan
+// doğrulanır). Yükleme: sadece görsel, en fazla 10 MB.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isMember(gid) {
+      return request.auth != null
+        && firestore.exists(
+          /databases/(default)/documents/groups/$(gid)/members/$(request.auth.uid)
+        );
+    }
+
+    match /households/{gid}/tasks/{taskId}/{fileName} {
+      allow read: if isMember(gid);
+      allow write: if isMember(gid)
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isMember(gid);
+    }
+  }
+}

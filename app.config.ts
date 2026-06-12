@@ -73,6 +73,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-web-browser',
     'expo-apple-authentication',
     [
+      'expo-image-picker',
+      {
+        photosPermission: 'Nafu, görevlere fotoğraf eklemen için galerine erişir.',
+        cameraPermission: 'Nafu, görevlere fotoğraf çekmen için kameranı kullanır.',
+      },
+    ],
+    [
       'expo-notifications',
       {
         color: BRAND.notificationColor,

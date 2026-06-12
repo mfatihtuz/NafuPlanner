@@ -68,6 +68,9 @@ service cloud.firestore {
         match /comments/{cid} {
           allow read, write: if isMember(gid);
         }
+        match /attachments/{aid} {
+          allow read, write: if isMember(gid);
+        }
       }
 
       match /shopping/{iid} {

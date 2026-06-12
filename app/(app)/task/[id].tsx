@@ -1,8 +1,10 @@
+import * as ImagePicker from 'expo-image-picker';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,17 +14,24 @@ import {
 
 import { PRIORITY_META } from '@/domain/constants';
 import { formatDueLabel } from '@/domain/format';
-import type { Subtask } from '@/domain/types';
+import type { Attachment, Subtask } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
 import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
+import {
+  addAttachment,
+  removeAttachment,
+  watchAttachments,
+} from '@/services/firestore/attachments';
 import { watchComments } from '@/services/firestore/comments';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { deleteTask, setSubtasks } from '@/services/firestore/tasks';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
+import { deleteStorageObject, uploadTaskImage } from '@/services/storage/attachments';
 import {
   commentTaskFlow,
   completeTaskFlow,
@@ -47,9 +56,11 @@ export default function TaskDetailScreen() {
   const task = useMemo(() => (tasks ?? []).find((item) => item.id === id) ?? null, [tasks, id]);
   const commentsKey = household && id ? `${household.id}/${id}` : null;
   const comments = useWatch(commentsKey, watchComments);
+  const attachments = useWatch(commentsKey, watchAttachments);
   const memberMap = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
   const [commentDraft, setCommentDraft] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const category = useMemo(
     () => (task?.categoryId ? (categories ?? []).find((c) => c.id === task.categoryId) : null),
     [categories, task],
@@ -83,6 +94,43 @@ export default function TaskDetailScreen() {
 
   const gid = household.id;
   const done = task.status === 'done';
+
+  const onAddPhoto = async () => {
+    if (!user) return;
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(t('common.appName'), t('attachments.permission'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.6 });
+    const asset = result.assets?.[0];
+    if (result.canceled || !asset) return;
+    setUploading(true);
+    try {
+      const uploaded = await uploadTaskImage(gid, task.id, asset.uri);
+      await addAttachment(gid, task.id, { ...uploaded, uploadedBy: user.uid });
+    } catch (error) {
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onRemovePhoto = (att: Attachment) => {
+    Alert.alert(t('attachments.deleteTitle'), t('attachments.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: () => {
+          removeAttachment(gid, task.id, att.id).catch((error) =>
+            console.warn('[task] ek silinemedi', error),
+          );
+          void deleteStorageObject(att.storagePath);
+        },
+      },
+    ]);
+  };
 
   const onToggleComplete = () => {
     if (!user) return;
@@ -254,6 +302,55 @@ export default function TaskDetailScreen() {
             </View>
           </View>
         ) : null}
+
+        {/* Fotoğraflar */}
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="overline" tone="secondary">
+            {t('attachments.title')}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {(attachments ?? []).map((att) => (
+              <Pressable key={att.id} onLongPress={() => onRemovePhoto(att)}>
+                <Image
+                  source={{ uri: att.url }}
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: radii.md,
+                    backgroundColor: colors.surface,
+                  }}
+                />
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => void onAddPhoto()}
+              disabled={uploading}
+              accessibilityLabel={t('attachments.add')}
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: radii.md,
+                borderWidth: 1.5,
+                borderColor: colors.border,
+                borderStyle: 'dashed',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surface,
+              }}
+            >
+              {uploading ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Icon name="plus" size={24} color={colors.primaryDark} />
+              )}
+            </Pressable>
+          </View>
+          {(attachments ?? []).length > 0 ? (
+            <Text variant="caption" tone="muted">
+              {t('attachments.removeHint')}
+            </Text>
+          ) : null}
+        </View>
 
         {task.subtasks.length > 0 ? (
           <View style={{ gap: spacing.sm }}>

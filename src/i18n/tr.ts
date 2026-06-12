@@ -255,6 +255,14 @@ export const tr = {
   'comments.placeholder': 'Yorum yaz…',
   'comments.empty': 'Henüz yorum yok. İlk notu sen bırak.',
 
+  'attachments.title': 'Fotoğraflar',
+  'attachments.add': 'Fotoğraf ekle',
+  'attachments.permission':
+    'Galeriye erişim izni gerekiyor. Telefon Ayarlar → Nafu üzerinden izin verebilirsin.',
+  'attachments.removeHint': 'Silmek için fotoğrafa basılı tut.',
+  'attachments.deleteTitle': 'Fotoğrafı sil',
+  'attachments.deleteBody': 'Bu fotoğraf kalıcı olarak silinecek. Emin misin?',
+
   'categories.title': 'Kategoriler',
   'categories.hint': 'Görevleri renklere göre grupla. Ada dokunup düzenle, renk seç, sil.',
   'categories.addNew': 'Yeni kategori',
