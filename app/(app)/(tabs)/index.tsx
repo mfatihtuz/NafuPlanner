@@ -16,7 +16,8 @@ import { t, type TranslationKey } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { markOnboarded } from '@/services/firestore/users';
 import { useHousehold } from '@/services/household/HouseholdProvider';
-import { completeTaskFlow, reopenTaskFlow } from '@/services/workflows/taskWorkflows';
+import { reopenTaskGate } from '@/features/tasks/reopenTask';
+import { completeTaskFlow } from '@/services/workflows/taskWorkflows';
 import { useNotificationScheduler } from '@/services/notifications/useNotificationScheduler';
 import { EmptyState, FAB, Icon, Screen, Text } from '@/ui';
 import { colors } from '@/ui/theme/colors';
@@ -84,9 +85,7 @@ function TodayContent() {
     if (!household || !user) return;
     const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
     if (task.status === 'done') {
-      reopenTaskFlow(task).catch((error) =>
-        console.warn('[today] görev güncellenemedi', error),
-      );
+      reopenTaskGate(task, actor, members);
     } else {
       completeTaskFlow({ task, actor, members })
         .then(celebrate)

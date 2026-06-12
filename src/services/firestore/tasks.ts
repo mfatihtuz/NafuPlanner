@@ -78,6 +78,33 @@ export async function reopenTask(gid: string, taskId: string): Promise<void> {
     status: 'open',
     completedBy: deleteField(),
     completedAtMs: deleteField(),
+    // Geri açma gerçekleşince bekleyen onay isteği de kapanır.
+    reopenRequestedBy: deleteField(),
+    reopenRequestedByName: deleteField(),
+    reopenRequestedAtMs: deleteField(),
+  });
+}
+
+/** Geri açma onay isteğini görevin üzerine işler. */
+export async function setReopenRequest(
+  gid: string,
+  taskId: string,
+  byUid: string,
+  byName: string,
+): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'tasks', taskId), {
+    reopenRequestedBy: byUid,
+    reopenRequestedByName: byName,
+    reopenRequestedAtMs: Date.now(),
+  });
+}
+
+/** Bekleyen geri açma isteğini temizler (ret / vazgeçme). */
+export async function clearReopenRequest(gid: string, taskId: string): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'tasks', taskId), {
+    reopenRequestedBy: deleteField(),
+    reopenRequestedByName: deleteField(),
+    reopenRequestedAtMs: deleteField(),
   });
 }
 

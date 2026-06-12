@@ -38,6 +38,7 @@ export function isNotificationFor(entry: ActivityEntry, uid: string): boolean {
   switch (entry.type) {
     case 'task_assigned':
     case 'task_nudged':
+    case 'task_reopen_requested':
       return (entry.targetIds ?? []).includes(uid);
     case 'task_commented':
       return true;

@@ -64,3 +64,25 @@ export function subtaskProgress(task: Task): [number, number] {
   const done = task.subtasks.filter((s) => s.done).length;
   return [done, total];
 }
+
+/**
+ * Geri açma onay gerektirir mi? Başkasının tamamladığı görev geri açılınca
+ * onun puanı geri alınır; bu yüzden (hanede başka üye varsa) onaya bağlıdır.
+ * Kendi tamamladığın görevi onaysız geri açabilirsin.
+ */
+export function reopenNeedsApproval(task: Task, uid: string, memberCount: number): boolean {
+  return (
+    task.status === 'done' &&
+    task.completedBy != null &&
+    task.completedBy !== uid &&
+    memberCount > 1
+  );
+}
+
+/**
+ * Bekleyen geri açma isteğini bu kullanıcı karara bağlayabilir mi?
+ * (İsteyen kendi isteğini onaylayamaz.)
+ */
+export function canDecideReopen(task: Task, uid: string): boolean {
+  return task.reopenRequestedBy != null && task.reopenRequestedBy !== uid;
+}

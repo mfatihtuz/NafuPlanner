@@ -145,6 +145,13 @@ export interface Task {
   createdAtMs: Millis;
   completedBy?: Id;
   completedAtMs?: Millis;
+  /**
+   * Bekleyen geri açma isteği: başkasının tamamladığı görev geri açılırken
+   * (puanı geri alınacağı için) diğer üyelerden onay beklenir.
+   */
+  reopenRequestedBy?: Id;
+  reopenRequestedByName?: string;
+  reopenRequestedAtMs?: Millis;
 }
 
 export interface TaskComment {
@@ -242,6 +249,7 @@ export type ActivityType =
   | 'task_nudged'
   | 'task_commented'
   | 'task_assigned'
+  | 'task_reopen_requested'
   | 'reward_redeemed'
   | 'shopping_completed'
   | 'member_joined';

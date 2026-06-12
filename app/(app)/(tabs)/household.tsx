@@ -36,6 +36,8 @@ function activityLine(entry: ActivityEntry): string {
       return t('activity.taskCommented', { name, task: entry.taskTitle ?? '' });
     case 'task_assigned':
       return t('activity.taskAssigned', { name, task: entry.taskTitle ?? '' });
+    case 'task_reopen_requested':
+      return t('activity.reopenRequested', { name, task: entry.taskTitle ?? '' });
     case 'reward_redeemed':
       return t('activity.rewardRedeemed', { name, task: entry.taskTitle ?? '' });
     case 'shopping_completed':

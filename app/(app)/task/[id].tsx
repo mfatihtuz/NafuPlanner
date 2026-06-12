@@ -29,11 +29,14 @@ import { deleteTask, setSubtasks } from '@/services/firestore/tasks';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { deleteStorageObject, uploadTaskImage } from '@/services/storage/attachments';
+import { reopenTaskGate } from '@/features/tasks/reopenTask';
 import {
+  approveReopenTaskFlow,
+  cancelReopenTaskFlow,
   commentTaskFlow,
   completeTaskFlow,
   nudgeTaskFlow,
-  reopenTaskFlow,
+  rejectReopenTaskFlow,
 } from '@/services/workflows/taskWorkflows';
 import {
   Avatar,
@@ -151,14 +154,40 @@ export default function TaskDetailScreen() {
     if (!user) return;
     const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
     if (done) {
-      reopenTaskFlow(task).catch((error) =>
-        console.warn('[task] durum değiştirilemedi', error),
-      );
+      reopenTaskGate(task, actor, members);
     } else {
       completeTaskFlow({ task, actor, members })
         .then(celebrate)
         .catch((error) => console.warn('[task] durum değiştirilemedi', error));
     }
+  };
+
+  const onApproveReopen = () => {
+    if (!user) return;
+    approveReopenTaskFlow({
+      task,
+      actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+      members,
+    }).catch((error) =>
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))),
+    );
+  };
+
+  const onRejectReopen = () => {
+    if (!user) return;
+    rejectReopenTaskFlow({
+      task,
+      actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+      members,
+    }).catch((error) =>
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))),
+    );
+  };
+
+  const onCancelReopenRequest = () => {
+    cancelReopenTaskFlow(task).catch((error) =>
+      console.warn('[task] istek geri çekilemedi', error),
+    );
   };
 
   const onNudge = () => {
@@ -484,16 +513,48 @@ export default function TaskDetailScreen() {
           {!done && members.length > 1 ? (
             <Button title={t('tasks.nudge')} variant="ghost" onPress={onNudge} />
           ) : null}
-          <Button
-            title={done ? t('tasks.reopen') : t('tasks.complete')}
-            variant={done ? 'secondary' : 'primary'}
-            onPress={onToggleComplete}
-            leftSlot={
-              done ? undefined : (
-                <Icon name="check" size={20} color={colors.onPrimary} strokeWidth={3} />
-              )
-            }
-          />
+          {done && task.reopenRequestedBy ? (
+            task.reopenRequestedBy === user?.uid ? (
+              // Kendi isteğim: bekleme durumu + vazgeçme.
+              <View style={{ gap: spacing.sm }}>
+                <Text variant="caption" tone="secondary" center>
+                  {t('tasks.reopenPending')}
+                </Text>
+                <Button
+                  title={t('tasks.reopenCancelRequest')}
+                  variant="ghost"
+                  onPress={onCancelReopenRequest}
+                />
+              </View>
+            ) : (
+              // Başkasının isteği: onayla / reddet.
+              <View style={{ gap: spacing.sm }}>
+                <Text variant="caption" tone="secondary" center>
+                  {t('tasks.reopenPendingBy', {
+                    name:
+                      (task.reopenRequestedByName ?? t('common.member')).split(' ')[0],
+                  })}
+                </Text>
+                <Button title={t('tasks.reopenApprove')} onPress={onApproveReopen} />
+                <Button
+                  title={t('tasks.reopenReject')}
+                  variant="secondary"
+                  onPress={onRejectReopen}
+                />
+              </View>
+            )
+          ) : (
+            <Button
+              title={done ? t('tasks.reopen') : t('tasks.complete')}
+              variant={done ? 'secondary' : 'primary'}
+              onPress={onToggleComplete}
+              leftSlot={
+                done ? undefined : (
+                  <Icon name="check" size={20} color={colors.onPrimary} strokeWidth={3} />
+                )
+              }
+            />
+          )}
         </View>
       </KeyboardAwareScrollView>
     </Screen>

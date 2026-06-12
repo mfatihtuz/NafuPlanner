@@ -17,7 +17,14 @@ import {
   spawnNextOccurrence,
   type NewRecurrenceInput,
 } from '@/services/firestore/recurrences';
-import { completeTask, createTask, reopenTask, type NewTaskInput } from '@/services/firestore/tasks';
+import {
+  clearReopenRequest,
+  completeTask,
+  createTask,
+  reopenTask,
+  setReopenRequest,
+  type NewTaskInput,
+} from '@/services/firestore/tasks';
 import { omitUndefined } from '@/services/firestore/utils';
 import { notifyMembers } from '@/services/notifications/push';
 
@@ -216,6 +223,82 @@ export async function reopenTaskFlow(task: Task): Promise<void> {
       console.warn('[workflow] puan geri alınamadı', error);
     }
   }
+}
+
+export interface ReopenRequestFlowInput {
+  task: Task;
+  actor: Actor;
+  members: Member[];
+}
+
+/**
+ * Başkasının tamamladığı görev için geri açma onayı ister: istek görevin
+ * üzerine işlenir, diğer üyelere aktivite + push gider. Bir üye onaylayınca
+ * görev geri açılır (puan tamamlayandan döner); reddederse istek silinir.
+ */
+export async function requestReopenTaskFlow(input: ReopenRequestFlowInput): Promise<void> {
+  const { task, actor, members } = input;
+  await setReopenRequest(task.householdId, task.id, actor.uid, actor.name);
+
+  const targets = members.map((m) => m.userId).filter((id) => id !== actor.uid);
+  const targetNames = members
+    .filter((m) => targets.includes(m.userId))
+    .map((m) => m.displayName.split(' ')[0]);
+
+  void addActivity({
+    householdId: task.householdId,
+    type: 'task_reopen_requested',
+    actorId: actor.uid,
+    actorName: actor.name,
+    taskId: task.id,
+    taskTitle: task.title,
+    targetIds: targets,
+    targetNames,
+  });
+
+  void notifyMembers({
+    members,
+    excludeUid: actor.uid,
+    title: t('push.reopenRequestTitle'),
+    body: t('push.reopenRequestBody', { name: actor.name, task: task.title }),
+  });
+}
+
+/** İsteği onaylar: görevi geri açar (puan döner) ve isteyene haber verir. */
+export async function approveReopenTaskFlow(input: ReopenRequestFlowInput): Promise<void> {
+  const { task, actor, members } = input;
+  const requesterId = task.reopenRequestedBy;
+  await reopenTaskFlow(task);
+  if (requesterId) {
+    void notifyMembers({
+      members,
+      excludeUid: actor.uid,
+      onlyUids: [requesterId],
+      title: t('push.reopenApprovedTitle'),
+      body: t('push.reopenApprovedBody', { name: actor.name, task: task.title }),
+    });
+  }
+}
+
+/** İsteği reddeder: istek silinir, görev tamamlanmış kalır; isteyene haber gider. */
+export async function rejectReopenTaskFlow(input: ReopenRequestFlowInput): Promise<void> {
+  const { task, actor, members } = input;
+  const requesterId = task.reopenRequestedBy;
+  await clearReopenRequest(task.householdId, task.id);
+  if (requesterId) {
+    void notifyMembers({
+      members,
+      excludeUid: actor.uid,
+      onlyUids: [requesterId],
+      title: t('push.reopenRejectedTitle'),
+      body: t('push.reopenRejectedBody', { name: actor.name, task: task.title }),
+    });
+  }
+}
+
+/** İsteyen kendi geri açma isteğinden vazgeçer. */
+export async function cancelReopenTaskFlow(task: Task): Promise<void> {
+  await clearReopenRequest(task.householdId, task.id);
 }
 
 export interface NudgeFlowInput {

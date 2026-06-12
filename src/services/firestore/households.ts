@@ -11,11 +11,14 @@ import {
 } from 'firebase/firestore';
 
 import { DEFAULT_CATEGORIES } from '@/domain/constants';
+import * as Crypto from 'expo-crypto';
+
 import {
   INVITE_TTL_MS,
   generateInviteCode,
   isInviteUsable,
   normalizeInviteCode,
+  type RandomInt,
 } from '@/domain/invites';
 import type { Household, Invitation, Member } from '@/domain/types';
 import { requireDb } from '@/services/firebase/config';
@@ -106,6 +109,21 @@ export async function joinHousehold(user: AuthUserLike, rawCode: string): Promis
   return gid;
 }
 
+/**
+ * Kriptografik rastgele tam sayı [0, max). Davet kodu hanenin güvenlik
+ * sınırıdır; Math.random yerine işletim sistemi RNG'si kullanılır. Modulo
+ * yanlılığı reddetme örneklemesiyle önlenir.
+ */
+const cryptoRandomInt: RandomInt = (maxExclusive) => {
+  const range = 0x1_0000_0000;
+  const limit = range - (range % maxExclusive);
+  for (;;) {
+    const b = Crypto.getRandomBytes(4);
+    const x = ((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]) >>> 0;
+    if (x < limit) return x % maxExclusive;
+  }
+};
+
 /** Yeni davet kodu üretip kaydeder (7 gün geçerli, çok kullanımlık). */
 export async function createInvitation(
   householdId: string,
@@ -114,7 +132,7 @@ export async function createInvitation(
   const db = requireDb();
   // Çakışma (zaten var olan kod) kural ihlaliyle reddedilir; yeniden dene.
   for (let attempt = 0; attempt < 3; attempt++) {
-    const code = generateInviteCode();
+    const code = generateInviteCode(cryptoRandomInt);
     const expiresAtMs = Date.now() + INVITE_TTL_MS;
     try {
       await setDoc(doc(db, 'invitations', code), {

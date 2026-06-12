@@ -15,7 +15,8 @@ import { useNow } from '@/hooks/useNow';
 import { t, type TranslationKey } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { useHousehold } from '@/services/household/HouseholdProvider';
-import { completeTaskFlow, reopenTaskFlow } from '@/services/workflows/taskWorkflows';
+import { reopenTaskGate } from '@/features/tasks/reopenTask';
+import { completeTaskFlow } from '@/services/workflows/taskWorkflows';
 import { Chip, EmptyState, FAB, Screen, Text, TextField } from '@/ui';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -64,9 +65,7 @@ function TasksContent() {
     if (!household || !user) return;
     const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
     if (task.status === 'done') {
-      reopenTaskFlow(task).catch((error) =>
-        console.warn('[tasks] görev güncellenemedi', error),
-      );
+      reopenTaskGate(task, actor, members);
     } else {
       completeTaskFlow({ task, actor, members })
         .then(celebrate)

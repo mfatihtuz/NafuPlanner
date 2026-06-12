@@ -1,4 +1,4 @@
-import { groupTasks, subtaskProgress } from '../tasks';
+import { canDecideReopen, groupTasks, reopenNeedsApproval, subtaskProgress } from '../tasks';
 import type { Task } from '../types';
 
 const NOW = new Date(2026, 5, 10, 12, 0).getTime(); // 10 Haziran 2026 öğlen
@@ -74,5 +74,46 @@ describe('subtaskProgress', () => {
       ],
     });
     expect(subtaskProgress(task)).toEqual([2, 3]);
+  });
+});
+
+describe('reopenNeedsApproval', () => {
+  const done = (completedBy: string) =>
+    makeTask({ status: 'done', completedBy, completedAtMs: NOW });
+
+  it('başkasının tamamladığı görevde onay ister', () => {
+    expect(reopenNeedsApproval(done('u1'), 'u2', 2)).toBe(true);
+  });
+
+  it('kendi tamamladığın görevde onay istemez', () => {
+    expect(reopenNeedsApproval(done('u1'), 'u1', 2)).toBe(false);
+  });
+
+  it('tek üyeli hanede onay istemez (onaylayacak kimse yok)', () => {
+    expect(reopenNeedsApproval(done('u1'), 'u2', 1)).toBe(false);
+  });
+
+  it('tamamlayanı bilinmeyen görevde onay istemez', () => {
+    expect(reopenNeedsApproval(makeTask({ status: 'done' }), 'u2', 2)).toBe(false);
+  });
+
+  it('açık görevde onay istemez', () => {
+    expect(reopenNeedsApproval(makeTask({}), 'u2', 2)).toBe(false);
+  });
+});
+
+describe('canDecideReopen', () => {
+  it('isteyen kendi isteğini karara bağlayamaz', () => {
+    const task = makeTask({ status: 'done', completedBy: 'u1', reopenRequestedBy: 'u2' });
+    expect(canDecideReopen(task, 'u2')).toBe(false);
+  });
+
+  it('diğer üye karara bağlayabilir', () => {
+    const task = makeTask({ status: 'done', completedBy: 'u1', reopenRequestedBy: 'u2' });
+    expect(canDecideReopen(task, 'u1')).toBe(true);
+  });
+
+  it('istek yoksa karar da yoktur', () => {
+    expect(canDecideReopen(makeTask({ status: 'done', completedBy: 'u1' }), 'u1')).toBe(false);
   });
 });

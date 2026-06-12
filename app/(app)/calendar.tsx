@@ -11,7 +11,8 @@ import { useTasks } from '@/features/tasks/useTasks';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { useHousehold } from '@/services/household/HouseholdProvider';
-import { completeTaskFlow, reopenTaskFlow } from '@/services/workflows/taskWorkflows';
+import { reopenTaskGate } from '@/features/tasks/reopenTask';
+import { completeTaskFlow } from '@/services/workflows/taskWorkflows';
 import { Calendar, Screen, Text } from '@/ui';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -51,7 +52,7 @@ export default function CalendarScreen() {
     if (!household || !user) return;
     const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
     if (task.status === 'done') {
-      reopenTaskFlow(task).catch((error) => console.warn('[calendar] güncellenemedi', error));
+      reopenTaskGate(task, actor, members);
     } else {
       completeTaskFlow({ task, actor, members })
         .then(celebrate)

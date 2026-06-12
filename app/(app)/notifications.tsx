@@ -26,6 +26,8 @@ function lineFor(entry: ActivityEntry): {
       return { icon: 'message', text: t('notifications.commented', { name, task }) };
     case 'task_nudged':
       return { icon: 'bell', text: t('notifications.nudged', { name, task }) };
+    case 'task_reopen_requested':
+      return { icon: 'bell', text: t('notifications.reopenRequested', { name, task }) };
     default:
       return { icon: 'bell', text: '' };
   }
