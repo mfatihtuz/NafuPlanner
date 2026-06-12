@@ -262,6 +262,9 @@ export const tr = {
   'categories.deleteBody': 'Bu kategori silinecek (görevlerdeki bağ kalkar). Emin misin?',
   'categories.defaultTag': 'Varsayılan',
 
+  'calendar.title': 'Takvim',
+  'calendar.empty': 'Bu günde planlı görev yok.',
+
   'stats.title': 'İstatistikler',
   'stats.thisWeek': 'Bu hafta (puan)',
   'stats.last7days': 'Son 7 gün (tamamlanan görev)',

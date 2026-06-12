@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { groupTasks } from '@/domain/tasks';
 import type { Task } from '@/domain/types';
@@ -17,7 +17,8 @@ import { markOnboarded } from '@/services/firestore/users';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { completeTaskFlow, reopenTaskFlow } from '@/services/workflows/taskWorkflows';
 import { useNotificationScheduler } from '@/services/notifications/useNotificationScheduler';
-import { EmptyState, FAB, Screen, Text } from '@/ui';
+import { EmptyState, FAB, Icon, Screen, Text } from '@/ui';
+import { colors } from '@/ui/theme/colors';
 import { spacing } from '@/ui/theme/spacing';
 
 function greetingKey(): TranslationKey {
@@ -99,11 +100,27 @@ function TodayContent() {
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: 96, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ marginBottom: spacing.lg }}>
-          <Text variant="small" tone="secondary">
-            {t(greetingKey())}
-          </Text>
-          <Text variant="h1">{firstName || t('today.title')}</Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            marginBottom: spacing.lg,
+          }}
+        >
+          <View>
+            <Text variant="small" tone="secondary">
+              {t(greetingKey())}
+            </Text>
+            <Text variant="h1">{firstName || t('today.title')}</Text>
+          </View>
+          <Pressable
+            onPress={() => router.push('/calendar')}
+            hitSlop={8}
+            accessibilityLabel={t('calendar.title')}
+          >
+            <Icon name="calendar" size={26} color={colors.primaryDark} />
+          </Pressable>
         </View>
 
         {profile && !profile.onboardedAtMs ? (

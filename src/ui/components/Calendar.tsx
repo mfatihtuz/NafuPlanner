@@ -15,6 +15,8 @@ import { Text } from './Text';
 export interface CalendarProps {
   selected?: DayKey | null;
   onSelect: (dayKey: DayKey) => void;
+  /** Bu günlerin altında küçük nokta gösterilir (ör. görevi olan günler). */
+  markedDays?: ReadonlySet<DayKey>;
 }
 
 interface MonthCursor {
@@ -47,7 +49,7 @@ function buildWeeks({ year, month }: MonthCursor): (DayKey | null)[][] {
 }
 
 /** Hafif, markaya uygun ay takvimi (tarih seçimi için). */
-export function Calendar({ selected, onSelect }: CalendarProps) {
+export function Calendar({ selected, onSelect, markedDays }: CalendarProps) {
   const [cursor, setCursor] = useState<MonthCursor>(() => cursorFrom(selected));
   const weeks = buildWeeks(cursor);
   const today = dayKeyFromMs(useNow());
@@ -99,7 +101,7 @@ export function Calendar({ selected, onSelect }: CalendarProps) {
       {weeks.map((week, wi) => (
         <View key={wi} style={{ flexDirection: 'row', marginTop: spacing.xs }}>
           {week.map((dayKey, di) => {
-            if (!dayKey) return <View key={di} style={{ flex: 1, height: 38 }} />;
+            if (!dayKey) return <View key={di} style={{ flex: 1, height: 44 }} />;
             const isSelected = dayKey === selected;
             const isToday = dayKey === today;
             const dayNum = Number(dayKey.slice(-2));
@@ -134,6 +136,18 @@ export function Calendar({ selected, onSelect }: CalendarProps) {
                   >
                     {dayNum}
                   </Text>
+                </View>
+                <View style={{ height: 6, marginTop: 1, justifyContent: 'center' }}>
+                  {markedDays?.has(dayKey) && !isSelected ? (
+                    <View
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: 2.5,
+                        backgroundColor: colors.primary,
+                      }}
+                    />
+                  ) : null}
                 </View>
               </Pressable>
             );

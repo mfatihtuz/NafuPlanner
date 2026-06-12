@@ -48,6 +48,10 @@ export default function AppLayout() {
             name="categories"
             options={{ presentation: 'modal', title: t('categories.title') }}
           />
+          <Stack.Screen
+            name="calendar"
+            options={{ presentation: 'modal', title: t('calendar.title') }}
+          />
         </Stack>
       </CelebrationProvider>
     </HouseholdProvider>
