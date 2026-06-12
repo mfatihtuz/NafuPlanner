@@ -241,6 +241,7 @@ export type ActivityType =
   | 'task_completed'
   | 'task_nudged'
   | 'task_commented'
+  | 'task_assigned'
   | 'reward_redeemed'
   | 'shopping_completed'
   | 'member_joined';
@@ -253,8 +254,10 @@ export interface ActivityEntry {
   actorName: string;
   taskId?: Id;
   taskTitle?: string;
-  /** Dürtmede hedef kişiler (görüntüleme için adlar). */
+  /** Hedef kişiler (görüntüleme için adlar). */
   targetNames?: string[];
+  /** Hedef kullanıcı kimlikleri (bildirim merkezinde "bana" süzmek için). */
+  targetIds?: Id[];
   atMs: Millis;
 }
 

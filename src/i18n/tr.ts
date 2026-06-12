@@ -139,6 +139,14 @@ export const tr = {
   'activity.shoppingCompleted': '{name}, {list} alışverişini tamamladı',
   'push.shoppingDoneTitle': 'Alışveriş tamam 🛒',
   'push.shoppingDoneBody': '{name}, {list} listesini tamamladı.',
+
+  'activity.taskAssigned': '{name}, "{task}" görevini atadı',
+  'notifications.title': 'Bildirimler',
+  'notifications.empty':
+    'Yeni bildirim yok. Sana atanan görevler ve gelen yorumlar burada görünür.',
+  'notifications.assigned': '{name} sana "{task}" görevini verdi',
+  'notifications.commented': '{name}, "{task}" görevine yorum yaptı',
+  'notifications.nudged': '{name} seni "{task}" için dürttü',
   'shopping.clearChecked': 'Alınanları temizle',
 
   'household.title': 'Hane',

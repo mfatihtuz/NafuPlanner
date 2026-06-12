@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { groupTasks } from '@/domain/tasks';
@@ -7,6 +7,7 @@ import type { Task } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
 import { RequireHousehold } from '@/features/household/NoHousehold';
+import { getNotifSeen, useNotifications } from '@/features/notifications/useNotifications';
 import { WelcomeCard } from '@/features/onboarding/WelcomeCard';
 import { TaskCard } from '@/features/tasks/TaskCard';
 import { useTasks } from '@/features/tasks/useTasks';
@@ -45,6 +46,20 @@ function TodayContent() {
   const { household, members, profile, myMember } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
   const categories = useCategories(household?.id ?? null);
+
+  // Bildirim merkezi: bana ait atama/yorum/dürtme + okunmamış sayacı.
+  const uid = user?.uid ?? null;
+  const notifications = useNotifications(household?.id ?? null, uid);
+  const [seenMs, setSeenMs] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      if (uid) void getNotifSeen(uid).then(setSeenMs);
+    }, [uid]),
+  );
+  const unread = useMemo(
+    () => (notifications ?? []).filter((n) => n.atMs > seenMs).length,
+    [notifications, seenMs],
+  );
 
   useNotificationScheduler(
     tasks,
@@ -114,13 +129,42 @@ function TodayContent() {
             </Text>
             <Text variant="h1">{firstName || t('today.title')}</Text>
           </View>
-          <Pressable
-            onPress={() => router.push('/calendar')}
-            hitSlop={8}
-            accessibilityLabel={t('calendar.title')}
-          >
-            <Icon name="calendar" size={26} color={colors.primaryDark} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
+            <Pressable
+              onPress={() => router.push('/notifications')}
+              hitSlop={8}
+              accessibilityLabel={t('notifications.title')}
+            >
+              <Icon name="bell" size={26} color={colors.primaryDark} />
+              {unread > 0 ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    minWidth: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    paddingHorizontal: 3,
+                    backgroundColor: colors.danger,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: colors.onPrimary, fontSize: 10, fontWeight: '700' }}>
+                    {unread > 9 ? '9+' : String(unread)}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/calendar')}
+              hitSlop={8}
+              accessibilityLabel={t('calendar.title')}
+            >
+              <Icon name="calendar" size={26} color={colors.primaryDark} />
+            </Pressable>
+          </View>
         </View>
 
         {profile && !profile.onboardedAtMs ? (

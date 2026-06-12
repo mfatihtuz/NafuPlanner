@@ -43,6 +43,7 @@ export interface CreateTaskFlowInput {
 export async function createTaskFlow(input: CreateTaskFlowInput): Promise<void> {
   const { task, recurrence, actor, members } = input;
 
+  let createdTaskId: string | undefined;
   if (recurrence) {
     const rule: NewRecurrenceInput = {
       ...recurrence,
@@ -70,7 +71,7 @@ export async function createTaskFlow(input: CreateTaskFlowInput): Promise<void> 
     );
     await spawnNextOccurrence(fullRule, dayBeforeStart);
   } else {
-    await createTask(task);
+    createdTaskId = await createTask(task);
   }
 
   void addActivity({
@@ -78,12 +79,26 @@ export async function createTaskFlow(input: CreateTaskFlowInput): Promise<void> 
     type: 'task_created',
     actorId: actor.uid,
     actorName: actor.name,
+    taskId: createdTaskId,
     taskTitle: task.title,
   });
 
-  // Başkasına atandıysa haber ver.
+  // Başkasına atandıysa bildirim + aktivite (bildirim merkezi bunu süzer).
   const others = task.assigneeIds.filter((id) => id !== actor.uid);
   if (others.length > 0) {
+    const targetNames = members
+      .filter((m) => others.includes(m.userId))
+      .map((m) => m.displayName.split(' ')[0]);
+    void addActivity({
+      householdId: task.householdId,
+      type: 'task_assigned',
+      actorId: actor.uid,
+      actorName: actor.name,
+      taskId: createdTaskId,
+      taskTitle: task.title,
+      targetIds: others,
+      targetNames,
+    });
     void notifyMembers({
       members,
       excludeUid: actor.uid,
@@ -237,6 +252,7 @@ export async function nudgeTaskFlow(input: NudgeFlowInput): Promise<void> {
     actorName: actor.name,
     taskId: task.id,
     taskTitle: task.title,
+    targetIds: targets,
     targetNames,
   });
 }
