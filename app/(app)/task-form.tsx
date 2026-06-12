@@ -1,7 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { CALENDAR_WEEKDAYS_TR, PRIORITY_META } from '@/domain/constants';
 import { formatDayKey } from '@/domain/format';
@@ -103,6 +103,10 @@ function TaskFormInner({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [saving, setSaving] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  // Klavye açılınca alt görev girişi + Ekle/Kaydet düğmeleri görünür kalsın.
+  const scrollToBottom = () =>
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
 
   const now = useNow();
   const today = dayKeyFromMs(now);
@@ -119,6 +123,7 @@ function TaskFormInner({
     if (!text) return;
     setSubtasks((prev) => [...prev, { id: randomUUID(), title: text, done: false }]);
     setSubtaskDraft('');
+    scrollToBottom();
   };
 
   const removeSubtask = (sid: string) => {
@@ -239,9 +244,17 @@ function TaskFormInner({
   };
 
   return (
-    <Screen scroll padded edges={['left', 'right', 'bottom']}>
+    <Screen padded={false} edges={['left', 'right', 'bottom']}>
       <Stack.Screen options={{ title: editing ? t('tasks.editTask') : t('tasks.newTask') }} />
 
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ padding: spacing.lg, flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+        showsVerticalScrollIndicator={false}
+      >
       <View style={{ gap: spacing.lg, paddingBottom: spacing.xxl }}>
         <TextField
           value={title}
@@ -520,6 +533,7 @@ function TaskFormInner({
                 placeholder={t('tasks.subtaskPlaceholder')}
                 returnKeyType="done"
                 onSubmitEditing={addSubtaskDraft}
+                onFocus={scrollToBottom}
               />
             </View>
             <Button
@@ -536,6 +550,7 @@ function TaskFormInner({
 
         <Button title={t('common.save')} onPress={() => void onSave()} loading={saving} />
       </View>
+      </ScrollView>
     </Screen>
   );
 }

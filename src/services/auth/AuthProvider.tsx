@@ -50,6 +50,8 @@ interface AuthContextValue {
    * geliştirme/test amaçlıdır; üretim akışı Google/Apple ile giriştir.
    */
   signInWithEmail: (name: string, email: string, password: string) => Promise<void>;
+  /** Görünen adı günceller (Auth profili; üyelik belgesi ayrıca güncellenir). */
+  updateDisplayName: (name: string) => Promise<void>;
   signOut: () => Promise<void>;
   /**
    * Hesabı kalıcı siler (App Store 5.1.1 zorunluluğu). Yakın zamanda giriş
@@ -229,6 +231,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const updateDisplayName = useCallback(async (name: string) => {
+    const current = auth?.currentUser;
+    if (!current) return;
+    await updateProfile(current, { displayName: name.trim() });
+    // React'in değişikliği görmesi için yeni bir referans üret (Firebase User
+    // nesnesi yerinde değiştiği için aynı referansla yeniden render olmaz).
+    setUser(
+      Object.assign(Object.create(Object.getPrototypeOf(current)), current) as FirebaseUser,
+    );
+  }, []);
+
   const signOut = useCallback(async () => {
     if (!auth) return;
     await firebaseSignOut(auth);
@@ -248,6 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithGoogle,
       signInWithApple,
       signInWithEmail,
+      updateDisplayName,
       signOut,
       deleteAccount,
     }),
@@ -259,6 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithGoogle,
       signInWithApple,
       signInWithEmail,
+      updateDisplayName,
       signOut,
       deleteAccount,
     ],

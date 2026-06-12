@@ -262,6 +262,15 @@ export const tr = {
   'attachments.removeHint': 'Silmek için fotoğrafa basılı tut.',
   'attachments.deleteTitle': 'Fotoğrafı sil',
   'attachments.deleteBody': 'Bu fotoğraf kalıcı olarak silinecek. Emin misin?',
+  'attachments.uploadError': 'Fotoğraf yüklenemedi. İnternet bağlantını kontrol edip tekrar dene.',
+  'attachments.errUnauthorized':
+    'Fotoğraf yüklenemedi: Storage izni yok. Firebase Storage kurallarının yayınlandığından emin ol.',
+
+  'activity.showMore': 'Tümünü göster (+{n})',
+  'activity.showLess': 'Daha az göster',
+
+  'profile.namePlaceholder': 'Adın',
+  'profile.editName': 'Adını düzenle',
 
   'categories.title': 'Kategoriler',
   'categories.hint': 'Görevleri renklere göre grupla. Ada dokunup düzenle, renk seç, sil.',

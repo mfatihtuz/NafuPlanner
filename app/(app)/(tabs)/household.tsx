@@ -161,6 +161,7 @@ function HouseholdView() {
   const { household, members, myMember, createInvite } = useHousehold();
   const [invite, setInvite] = useState<{ code: string } | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showAllActivity, setShowAllActivity] = useState(false);
   const activity = useWatch(household?.id ?? null, watchActivity);
   const tasks = useTasks(household?.id ?? null);
   const weekly = useMemo(() => weeklyPoints(tasks ?? [], now), [tasks, now]);
@@ -323,7 +324,7 @@ function HouseholdView() {
             {t('activity.title')}
           </Text>
           <Card style={{ gap: spacing.md }}>
-            {activity.map((entry) => (
+            {(showAllActivity ? activity : activity.slice(0, 5)).map((entry) => (
               <View key={entry.id} style={{ gap: 2 }}>
                 <Text variant="small">{activityLine(entry)}</Text>
                 <Text variant="caption" tone="muted">
@@ -331,6 +332,15 @@ function HouseholdView() {
                 </Text>
               </View>
             ))}
+            {activity.length > 5 ? (
+              <Pressable onPress={() => setShowAllActivity((v) => !v)} hitSlop={6}>
+                <Text variant="small" style={{ color: colors.primaryDark, fontWeight: '700' }}>
+                  {showAllActivity
+                    ? t('activity.showLess')
+                    : t('activity.showMore', { n: activity.length - 5 })}
+                </Text>
+              </Pressable>
+            ) : null}
           </Card>
         </View>
       ) : null}

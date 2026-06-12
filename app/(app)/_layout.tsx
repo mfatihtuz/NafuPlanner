@@ -19,6 +19,9 @@ export default function AppLayout() {
             headerTitleStyle: { ...typography.title, color: colors.textPrimary },
             headerTitleAlign: 'center',
             headerTintColor: colors.primaryDark,
+            // iOS geri düğmesi, önceki ekranın başlığını gösterir; (tabs)'ın
+            // başlığı olmadığı için "(tabs)" yazıyordu. Her yerde "Geri" yaz.
+            headerBackTitle: t('common.back'),
             contentStyle: { backgroundColor: colors.background },
           }}
         >

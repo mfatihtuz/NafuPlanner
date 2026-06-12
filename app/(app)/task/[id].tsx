@@ -27,7 +27,6 @@ import {
   watchAttachments,
 } from '@/services/firestore/attachments';
 import { watchComments } from '@/services/firestore/comments';
-import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { deleteTask, setSubtasks } from '@/services/firestore/tasks';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
@@ -110,7 +109,14 @@ export default function TaskDetailScreen() {
       const uploaded = await uploadTaskImage(gid, task.id, asset.uri);
       await addAttachment(gid, task.id, { ...uploaded, uploadedBy: user.uid });
     } catch (error) {
-      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
+      console.warn('[task] foto yüklenemedi', error);
+      const code = (error as { code?: string }).code ?? '';
+      Alert.alert(
+        t('common.appName'),
+        code.includes('unauthorized')
+          ? t('attachments.errUnauthorized')
+          : t('attachments.uploadError'),
+      );
     } finally {
       setUploading(false);
     }

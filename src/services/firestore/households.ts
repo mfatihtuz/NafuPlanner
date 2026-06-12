@@ -132,6 +132,17 @@ export async function createInvitation(
   throw new Error('Davet kodu üretilemedi');
 }
 
+/** Üyenin görünen adını günceller (ad değişiminde diğer üyeler de görür). */
+export async function updateMemberDisplayName(
+  gid: string,
+  uid: string,
+  displayName: string,
+): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'members', uid), {
+    displayName: displayName.trim(),
+  });
+}
+
 /** groups/{gid} belgesini canlı dinler. */
 export function watchHousehold(
   gid: string,

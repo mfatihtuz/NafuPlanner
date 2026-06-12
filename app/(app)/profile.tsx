@@ -1,4 +1,5 @@
-import { View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, View } from 'react-native';
 
 import {
   BADGES,
@@ -8,8 +9,9 @@ import {
 } from '@/domain/gamification';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
+import { updateMemberDisplayName } from '@/services/firestore/households';
 import { useHousehold } from '@/services/household/HouseholdProvider';
-import { Avatar, Card, Icon, Screen, Text } from '@/ui';
+import { Avatar, Button, Card, Icon, Screen, Text, TextField } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
@@ -28,13 +30,36 @@ function StatBox({ label, value }: { label: string; value: string }) {
 }
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
-  const { myMember } = useHousehold();
+  const { user, updateDisplayName } = useAuth();
+  const { myMember, household } = useHousehold();
 
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
+  const displayName = myMember?.displayName ?? user?.displayName ?? '';
   const points = myMember?.points ?? 0;
   const level = levelForPoints(points);
   const progress = levelProgress(points);
   const earned = new Set(myMember?.earnedBadgeKeys ?? []);
+
+  const onSaveName = async () => {
+    const name = nameDraft.trim();
+    if (!name) return;
+    setSavingName(true);
+    try {
+      await updateDisplayName(name);
+      if (household && user) {
+        await updateMemberDisplayName(household.id, user.uid, name);
+      }
+      setEditingName(false);
+    } catch (error) {
+      console.warn('[profile] ad güncellenemedi', error);
+      Alert.alert(t('common.appName'), t('common.error'));
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   return (
     <Screen scroll padded edges={['left', 'right', 'bottom']}>
@@ -46,9 +71,51 @@ export default function ProfileScreen() {
             seed={user?.uid}
             size={84}
           />
-          <Text variant="h1" center>
-            {user?.displayName}
-          </Text>
+          {editingName ? (
+            <View style={{ width: '100%', gap: spacing.sm }}>
+              <TextField
+                value={nameDraft}
+                onChangeText={setNameDraft}
+                autoFocus
+                autoCapitalize="words"
+                placeholder={t('profile.namePlaceholder')}
+                returnKeyType="done"
+                onSubmitEditing={() => void onSaveName()}
+              />
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title={t('common.cancel')}
+                    variant="secondary"
+                    onPress={() => setEditingName(false)}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    title={t('common.save')}
+                    loading={savingName}
+                    disabled={nameDraft.trim().length === 0}
+                    onPress={() => void onSaveName()}
+                  />
+                </View>
+              </View>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => {
+                setNameDraft(displayName);
+                setEditingName(true);
+              }}
+              hitSlop={8}
+              accessibilityLabel={t('profile.editName')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+            >
+              <Text variant="h1" center>
+                {displayName}
+              </Text>
+              <Icon name="pencil" size={18} color={colors.textMuted} />
+            </Pressable>
+          )}
           <View
             style={{
               backgroundColor: colors.primarySoft,

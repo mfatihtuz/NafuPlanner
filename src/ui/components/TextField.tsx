@@ -11,6 +11,10 @@ export interface TextFieldProps extends TextInputProps {
 }
 
 export function TextField({ label, style, multiline, ...rest }: TextFieldProps) {
+  // iOS'ta tek satırlık TextInput'a lineHeight verilince alt kuyruklar (y, g, p)
+  // kırpılıyor. Çok satırda satır aralığı gerekli olduğundan lineHeight'ı yalnız
+  // orada uygula; tek satırda doğal yüksekliğe bırak.
+  const { lineHeight: bodyLineHeight, ...bodyBase } = typography.body;
   return (
     <View>
       {label ? (
@@ -22,7 +26,7 @@ export function TextField({ label, style, multiline, ...rest }: TextFieldProps) 
         placeholderTextColor={colors.textMuted}
         multiline={multiline}
         style={[
-          typography.body,
+          bodyBase,
           {
             backgroundColor: colors.surface,
             borderWidth: 1.5,
@@ -33,6 +37,7 @@ export function TextField({ label, style, multiline, ...rest }: TextFieldProps) 
             color: colors.textPrimary,
             minHeight: multiline ? 88 : 50,
             textAlignVertical: multiline ? 'top' : 'center',
+            ...(multiline ? { lineHeight: bodyLineHeight } : null),
           },
           style,
         ]}
