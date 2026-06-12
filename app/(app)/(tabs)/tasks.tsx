@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { QUICK_START_TASKS } from '@/domain/quickStart';
+import { filterTasksByQuery } from '@/domain/search';
 import { groupTasks, type TaskSections } from '@/domain/tasks';
 import type { Task } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
@@ -15,7 +16,7 @@ import { t, type TranslationKey } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { completeTaskFlow, reopenTaskFlow } from '@/services/workflows/taskWorkflows';
-import { Chip, EmptyState, FAB, Screen, Text } from '@/ui';
+import { Chip, EmptyState, FAB, Screen, Text, TextField } from '@/ui';
 import { spacing } from '@/ui/theme/spacing';
 
 const SECTION_ORDER: { key: keyof TaskSections; label: TranslationKey; accent?: boolean }[] = [
@@ -46,8 +47,13 @@ function TasksContent() {
   const tasks = useTasks(household?.id ?? null);
   const categories = useCategories(household?.id ?? null);
 
+  const [query, setQuery] = useState('');
   const now = useNow();
-  const sections = useMemo(() => (tasks ? groupTasks(tasks, now) : null), [tasks, now]);
+  const filtered = useMemo(
+    () => (tasks ? filterTasksByQuery(tasks, query) : null),
+    [tasks, query],
+  );
+  const sections = useMemo(() => (filtered ? groupTasks(filtered, now) : null), [filtered, now]);
   const categoryMap = useMemo(
     () => new Map((categories ?? []).map((c) => [c.id, c])),
     [categories],
@@ -83,14 +89,36 @@ function TasksContent() {
 
   const isEmpty =
     sections != null && SECTION_ORDER.every(({ key }) => sections[key].length === 0);
+  const hasAnyTask = tasks != null && tasks.length > 0;
+  const searching = query.trim().length > 0;
 
   return (
     <View style={{ flex: 1 }}>
+      {hasAnyTask ? (
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
+          <TextField
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('tasks.searchPlaceholder')}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+        </View>
+      ) : null}
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: 96, flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {sections == null ? null : isEmpty ? (
+          searching ? (
+            <EmptyState
+              expression="remind"
+              title={t('tasks.noResults')}
+              body={t('tasks.noResultsBody')}
+            />
+          ) : (
           <View style={{ flex: 1 }}>
             <EmptyState
               expression="happy"
@@ -121,6 +149,7 @@ function TasksContent() {
               </View>
             </View>
           </View>
+          )
         ) : (
           <View style={{ gap: spacing.xl }}>
             {SECTION_ORDER.map(({ key, label, accent }) => {
