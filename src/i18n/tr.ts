@@ -69,10 +69,13 @@ export const tr = {
   'today.emptyTitle': 'Bugün için her şey tıkırında',
   'today.emptyBody': 'Bekleyen işin yok. Nafu seninle gurur duyuyor.',
   'today.allTasksLink': 'Tüm görevleri gör',
+  'today.firstTaskTitle': 'Hadi ilk görevini ekleyelim!',
+  'today.firstTaskBody': 'Nafu hazır. Bir iş ekle, birlikte takip edelim.',
 
   'tasks.title': 'Görevler',
   'tasks.empty': 'Henüz görev yok. İlk görevini ekleyerek başla.',
   'tasks.add': 'Görev ekle',
+  'tasks.quickStartHint': 'veya hızlı başla:',
   'tasks.newTask': 'Yeni Görev',
   'tasks.editTask': 'Görevi Düzenle',
   'tasks.titlePlaceholder': 'Ne yapılacak?',
@@ -159,6 +162,8 @@ export const tr = {
   'notifications.taskDueTitle': 'Görev zamanı geldi',
   'notifications.taskStillWaiting': 'Hâlâ bekliyor 👀',
   'notifications.digestTitle': 'Günaydın! Nafu özetin hazır',
+  'notifications.streakTitle': 'Serini koru! 🔥',
+  'notifications.streakBody': '{{n}} günlük serin var. Bugün 1 görev yeter, kaçırma!',
 
   'push.assignedTitle': 'Yeni görev sana atandı',
   'push.assignedBody': '{{name}}: {{task}}',

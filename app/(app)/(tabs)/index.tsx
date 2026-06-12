@@ -39,11 +39,18 @@ function TodayContent() {
   const router = useRouter();
   const { user } = useAuth();
   const { celebrate } = useCelebration();
-  const { household, members, profile } = useHousehold();
+  const { household, members, profile, myMember } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
   const categories = useCategories(household?.id ?? null);
 
-  useNotificationScheduler(tasks, profile?.settings, user?.uid ?? null);
+  useNotificationScheduler(
+    tasks,
+    profile?.settings,
+    user?.uid ?? null,
+    myMember
+      ? { count: myMember.streakCount, lastActiveDayKey: myMember.lastActiveDayKey }
+      : undefined,
+  );
 
   const now = useNow();
   const sections = useMemo(() => (tasks ? groupTasks(tasks, now) : null), [tasks, now]);
@@ -98,11 +105,22 @@ function TodayContent() {
         </View>
 
         {sections == null ? null : isEmpty ? (
-          <EmptyState
-            expression="celebrate"
-            title={t('today.emptyTitle')}
-            body={t('today.emptyBody')}
-          />
+          tasks != null && tasks.length === 0 ? (
+            // Yeni hane: henüz hiç görev yok → kutlama yerine eyleme yönlendir.
+            <EmptyState
+              expression="happy"
+              title={t('today.firstTaskTitle')}
+              body={t('today.firstTaskBody')}
+              actionLabel={t('tasks.add')}
+              onAction={() => router.push('/task-form')}
+            />
+          ) : (
+            <EmptyState
+              expression="celebrate"
+              title={t('today.emptyTitle')}
+              body={t('today.emptyBody')}
+            />
+          )
         ) : (
           <View style={{ gap: spacing.xl }}>
             {sections.overdue.length > 0 ? (

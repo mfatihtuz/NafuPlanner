@@ -47,7 +47,7 @@ const NEW_CATEGORY_COLORS = [
 ];
 
 export default function TaskFormScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, title } = useLocalSearchParams<{ id?: string; title?: string }>();
   const { household } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
 
@@ -63,16 +63,22 @@ export default function TaskFormScreen() {
   }
 
   const editing = id ? (tasks ?? []).find((task) => task.id === id) ?? null : null;
-  return <TaskFormInner key={editing?.id ?? 'new'} editing={editing} />;
+  return <TaskFormInner key={editing?.id ?? 'new'} editing={editing} initialTitle={title} />;
 }
 
-function TaskFormInner({ editing }: { editing: Task | null }) {
+function TaskFormInner({
+  editing,
+  initialTitle,
+}: {
+  editing: Task | null;
+  initialTitle?: string;
+}) {
   const router = useRouter();
   const { user } = useAuth();
   const { household, members } = useHousehold();
   const categories = useCategories(household?.id ?? null) ?? [];
 
-  const [title, setTitle] = useState(editing?.title ?? '');
+  const [title, setTitle] = useState(editing?.title ?? initialTitle ?? '');
   const [description, setDescription] = useState(editing?.description ?? '');
   const [categoryId, setCategoryId] = useState<string | null>(editing?.categoryId ?? null);
   const [priority, setPriority] = useState<Priority>(editing?.priority ?? 'medium');

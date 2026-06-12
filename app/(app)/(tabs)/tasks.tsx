@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { QUICK_START_TASKS } from '@/domain/quickStart';
 import { groupTasks, type TaskSections } from '@/domain/tasks';
 import type { Task } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
@@ -14,7 +15,7 @@ import { t, type TranslationKey } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { completeTaskFlow, reopenTaskFlow } from '@/services/workflows/taskWorkflows';
-import { EmptyState, FAB, Screen, Text } from '@/ui';
+import { Chip, EmptyState, FAB, Screen, Text } from '@/ui';
 import { spacing } from '@/ui/theme/spacing';
 
 const SECTION_ORDER: { key: keyof TaskSections; label: TranslationKey; accent?: boolean }[] = [
@@ -90,7 +91,36 @@ function TasksContent() {
         showsVerticalScrollIndicator={false}
       >
         {sections == null ? null : isEmpty ? (
-          <EmptyState expression="happy" title={t('tasks.title')} body={t('tasks.empty')} />
+          <View style={{ flex: 1 }}>
+            <EmptyState
+              expression="happy"
+              title={t('tasks.title')}
+              body={t('tasks.empty')}
+              actionLabel={t('tasks.add')}
+              onAction={() => router.push('/task-form')}
+            />
+            <View style={{ paddingBottom: spacing.xl, gap: spacing.sm }}>
+              <Text variant="caption" tone="muted" center>
+                {t('tasks.quickStartHint')}
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: spacing.sm,
+                }}
+              >
+                {QUICK_START_TASKS.map((title) => (
+                  <Chip
+                    key={title}
+                    label={title}
+                    onPress={() => router.push({ pathname: '/task-form', params: { title } })}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
         ) : (
           <View style={{ gap: spacing.xl }}>
             {SECTION_ORDER.map(({ key, label, accent }) => {

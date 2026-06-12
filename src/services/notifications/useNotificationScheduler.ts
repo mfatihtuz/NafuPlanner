@@ -39,6 +39,8 @@ export function useNotificationScheduler(
   tasks: Task[] | null,
   settings: UserSettings | null | undefined,
   myUid: string | null,
+  /** Seri hatırlatması için: aktif seri sayısı + en son aktif gün. */
+  streak?: { count: number; lastActiveDayKey?: string },
 ): void {
   const running = useRef(false);
 
@@ -143,6 +145,28 @@ export function useNotificationScheduler(
           }),
         );
 
+        // Seri hatırlatması: aktif serisi olup bugün henüz görev tamamlamamış
+        // kullanıcıya, bugün 20:00'da (henüz geçmediyse) nazik bir dürtme.
+        if (streak && streak.count > 0 && streak.lastActiveDayKey !== dayKeyFromMs(now)) {
+          const at = new Date(now);
+          at.setHours(20, 0, 0, 0);
+          if (at.getTime() > now) {
+            schedule.push(
+              Notifications.scheduleNotificationAsync({
+                content: {
+                  title: t('notifications.streakTitle'),
+                  body: t('notifications.streakBody', { n: streak.count }),
+                  sound: true,
+                },
+                trigger: {
+                  type: Notifications.SchedulableTriggerInputTypes.DATE,
+                  date: at,
+                },
+              }),
+            );
+          }
+        }
+
         await Promise.all(schedule);
       } catch (error) {
         console.warn('[notifications] zamanlama hatası', error);
@@ -150,5 +174,9 @@ export function useNotificationScheduler(
         running.current = false;
       }
     })();
-  }, [tasks, settings, myUid]);
+    // streak objesi her render yeniden oluşabilir; obje referansı yerine
+    // bilinçli olarak alanlarını bağımlılık veriyoruz (gereksiz yeniden
+    // zamanlamayı önler).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks, settings, myUid, streak?.count, streak?.lastActiveDayKey]);
 }
