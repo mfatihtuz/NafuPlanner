@@ -46,6 +46,9 @@ export const KeyboardAwareScrollView = forwardRef<ScrollView, ScrollViewProps>(
       const input = TextInput.State.currentlyFocusedInput();
       if (!input) return;
       input.measureInWindow((_x, y, _w, h) => {
+        // Ölçüm asenkron: callback gelene dek klavye kapanmış olabilir
+        // (keyboardTop=0 → overlap saçma büyür); yeniden doğrula.
+        if (keyboardTop.current <= 0) return;
         const overlap = y + h + REVEAL_MARGIN - keyboardTop.current;
         if (overlap > 0) {
           scrollRef.current?.scrollTo({ y: offsetY.current + overlap, animated: true });

@@ -147,7 +147,6 @@ export const tr = {
   'notifications.assigned': '{{name}} sana "{{task}}" görevini verdi',
   'notifications.commented': '{{name}}, "{{task}}" görevine yorum yaptı',
   'notifications.nudged': '{{name}} seni "{{task}}" için dürttü',
-  'shopping.clearChecked': 'Alınanları temizle',
 
   'household.title': 'Hane',
   'household.create': 'Hane oluştur',

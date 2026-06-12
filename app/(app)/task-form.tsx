@@ -145,7 +145,7 @@ function TaskFormInner({
       setShowNewCategory(false);
     } catch (error) {
       console.warn('[task-form] kategori eklenemedi', error);
-      Alert.alert(t('common.appName'), t('common.error'));
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
     }
   };
 

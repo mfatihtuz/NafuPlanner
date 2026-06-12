@@ -5,6 +5,7 @@ import { Alert, Switch, View } from 'react-native';
 import type { ClockTime, UserSettings } from '@/domain/types';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { deleteUserData, saveUserSettings } from '@/services/firestore/users';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Button, Card, Screen, Text, TimeWheel } from '@/ui';
@@ -113,7 +114,7 @@ export default function SettingsScreen() {
       router.back();
     } catch (error) {
       console.warn('[settings] kaydedilemedi', error);
-      Alert.alert(t('common.appName'), t('common.error'));
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
     } finally {
       setSaving(false);
     }

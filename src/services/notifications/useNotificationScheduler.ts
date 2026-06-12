@@ -42,14 +42,15 @@ export function useNotificationScheduler(
   /** Seri hatırlatması için: aktif seri sayısı + en son aktif gün. */
   streak?: { count: number; lastActiveDayKey?: string },
 ): void {
-  const running = useRef(false);
+  // Eşzamanlı kurulum (cancelAll + schedule) çakışmasın diye çalıştırmaları
+  // zincire dizer; önceki "meşgulken geleni at" yaklaşımı son değişikliği
+  // kaybediyordu (görev güncellense de takvim eski kalabiliyordu).
+  const chain = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     if (!myUid) return;
-    if (running.current) return;
-    running.current = true;
 
-    (async () => {
+    chain.current = chain.current.then(async () => {
       try {
         const now = Date.now();
         // tasks henüz yüklenmemiş olsa (null) bile haftalık ödül bildirimi
@@ -170,10 +171,8 @@ export function useNotificationScheduler(
         await Promise.all(schedule);
       } catch (error) {
         console.warn('[notifications] zamanlama hatası', error);
-      } finally {
-        running.current = false;
       }
-    })();
+    });
     // streak objesi her render yeniden oluşabilir; obje referansı yerine
     // bilinçli olarak alanlarını bağımlılık veriyoruz (gereksiz yeniden
     // zamanlamayı önler).

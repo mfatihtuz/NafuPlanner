@@ -24,6 +24,7 @@ import {
   watchAttachments,
 } from '@/services/firestore/attachments';
 import { watchComments } from '@/services/firestore/comments';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { deleteTask, setSubtasks } from '@/services/firestore/tasks';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
@@ -165,7 +166,9 @@ export default function TaskDetailScreen() {
     const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
     nudgeTaskFlow({ task, actor, members })
       .then(() => Alert.alert(t('common.appName'), t('tasks.nudgeSent')))
-      .catch(() => Alert.alert(t('common.appName'), t('common.error')));
+      .catch((error) =>
+        Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))),
+      );
   };
 
   const onSendComment = () => {
@@ -175,9 +178,9 @@ export default function TaskDetailScreen() {
     setSendingComment(true);
     setCommentDraft('');
     commentTaskFlow({ task, body, actor, members })
-      .catch(() => {
+      .catch((error) => {
         setCommentDraft(body);
-        Alert.alert(t('common.appName'), t('common.error'));
+        Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
       })
       .finally(() => setSendingComment(false));
   };
@@ -200,7 +203,9 @@ export default function TaskDetailScreen() {
         onPress: () => {
           deleteTask(gid, task.id)
             .then(() => router.back())
-            .catch(() => Alert.alert(t('common.appName'), t('common.error')));
+            .catch((error) =>
+              Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))),
+            );
         },
       },
     ]);

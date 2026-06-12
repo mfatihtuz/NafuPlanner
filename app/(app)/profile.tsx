@@ -9,6 +9,7 @@ import {
 } from '@/domain/gamification';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { updateMemberDisplayName } from '@/services/firestore/households';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Avatar, Button, Card, Icon, Screen, Text, TextField } from '@/ui';
@@ -55,7 +56,7 @@ export default function ProfileScreen() {
       setEditingName(false);
     } catch (error) {
       console.warn('[profile] ad güncellenemedi', error);
-      Alert.alert(t('common.appName'), t('common.error'));
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
     } finally {
       setSavingName(false);
     }

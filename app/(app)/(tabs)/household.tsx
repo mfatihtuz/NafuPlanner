@@ -183,7 +183,7 @@ function HouseholdView() {
       setInvite({ code: result.code });
     } catch (error) {
       console.warn('[household] davet hatası', error);
-      Alert.alert(t('common.appName'), t('common.error'));
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
     } finally {
       setCreating(false);
     }

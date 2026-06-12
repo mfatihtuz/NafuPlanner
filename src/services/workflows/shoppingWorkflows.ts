@@ -78,11 +78,13 @@ export async function completeShoppingListFlow(
     }
   }
 
+  // Aktivitede eylemi YAPAN görünür (puan atanana gitse bile); push metniyle
+  // tutarlı kalır.
   void addActivity({
     householdId: gid,
     type: 'shopping_completed',
-    actorId: recipientId,
-    actorName: me?.displayName ?? actor.name,
+    actorId: actor.uid,
+    actorName: actor.name,
     taskTitle: list.name,
   });
 

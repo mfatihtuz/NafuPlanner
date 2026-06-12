@@ -8,6 +8,7 @@ import { useShopping } from '@/features/shopping/useShopping';
 import { useShoppingLists } from '@/features/shopping/useShoppingLists';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
 import {
   addShoppingItem,
   removeShoppingItem,
@@ -199,7 +200,7 @@ export default function ShoppingListDetailScreen() {
       celebrate(reward);
     } catch (error) {
       console.warn('[shopping] tamamlanamadı', error);
-      Alert.alert(t('common.appName'), t('common.error'));
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
     } finally {
       setBusy(false);
     }
