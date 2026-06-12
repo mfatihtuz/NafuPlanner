@@ -123,7 +123,7 @@ export const tr = {
   'shopping.checkedSection': 'Alınanlar',
   'shopping.newListPlaceholder': 'Yeni liste adı (ör. Migros)',
   'shopping.generalList': 'Genel',
-  'shopping.itemProgress': '{done}/{total} alındı',
+  'shopping.itemProgress': '{{done}}/{{total}} alındı',
   'shopping.emptyLists': 'Henüz liste yok. Bir alışveriş listesi oluştur.',
   'shopping.doneTag': 'Tamamlandı',
   'shopping.assignee': 'Kim alacak?',
@@ -136,17 +136,17 @@ export const tr = {
   'shopping.deleteListBody': 'Liste ve içindeki ürünler silinecek. Emin misin?',
   'shopping.listNotFound': 'Liste bulunamadı',
   'common.create': 'Oluştur',
-  'activity.shoppingCompleted': '{name}, {list} alışverişini tamamladı',
+  'activity.shoppingCompleted': '{{name}}, {{list}} alışverişini tamamladı',
   'push.shoppingDoneTitle': 'Alışveriş tamam 🛒',
-  'push.shoppingDoneBody': '{name}, {list} listesini tamamladı.',
+  'push.shoppingDoneBody': '{{name}}, {{list}} listesini tamamladı.',
 
-  'activity.taskAssigned': '{name}, "{task}" görevini atadı',
+  'activity.taskAssigned': '{{name}}, "{{task}}" görevini atadı',
   'notifications.title': 'Bildirimler',
   'notifications.empty':
     'Yeni bildirim yok. Sana atanan görevler ve gelen yorumlar burada görünür.',
-  'notifications.assigned': '{name} sana "{task}" görevini verdi',
-  'notifications.commented': '{name}, "{task}" görevine yorum yaptı',
-  'notifications.nudged': '{name} seni "{task}" için dürttü',
+  'notifications.assigned': '{{name}} sana "{{task}}" görevini verdi',
+  'notifications.commented': '{{name}}, "{{task}}" görevine yorum yaptı',
+  'notifications.nudged': '{{name}} seni "{{task}}" için dürttü',
   'shopping.clearChecked': 'Alınanları temizle',
 
   'household.title': 'Hane',
@@ -292,14 +292,14 @@ export const tr = {
   'attachments.errUnauthorized':
     'Fotoğraf yüklenemedi: Storage izni yok. Firebase Storage kurallarının yayınlandığından emin ol.',
 
-  'activity.showMore': 'Tümünü göster (+{n})',
+  'activity.showMore': 'Tümünü göster (+{{n}})',
   'activity.showLess': 'Daha az göster',
 
   'profile.namePlaceholder': 'Adın',
   'profile.editName': 'Adını düzenle',
 
   'tasks.difficulty': 'Zorluk',
-  'tasks.pointsPreview': 'Tamamlayınca +{n} puan',
+  'tasks.pointsPreview': 'Tamamlayınca +{{n}} puan',
 
   'categories.title': 'Kategoriler',
   'categories.hint': 'Görevleri renklere göre grupla. Ada dokunup düzenle, renk seç, sil.',

@@ -14,7 +14,7 @@ import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { InviteError } from '@/services/firestore/households';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
-import { Avatar, Button, Card, Icon, Nafu, Screen, Text, TextField } from '@/ui';
+import { Avatar, Button, Card, Icon, KeyboardAwareScrollView, Nafu, Screen, Text, TextField } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
@@ -102,12 +102,8 @@ function SetupView() {
   };
 
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, flexGrow: 1 }}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
-      automaticallyAdjustKeyboardInsets
-      showsVerticalScrollIndicator={false}
     >
       <View style={{ alignItems: 'center', marginVertical: spacing.md }}>
         <Nafu expression="wave" size={120} />
@@ -153,7 +149,7 @@ function SetupView() {
           disabled={busy !== null || code.trim().length === 0}
         />
       </Card>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

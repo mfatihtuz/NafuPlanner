@@ -5,10 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   View,
 } from 'react-native';
 
@@ -37,7 +34,18 @@ import {
   nudgeTaskFlow,
   reopenTaskFlow,
 } from '@/services/workflows/taskWorkflows';
-import { Avatar, Button, Card, Checkbox, EmptyState, Icon, Screen, Text, TextField } from '@/ui';
+import {
+  Avatar,
+  Button,
+  Card,
+  Checkbox,
+  EmptyState,
+  Icon,
+  KeyboardAwareScrollView,
+  Screen,
+  Text,
+  TextField,
+} from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
@@ -220,15 +228,8 @@ export default function TaskDetailScreen() {
         }}
       />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 96 : 0}
-      >
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
       >
         <View style={{ gap: spacing.sm }}>
           <Text
@@ -489,8 +490,7 @@ export default function TaskDetailScreen() {
             }
           />
         </View>
-      </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

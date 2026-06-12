@@ -24,6 +24,7 @@ import {
   Calendar,
   Chip,
   Icon,
+  KeyboardAwareScrollView,
   Screen,
   Text,
   TextField,
@@ -106,7 +107,8 @@ function TaskFormInner({
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [saving, setSaving] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  // Klavye açılınca alt görev girişi + Ekle/Kaydet düğmeleri görünür kalsın.
+  // Alt görev eklenince liste + giriş alanı formun dibinde; sona kaydır ki
+  // eklenen satır ve Kaydet düğmesi görünür kalsın.
   const scrollToBottom = () =>
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
 
@@ -251,13 +253,9 @@ function TaskFormInner({
     <Screen padded={false} edges={['left', 'right', 'bottom']}>
       <Stack.Screen options={{ title: editing ? t('tasks.editTask') : t('tasks.newTask') }} />
 
-      <ScrollView
+      <KeyboardAwareScrollView
         ref={scrollRef}
         contentContainerStyle={{ padding: spacing.lg, flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        automaticallyAdjustKeyboardInsets
-        showsVerticalScrollIndicator={false}
       >
       <View style={{ gap: spacing.lg, paddingBottom: spacing.xxl }}>
         <TextField
@@ -557,7 +555,6 @@ function TaskFormInner({
                 placeholder={t('tasks.subtaskPlaceholder')}
                 returnKeyType="done"
                 onSubmitEditing={addSubtaskDraft}
-                onFocus={scrollToBottom}
               />
             </View>
             <Button
@@ -574,7 +571,7 @@ function TaskFormInner({
 
         <Button title={t('common.save')} onPress={() => void onSave()} loading={saving} />
       </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

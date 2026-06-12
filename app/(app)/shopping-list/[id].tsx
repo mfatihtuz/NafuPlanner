@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
 import type { ShoppingItem } from '@/domain/types';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
@@ -19,7 +19,19 @@ import {
   completeShoppingListFlow,
   reopenShoppingListFlow,
 } from '@/services/workflows/shoppingWorkflows';
-import { Avatar, Button, Card, Checkbox, Chip, EmptyState, Icon, Screen, Text, TextField } from '@/ui';
+import {
+  Avatar,
+  Button,
+  Card,
+  Checkbox,
+  Chip,
+  EmptyState,
+  Icon,
+  KeyboardAwareScrollView,
+  Screen,
+  Text,
+  TextField,
+} from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
@@ -92,9 +104,6 @@ export default function ShoppingListDetailScreen() {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [busy, setBusy] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
-  const scrollToBottom = () =>
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
 
   const done = list?.status === 'done';
   const title = isGeneral ? t('shopping.generalList') : (list?.name ?? t('shopping.title'));
@@ -126,7 +135,6 @@ export default function ShoppingListDetailScreen() {
     addShoppingItem(gid, name, user.uid, isGeneral ? undefined : id).catch((error) =>
       console.warn('[shopping] eklenemedi', error),
     );
-    scrollToBottom();
   };
 
   const onToggle = (item: ShoppingItem) => {
@@ -169,7 +177,6 @@ export default function ShoppingListDetailScreen() {
     updateShoppingList(gid, list.id, { reminders: [...reminders, text] }).catch((error) =>
       console.warn('[shopping] hatırlatma eklenemedi', error),
     );
-    scrollToBottom();
   };
 
   const onRemoveReminder = (index: number) => {
@@ -248,13 +255,8 @@ export default function ShoppingListDetailScreen() {
         }}
       />
 
-      <ScrollView
-        ref={scrollRef}
+      <KeyboardAwareScrollView
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        automaticallyAdjustKeyboardInsets
-        showsVerticalScrollIndicator={false}
       >
         {/* Ad düzenleme */}
         {list && editingName ? (
@@ -331,7 +333,6 @@ export default function ShoppingListDetailScreen() {
                   placeholder={t('shopping.reminderPlaceholder')}
                   returnKeyType="done"
                   onSubmitEditing={onAddReminder}
-                  onFocus={scrollToBottom}
                 />
               </View>
               <Button
@@ -356,7 +357,6 @@ export default function ShoppingListDetailScreen() {
               placeholder={t('shopping.inputPlaceholder')}
               returnKeyType="done"
               onSubmitEditing={onAddItem}
-              onFocus={scrollToBottom}
             />
           </View>
           <Button
@@ -406,7 +406,7 @@ export default function ShoppingListDetailScreen() {
             )}
           </View>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

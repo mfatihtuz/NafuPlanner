@@ -109,6 +109,7 @@ function TasksContent() {
       <ScrollView
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: 96, flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
         {sections == null ? null : isEmpty ? (

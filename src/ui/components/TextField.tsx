@@ -1,20 +1,32 @@
+import { useRef } from 'react';
 import { TextInput, View, type TextInputProps } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { radii } from '../theme/radii';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { useKeyboardReveal } from './KeyboardAwareScrollView';
 import { Text } from './Text';
 
 export interface TextFieldProps extends TextInputProps {
   label?: string;
 }
 
-export function TextField({ label, style, multiline, ...rest }: TextFieldProps) {
+export function TextField({
+  label,
+  style,
+  multiline,
+  onFocus,
+  onBlur,
+  onContentSizeChange,
+  ...rest
+}: TextFieldProps) {
   // iOS'ta tek satırlık TextInput'a lineHeight verilince alt kuyruklar (y, g, p)
   // kırpılıyor. Çok satırda satır aralığı gerekli olduğundan lineHeight'ı yalnız
   // orada uygula; tek satırda doğal yüksekliğe bırak.
   const { lineHeight: bodyLineHeight, ...bodyBase } = typography.body;
+  const reveal = useKeyboardReveal();
+  const focused = useRef(false);
   return (
     <View>
       {label ? (
@@ -25,6 +37,21 @@ export function TextField({ label, style, multiline, ...rest }: TextFieldProps) 
       <TextInput
         placeholderTextColor={colors.textMuted}
         multiline={multiline}
+        onFocus={(event) => {
+          focused.current = true;
+          reveal?.();
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          focused.current = false;
+          onBlur?.(event);
+        }}
+        // Çok satırlı alan yazdıkça büyür; büyüme klavyenin altına taşarsa
+        // odaklı alanı yeniden görünür yap.
+        onContentSizeChange={(event) => {
+          if (multiline && focused.current) reveal?.();
+          onContentSizeChange?.(event);
+        }}
         style={[
           bodyBase,
           {

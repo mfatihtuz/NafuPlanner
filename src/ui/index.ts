@@ -4,6 +4,7 @@ export { Card, type CardProps } from './components/Card';
 export { Screen, type ScreenProps } from './components/Screen';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
 export { TextField, type TextFieldProps } from './components/TextField';
+export { KeyboardAwareScrollView, useKeyboardReveal } from './components/KeyboardAwareScrollView';
 export { Chip, type ChipProps } from './components/Chip';
 export { Checkbox, type CheckboxProps } from './components/Checkbox';
 export { Avatar, type AvatarProps } from './components/Avatar';
