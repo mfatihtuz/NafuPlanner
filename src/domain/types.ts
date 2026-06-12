@@ -172,6 +172,8 @@ export interface Attachment {
 export interface ShoppingItem {
   id: Id;
   householdId: Id;
+  /** Ait olduğu alışveriş listesi; yoksa "Genel" kovasına düşer. */
+  listId?: Id;
   name: string;
   quantity?: string;
   note?: string;
@@ -181,6 +183,25 @@ export interface ShoppingItem {
   addedAtMs: Millis;
   checkedBy?: Id;
   checkedAtMs?: Millis;
+}
+
+export type ShoppingListStatus = 'active' | 'done';
+
+export interface ShoppingList {
+  id: Id;
+  householdId: Id;
+  name: string;
+  /** Listeyi yapacak kişi; tamamlanınca puan ona yazılır. */
+  assigneeId?: Id;
+  /** "Dönerken şunu da al/yap" gibi bağlı hatırlatmalar (#7). */
+  reminders?: string[];
+  status: ShoppingListStatus;
+  createdBy: Id;
+  createdAtMs: Millis;
+  completedBy?: Id;
+  completedAtMs?: Millis;
+  /** Tamamlanınca yazılan puan (geri açmada düşmek için saklanır). */
+  awardedPoints?: number;
 }
 
 // --- Tekrar (esnek kalıplar) --------------------------------------------------
@@ -221,6 +242,7 @@ export type ActivityType =
   | 'task_nudged'
   | 'task_commented'
   | 'reward_redeemed'
+  | 'shopping_completed'
   | 'member_joined';
 
 export interface ActivityEntry {

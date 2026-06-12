@@ -1,20 +1,18 @@
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
-import type { ShoppingItem } from '@/domain/types';
+import type { Member, ShoppingList } from '@/domain/types';
 import { RequireHousehold } from '@/features/household/NoHousehold';
 import { useShopping } from '@/features/shopping/useShopping';
+import { useShoppingLists } from '@/features/shopping/useShoppingLists';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
-import {
-  addShoppingItem,
-  removeShoppingItem,
-  setShoppingItemChecked,
-} from '@/services/firestore/shopping';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
+import { createShoppingList } from '@/services/firestore/shoppingLists';
 import { useHousehold } from '@/services/household/HouseholdProvider';
-import { Button, Checkbox, EmptyState, Icon, Screen, Text, TextField } from '@/ui';
+import { Avatar, Button, Card, EmptyState, Icon, Screen, Text, TextField } from '@/ui';
 import { colors } from '@/ui/theme/colors';
-import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
 
 export default function ShoppingScreen() {
@@ -27,147 +25,162 @@ export default function ShoppingScreen() {
   );
 }
 
-function ItemRow({
-  item,
-  onToggle,
-  onRemove,
+function ListCard({
+  title,
+  subtitle,
+  done,
+  assignee,
+  hasReminders,
+  onPress,
 }: {
-  item: ShoppingItem;
-  onToggle: (item: ShoppingItem) => void;
-  onRemove: (item: ShoppingItem) => void;
+  title: string;
+  subtitle: string;
+  done?: boolean;
+  assignee?: Member | null;
+  hasReminders?: boolean;
+  onPress: () => void;
 }) {
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: radii.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        gap: spacing.md,
-      }}
-    >
-      <Checkbox checked={item.checked} onToggle={() => onToggle(item)} size={26} />
-      <Text
-        variant="body"
-        style={[
-          { flex: 1 },
-          item.checked && { textDecorationLine: 'line-through', color: colors.textMuted },
-        ]}
-      >
-        {item.name}
-      </Text>
-      <Pressable hitSlop={8} onPress={() => onRemove(item)} accessibilityLabel={t('common.delete')}>
-        <Icon name="x" size={18} color={colors.textMuted} />
-      </Pressable>
-    </View>
+    <Pressable onPress={onPress}>
+      {({ pressed }) => (
+        <Card
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md,
+            opacity: pressed ? 0.9 : 1,
+          }}
+        >
+          <Icon name="cart" size={22} color={done ? colors.textMuted : colors.primaryDark} />
+          <View style={{ flex: 1 }}>
+            <Text
+              variant="bodyStrong"
+              style={done ? { textDecorationLine: 'line-through', color: colors.textMuted } : undefined}
+            >
+              {title}
+            </Text>
+            <Text variant="caption" tone="muted">
+              {subtitle}
+              {done ? ` · ${t('shopping.doneTag')}` : ''}
+            </Text>
+          </View>
+          {hasReminders ? <Icon name="bell" size={16} color={colors.reward} /> : null}
+          {assignee ? (
+            <Avatar
+              name={assignee.displayName}
+              photoUrl={assignee.photoUrl}
+              seed={assignee.userId}
+              size={28}
+            />
+          ) : null}
+          <Icon name="chevronRight" size={20} color={colors.textMuted} />
+        </Card>
+      )}
+    </Pressable>
   );
 }
 
 function ShoppingContent() {
+  const router = useRouter();
   const { user } = useAuth();
-  const { household } = useHousehold();
-  const items = useShopping(household?.id ?? null);
-  const [draft, setDraft] = useState('');
+  const { household, members } = useHousehold();
+  const gid = household?.id;
+  const items = useShopping(gid ?? null);
+  const lists = useShoppingLists(gid ?? null);
+  const [newListName, setNewListName] = useState('');
+  const [creating, setCreating] = useState(false);
 
-  const { open, checked } = useMemo(() => {
-    const list = items ?? [];
-    return {
-      open: list.filter((i) => !i.checked),
-      checked: list.filter((i) => i.checked),
-    };
+  const memberMap = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
+
+  // Ürünleri liste bazında say (listId yoksa "general" kovası).
+  const countByList = useMemo(() => {
+    const map = new Map<string, { total: number; checked: number }>();
+    (items ?? []).forEach((it) => {
+      const key = it.listId ?? 'general';
+      const c = map.get(key) ?? { total: 0, checked: 0 };
+      c.total += 1;
+      if (it.checked) c.checked += 1;
+      map.set(key, c);
+    });
+    return map;
   }, [items]);
 
-  const gid = household?.id;
-  const uid = user?.uid;
+  const general = countByList.get('general') ?? { total: 0, checked: 0 };
 
-  const onAdd = () => {
-    const name = draft.trim();
-    if (!name || !gid || !uid) return;
-    setDraft('');
-    addShoppingItem(gid, name, uid).catch(() => Alert.alert(t('common.appName'), t('common.error')));
+  const onCreateList = async () => {
+    const name = newListName.trim();
+    if (!name || !gid || !user) return;
+    setCreating(true);
+    try {
+      const lid = await createShoppingList(gid, name, user.uid);
+      setNewListName('');
+      router.push({ pathname: '/shopping-list/[id]', params: { id: lid } });
+    } catch (error) {
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
+    } finally {
+      setCreating(false);
+    }
   };
 
-  const onToggle = (item: ShoppingItem) => {
-    if (!gid || !uid) return;
-    setShoppingItemChecked(gid, item.id, !item.checked, uid).catch((error) =>
-      console.warn('[shopping] güncellenemedi', error),
-    );
-  };
-
-  const onRemove = (item: ShoppingItem) => {
-    if (!gid) return;
-    removeShoppingItem(gid, item.id).catch((error) =>
-      console.warn('[shopping] silinemedi', error),
-    );
-  };
-
-  const onClearChecked = () => {
-    if (!gid) return;
-    Promise.all(checked.map((i) => removeShoppingItem(gid, i.id))).catch((error) =>
-      console.warn('[shopping] temizlenemedi', error),
-    );
-  };
+  const emptyEverything =
+    lists != null && lists.length === 0 && general.total === 0;
 
   return (
     <View style={{ flex: 1, padding: spacing.lg, gap: spacing.md }}>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         <View style={{ flex: 1 }}>
           <TextField
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={t('shopping.inputPlaceholder')}
+            value={newListName}
+            onChangeText={setNewListName}
+            placeholder={t('shopping.newListPlaceholder')}
             returnKeyType="done"
-            onSubmitEditing={onAdd}
+            onSubmitEditing={() => void onCreateList()}
           />
         </View>
         <Button
-          title={t('common.add')}
+          title={t('common.create')}
           fullWidth={false}
           size="md"
-          onPress={onAdd}
-          disabled={draft.trim().length === 0}
           style={{ height: 50 }}
+          onPress={() => void onCreateList()}
+          loading={creating}
+          disabled={newListName.trim().length === 0}
         />
       </View>
 
-      {items != null && open.length === 0 && checked.length === 0 ? (
-        <EmptyState expression="happy" title={t('shopping.title')} body={t('shopping.empty')} />
+      {emptyEverything ? (
+        <EmptyState expression="happy" title={t('shopping.title')} body={t('shopping.emptyLists')} />
       ) : (
         <ScrollView
           contentContainerStyle={{ gap: spacing.sm, paddingBottom: spacing.xxl }}
           showsVerticalScrollIndicator={false}
         >
-          {open.map((item) => (
-            <ItemRow key={item.id} item={item} onToggle={onToggle} onRemove={onRemove} />
-          ))}
-
-          {checked.length > 0 ? (
-            <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Text variant="overline" tone="secondary">
-                  {t('shopping.checkedSection')} ({checked.length})
-                </Text>
-                <Pressable onPress={onClearChecked} hitSlop={8}>
-                  <Text variant="caption" tone="link">
-                    {t('shopping.clearChecked')}
-                  </Text>
-                </Pressable>
-              </View>
-              {checked.map((item) => (
-                <ItemRow key={item.id} item={item} onToggle={onToggle} onRemove={onRemove} />
-              ))}
-            </View>
+          {general.total > 0 ? (
+            <ListCard
+              title={t('shopping.generalList')}
+              subtitle={t('shopping.itemProgress', { done: general.checked, total: general.total })}
+              onPress={() =>
+                router.push({ pathname: '/shopping-list/[id]', params: { id: 'general' } })
+              }
+            />
           ) : null}
+
+          {(lists ?? []).map((list: ShoppingList) => {
+            const c = countByList.get(list.id) ?? { total: 0, checked: 0 };
+            return (
+              <ListCard
+                key={list.id}
+                title={list.name}
+                subtitle={t('shopping.itemProgress', { done: c.checked, total: c.total })}
+                done={list.status === 'done'}
+                assignee={list.assigneeId ? memberMap.get(list.assigneeId) : null}
+                hasReminders={(list.reminders ?? []).length > 0}
+                onPress={() =>
+                  router.push({ pathname: '/shopping-list/[id]', params: { id: list.id } })
+                }
+              />
+            );
+          })}
         </ScrollView>
       )}
     </View>

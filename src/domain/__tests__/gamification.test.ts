@@ -5,6 +5,7 @@ import {
   newlyEarnedBadges,
   pointsForTask,
   pointsToNextLevel,
+  shoppingListPoints,
   startOfWeekMs,
   weeklyPoints,
 } from '../gamification';
@@ -22,6 +23,14 @@ describe('gamification', () => {
     expect(pointsForTask('urgent', 'easy')).toBe(8); // 6 × 1.3 = 7.8 → 8
     expect(pointsForTask('medium', 'hard')).toBe(20); // 20 × 1.0
     expect(pointsForTask('urgent', 'hard')).toBe(26); // 20 × 1.3
+  });
+
+  it('alışveriş listesi puanını ürün sayısına göre sınırlar', () => {
+    expect(shoppingListPoints(0)).toBe(0);
+    expect(shoppingListPoints(1)).toBe(5); // alt sınır
+    expect(shoppingListPoints(4)).toBe(12); // 4 × 3
+    expect(shoppingListPoints(10)).toBe(30); // üst sınır
+    expect(shoppingListPoints(20)).toBe(30); // üst sınır korunur
   });
 
   it('puandan seviye hesaplar (1 tabanlı)', () => {

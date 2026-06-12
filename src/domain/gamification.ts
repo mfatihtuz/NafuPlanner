@@ -11,6 +11,15 @@ export function pointsForTask(priority: Priority, difficulty: Difficulty = 'medi
   return Math.round(DIFFICULTY_META[difficulty].base * PRIORITY_POINT_MULTIPLIER[priority]);
 }
 
+/**
+ * Alışveriş listesi tamamlanınca kazanılan puan — ürün sayısına göre, alt/üst
+ * sınırlı (3 puan/ürün, en az 5, en çok 30). Boş liste puan vermez.
+ */
+export function shoppingListPoints(itemCount: number): number {
+  if (itemCount <= 0) return 0;
+  return Math.min(30, Math.max(5, itemCount * 3));
+}
+
 /** Toplam puandan seviye (1 tabanlı). */
 export function levelForPoints(points: number): number {
   if (points <= 0) return 1;

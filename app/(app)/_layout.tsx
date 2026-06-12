@@ -31,6 +31,7 @@ export default function AppLayout() {
             options={{ presentation: 'modal', title: t('tasks.newTask') }}
           />
           <Stack.Screen name="task/[id]" options={{ title: '' }} />
+          <Stack.Screen name="shopping-list/[id]" options={{ title: '' }} />
           <Stack.Screen
             name="settings"
             options={{ presentation: 'modal', title: t('settings.title') }}

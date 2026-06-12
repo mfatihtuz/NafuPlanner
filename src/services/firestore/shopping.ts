@@ -19,9 +19,13 @@ export async function addShoppingItem(
   gid: string,
   name: string,
   addedBy: string,
+  listId?: string,
 ): Promise<void> {
+  // listId undefined ise Firestore (ignoreUndefinedProperties) alanı atlar →
+  // ürün "Genel" kovasına düşer.
   await addDoc(collection(requireDb(), 'groups', gid, 'shopping'), {
     name: name.trim(),
+    listId,
     checked: false,
     addedBy,
     addedAtMs: Date.now(),

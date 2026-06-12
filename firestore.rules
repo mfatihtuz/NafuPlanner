@@ -77,6 +77,10 @@ service cloud.firestore {
         allow read, write: if isMember(gid);
       }
 
+      match /shoppingLists/{lid} {
+        allow read, write: if isMember(gid);
+      }
+
       match /recurrences/{rid} {
         allow read, write: if isMember(gid);
       }

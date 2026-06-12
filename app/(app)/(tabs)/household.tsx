@@ -36,6 +36,8 @@ function activityLine(entry: ActivityEntry): string {
       return t('activity.taskCommented', { name, task: entry.taskTitle ?? '' });
     case 'reward_redeemed':
       return t('activity.rewardRedeemed', { name, task: entry.taskTitle ?? '' });
+    case 'shopping_completed':
+      return t('activity.shoppingCompleted', { name, list: entry.taskTitle ?? '' });
     case 'member_joined':
       return t('activity.memberJoined', { name });
   }
