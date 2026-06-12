@@ -272,6 +272,9 @@ export const tr = {
   'profile.namePlaceholder': 'Adın',
   'profile.editName': 'Adını düzenle',
 
+  'tasks.difficulty': 'Zorluk',
+  'tasks.pointsPreview': 'Tamamlayınca +{n} puan',
+
   'categories.title': 'Kategoriler',
   'categories.hint': 'Görevleri renklere göre grupla. Ada dokunup düzenle, renk seç, sil.',
   'categories.addNew': 'Yeni kategori',

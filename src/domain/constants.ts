@@ -1,6 +1,6 @@
 import { colors } from '@/ui/theme/colors';
 
-import type { Priority } from './types';
+import type { Difficulty, Priority } from './types';
 
 /** Önceliklerin görsel/sayısal meta verisi. */
 export const PRIORITY_META: Record<
@@ -13,12 +13,19 @@ export const PRIORITY_META: Record<
   urgent: { labelTr: 'Acil', color: colors.priorityUrgent, weight: 4 },
 };
 
-/** Önceliğe göre bir görevi tamamlayınca kazanılan temel puan. */
-export const POINTS_BY_PRIORITY: Record<Priority, number> = {
-  low: 5,
-  medium: 10,
-  high: 15,
-  urgent: 20,
+/** Zorluk (efor) meta verisi — puan tabanını belirler. */
+export const DIFFICULTY_META: Record<Difficulty, { labelTr: string; base: number }> = {
+  easy: { labelTr: 'Kolay', base: 6 },
+  medium: { labelTr: 'Orta', base: 12 },
+  hard: { labelTr: 'Zor', base: 20 },
+};
+
+/** Öncelik, efor tabanını ölçekleyen puan çarpanı. */
+export const PRIORITY_POINT_MULTIPLIER: Record<Priority, number> = {
+  low: 0.9,
+  medium: 1.0,
+  high: 1.15,
+  urgent: 1.3,
 };
 
 /** Her seviye için gereken puan aralığı. */

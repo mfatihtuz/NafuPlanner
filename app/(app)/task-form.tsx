@@ -3,11 +3,11 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
 
-import { CALENDAR_WEEKDAYS_TR, PRIORITY_META } from '@/domain/constants';
+import { CALENDAR_WEEKDAYS_TR, DIFFICULTY_META, PRIORITY_META } from '@/domain/constants';
 import { formatDayKey } from '@/domain/format';
 import { pointsForTask } from '@/domain/gamification';
 import { dayKeyFromMs } from '@/domain/time';
-import type { ClockTime, DayKey, Priority, Subtask, Task } from '@/domain/types';
+import type { ClockTime, DayKey, Difficulty, Priority, Subtask, Task } from '@/domain/types';
 import { useNow } from '@/hooks/useNow';
 import { useCategories } from '@/features/categories/useCategories';
 import { useTasks } from '@/features/tasks/useTasks';
@@ -39,6 +39,7 @@ type RecurrenceChoice = 'none' | 'daily' | 'weekdays' | 'weekly' | 'interval' | 
 const WEEKDAY_VALUES = [1, 2, 3, 4, 5, 6, 0] as const;
 
 const PRIORITIES: Priority[] = ['low', 'medium', 'high', 'urgent'];
+const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
 const NEW_CATEGORY_COLORS = [
   palette.teal[500],
   palette.coral[500],
@@ -82,6 +83,7 @@ function TaskFormInner({
   const [description, setDescription] = useState(editing?.description ?? '');
   const [categoryId, setCategoryId] = useState<string | null>(editing?.categoryId ?? null);
   const [priority, setPriority] = useState<Priority>(editing?.priority ?? 'medium');
+  const [difficulty, setDifficulty] = useState<Difficulty>(editing?.difficulty ?? 'medium');
   const [dayKey, setDayKey] = useState<DayKey | null>(
     editing?.dueAtMs != null ? dayKeyFromMs(editing.dueAtMs) : null,
   );
@@ -181,12 +183,13 @@ function TaskFormInner({
           categoryId: categoryId ?? undefined,
           clearCategory: !categoryId && Boolean(editing.categoryId),
           priority,
+          difficulty,
           dueAtMs,
           hasTime,
           clearDueDate: dueAtMs == null && editing.dueAtMs != null,
           assigneeIds,
           subtasks,
-          points: pointsForTask(priority),
+          points: pointsForTask(priority, difficulty),
         });
       } else {
         const input: NewTaskInput = {
@@ -195,12 +198,13 @@ function TaskFormInner({
           description: description.trim() || undefined,
           categoryId: categoryId ?? undefined,
           priority,
+          difficulty,
           status: 'open',
           dueAtMs,
           hasTime,
           assigneeIds,
           subtasks,
-          points: pointsForTask(priority),
+          points: pointsForTask(priority, difficulty),
           createdBy: user.uid,
         };
 
@@ -330,6 +334,26 @@ function TaskFormInner({
               />
             ))}
           </View>
+        </View>
+
+        {/* Zorluk (efor) — puanı etkiler */}
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="overline" tone="secondary">
+            {t('tasks.difficulty')}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {DIFFICULTIES.map((d) => (
+              <Chip
+                key={d}
+                label={DIFFICULTY_META[d].labelTr}
+                selected={difficulty === d}
+                onPress={() => setDifficulty(d)}
+              />
+            ))}
+          </View>
+          <Text variant="caption" tone="muted">
+            {t('tasks.pointsPreview', { n: pointsForTask(priority, difficulty) })}
+          </Text>
         </View>
 
         {/* Tarih */}

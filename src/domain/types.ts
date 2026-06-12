@@ -111,6 +111,7 @@ export interface Category {
 // --- Görevler -----------------------------------------------------------------
 
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
+export type Difficulty = 'easy' | 'medium' | 'hard';
 export type TaskStatus = 'open' | 'in_progress' | 'done' | 'archived';
 
 export interface Subtask {
@@ -126,6 +127,8 @@ export interface Task {
   description?: string;
   categoryId?: Id;
   priority: Priority;
+  /** İş eforu — puanı önceliğe ek olarak belirler (varsayılan: orta). */
+  difficulty?: Difficulty;
   status: TaskStatus;
   /** Son tarih (varsa). Saat içeriyorsa hasTime=true. */
   dueAtMs?: Millis;

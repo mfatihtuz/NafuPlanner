@@ -1,14 +1,14 @@
-import { POINTS_BY_PRIORITY, POINTS_PER_LEVEL } from './constants';
+import { DIFFICULTY_META, POINTS_PER_LEVEL, PRIORITY_POINT_MULTIPLIER } from './constants';
 import { isConsecutiveDay } from './time';
-import type { Badge, DayKey, Millis, Priority, Task } from './types';
+import type { Badge, DayKey, Difficulty, Millis, Priority, Task } from './types';
 
 /**
  * Saf oyunlaştırma kuralları — yan etkisiz, kolayca test edilebilir.
  */
 
-/** Bir görevi tamamlayınca kazanılan puan. */
-export function pointsForTask(priority: Priority): number {
-  return POINTS_BY_PRIORITY[priority];
+/** Bir görevi tamamlayınca kazanılan puan: efor tabanı × öncelik çarpanı. */
+export function pointsForTask(priority: Priority, difficulty: Difficulty = 'medium'): number {
+  return Math.round(DIFFICULTY_META[difficulty].base * PRIORITY_POINT_MULTIPLIER[priority]);
 }
 
 /** Toplam puandan seviye (1 tabanlı). */

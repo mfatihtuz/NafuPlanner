@@ -11,11 +11,17 @@ import {
 import type { Task } from '../types';
 
 describe('gamification', () => {
-  it('önceliğe göre puan verir', () => {
-    expect(pointsForTask('low')).toBe(5);
-    expect(pointsForTask('medium')).toBe(10);
-    expect(pointsForTask('high')).toBe(15);
-    expect(pointsForTask('urgent')).toBe(20);
+  it('efor tabanı × öncelik çarpanı ile puan verir', () => {
+    // Varsayılan zorluk orta (taban 12)
+    expect(pointsForTask('low')).toBe(11); // 12 × 0.9 = 10.8 → 11
+    expect(pointsForTask('medium')).toBe(12); // 12 × 1.0
+    expect(pointsForTask('high')).toBe(14); // 12 × 1.15 = 13.8 → 14
+    expect(pointsForTask('urgent')).toBe(16); // 12 × 1.3 = 15.6 → 16
+    // Zorluk tabanı belirler — "çöp at" (kolay) vs "banyo" (zor)
+    expect(pointsForTask('low', 'easy')).toBe(5); // 6 × 0.9 = 5.4 → 5
+    expect(pointsForTask('urgent', 'easy')).toBe(8); // 6 × 1.3 = 7.8 → 8
+    expect(pointsForTask('medium', 'hard')).toBe(20); // 20 × 1.0
+    expect(pointsForTask('urgent', 'hard')).toBe(26); // 20 × 1.3
   });
 
   it('puandan seviye hesaplar (1 tabanlı)', () => {

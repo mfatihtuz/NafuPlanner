@@ -39,6 +39,7 @@ export type TaskPatch = Partial<
     | 'description'
     | 'categoryId'
     | 'priority'
+    | 'difficulty'
     | 'dueAtMs'
     | 'hasTime'
     | 'assigneeIds'
