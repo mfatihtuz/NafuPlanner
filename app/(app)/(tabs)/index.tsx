@@ -7,11 +7,13 @@ import type { Task } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
 import { RequireHousehold } from '@/features/household/NoHousehold';
+import { WelcomeCard } from '@/features/onboarding/WelcomeCard';
 import { TaskCard } from '@/features/tasks/TaskCard';
 import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t, type TranslationKey } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
+import { markOnboarded } from '@/services/firestore/users';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { completeTaskFlow, reopenTaskFlow } from '@/services/workflows/taskWorkflows';
 import { useNotificationScheduler } from '@/services/notifications/useNotificationScheduler';
@@ -103,6 +105,16 @@ function TodayContent() {
           </Text>
           <Text variant="h1">{firstName || t('today.title')}</Text>
         </View>
+
+        {profile && !profile.onboardedAtMs ? (
+          <WelcomeCard
+            onAddTask={() => router.push('/task-form')}
+            onInvite={() => router.navigate('/household')}
+            onDismiss={() => {
+              if (user) void markOnboarded(user.uid);
+            }}
+          />
+        ) : null}
 
         {sections == null ? null : isEmpty ? (
           tasks != null && tasks.length === 0 ? (

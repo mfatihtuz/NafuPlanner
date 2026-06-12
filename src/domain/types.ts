@@ -41,6 +41,8 @@ export interface UserSettings {
 export interface UserProfile extends User {
   householdId: Id | null;
   settings?: UserSettings;
+  /** İlk kullanım "hoş geldin" kartı görülünce işaretlenir. */
+  onboardedAtMs?: Millis;
 }
 
 export type HouseholdRole = 'owner' | 'member';

@@ -92,6 +92,11 @@ export async function deleteUserData(uid: string, householdId: string | null): P
   await deleteDoc(doc(db, 'users', uid));
 }
 
+/** İlk kullanım "hoş geldin" kartını kalıcı kapatır (profilde işaret). */
+export async function markOnboarded(uid: string): Promise<void> {
+  await setDoc(doc(requireDb(), 'users', uid), { onboardedAtMs: Date.now() }, { merge: true });
+}
+
 export interface UserDocSnapshot {
   profile: UserProfile | null;
 }

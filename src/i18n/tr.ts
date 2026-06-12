@@ -72,6 +72,12 @@ export const tr = {
   'today.firstTaskTitle': 'Hadi ilk görevini ekleyelim!',
   'today.firstTaskBody': 'Nafu hazır. Bir iş ekle, birlikte takip edelim.',
 
+  'onboarding.title': 'Nafu’ya hoş geldin! 👋',
+  'onboarding.body': 'Evi birlikte yönetmenin en kolay yolu. Şöyle başlayalım:',
+  'onboarding.addTask': 'İlk görevini ekle',
+  'onboarding.invite': 'Eşini davet et',
+  'onboarding.dismiss': 'Şimdilik geç',
+
   'tasks.title': 'Görevler',
   'tasks.empty': 'Henüz görev yok. İlk görevini ekleyerek başla.',
   'tasks.add': 'Görev ekle',
