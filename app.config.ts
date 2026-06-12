@@ -13,7 +13,11 @@ const BRAND = {
 // Used to register the OAuth redirect URL scheme for native Google Sign-In.
 const googleIosUrlScheme = process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME;
 
-const iosUrlSchemes = [googleIosUrlScheme].filter(Boolean) as string[];
+// Native Google Sign-In iOS URL şemasını (reversed client id) yalnız mevcutsa
+// ekle; eksikse eklenti hiç konmaz (build kırılmaz).
+const googlePlugin: [string, { iosUrlScheme: string }] | null = googleIosUrlScheme
+  ? ['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }]
+  : null;
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -30,16 +34,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: BRAND.bundleId,
     usesAppleSignIn: true,
     infoPlist: {
+      // Google iOS URL şeması artık @react-native-google-signin eklentisiyle
+      // yönetiliyor (aşağıdaki plugins).
       ITSAppUsesNonExemptEncryption: false,
-      ...(iosUrlSchemes.length > 0
-        ? {
-            CFBundleURLTypes: [
-              {
-                CFBundleURLSchemes: iosUrlSchemes,
-              },
-            ],
-          }
-        : {}),
     },
   },
   android: {
@@ -72,6 +69,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-localization',
     'expo-web-browser',
     'expo-apple-authentication',
+    ...(googlePlugin ? [googlePlugin] : []),
     [
       'expo-image-picker',
       {

@@ -1,8 +1,5 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
-import type { AuthSessionResult } from 'expo-auth-session';
-import * as Google from 'expo-auth-session/providers/google';
 import * as Crypto from 'expo-crypto';
-import * as WebBrowser from 'expo-web-browser';
 import {
   createUserWithEmailAndPassword,
   deleteUser,
@@ -30,10 +27,30 @@ import { googleAuthConfig, isGoogleAuthConfigured } from '@/config/env';
 import { t } from '@/i18n';
 import { auth, firebaseReady } from '@/services/firebase/config';
 
-// OAuth yönlendirmesinden dönüşte tarayıcı oturumunu kapatır.
-WebBrowser.maybeCompleteAuthSession();
+// Native Google Sign-In modülü yalnız derlenmiş uygulamada bulunur; Expo Go'da
+// yoksa require başarısız olur ve Google girişi sessizce gizlenir (e-posta/Apple
+// girişi çalışmaya devam eder).
+type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin');
+let GoogleSignin: GoogleSigninModule['GoogleSignin'] | undefined;
+let googleStatusCodes: GoogleSigninModule['statusCodes'] | undefined;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require('@react-native-google-signin/google-signin') as GoogleSigninModule;
+  GoogleSignin = mod.GoogleSignin;
+  googleStatusCodes = mod.statusCodes;
+} catch {
+  // Modül yok (Expo Go) — Google girişi devre dışı kalır.
+}
 
-type GooglePrompt = () => Promise<AuthSessionResult>;
+let googleConfigured = false;
+function ensureGoogleConfigured() {
+  if (googleConfigured || !GoogleSignin || !isGoogleAuthConfigured()) return;
+  GoogleSignin.configure({
+    webClientId: googleAuthConfig.webClientId,
+    iosClientId: googleAuthConfig.iosClientId,
+  });
+  googleConfigured = true;
+}
 
 interface AuthContextValue {
   user: FirebaseUser | null;
@@ -68,16 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [initializing, setInitializing] = useState(firebaseReady);
   const [signingIn, setSigningIn] = useState(false);
 
-  // ÖNEMLİ: Google.useAuthRequest, platforma ait client id undefined ise
-  // render sırasında hata fırlatır (invariantClientId) ve release build'i
-  // açılışta çökertir. Bu yüzden hook'u yalnızca yapılandırma varken mount
-  // edilen GoogleSignInBridge'e taşıdık; prompt fonksiyonu state'e aktarılır.
-  const [googlePrompt, setGooglePrompt] = useState<{ run: GooglePrompt } | null>(null);
-  const handleGoogleReady = useCallback((run: GooglePrompt | null) => {
-    setGooglePrompt(run ? { run } : null);
-  }, []);
+  const canSignIn = firebaseReady && Boolean(GoogleSignin) && isGoogleAuthConfigured();
 
-  const canSignIn = firebaseReady && googlePrompt != null;
+  // Native Google Sign-In'ı yapılandır (modül + client id mevcutsa).
+  useEffect(() => {
+    ensureGoogleConfigured();
+  }, []);
 
   // Firebase oturum durumunu dinle (yalnızca yapılandırma hazırsa).
   useEffect(() => {
@@ -90,43 +103,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    if (!firebaseReady || !auth || !googlePrompt) {
+    if (!firebaseReady || !auth || !GoogleSignin) {
       Alert.alert(t('auth.configMissingTitle'), t('auth.configMissing'));
       return;
     }
     try {
       setSigningIn(true);
-      const result = await googlePrompt.run();
-      if (result.type === 'cancel' || result.type === 'dismiss') return;
-      if (result.type !== 'success') {
-        Alert.alert(t('common.appName'), t('auth.signInError'));
-        return;
-      }
-
-      // expo-auth-session yapılandırmaya göre id_token VEYA yalnızca
-      // access_token döndürebilir; Firebase ikisini de kabul eder. Daha önce
-      // sadece id_token aranıyordu; gelmeyince giriş sessizce düşüyordu
-      // (Google "oturum açıldı" maili gelir ama uygulama içeri almaz).
+      ensureGoogleConfigured();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      // v13+ biçimi: { type: 'success', data } | { type: 'cancelled' };
+      // eski sürümler doğrudan kullanıcıyı döndürür. İkisini de destekle.
+      if ((response as { type?: string }).type === 'cancelled') return;
       const idToken =
-        result.authentication?.idToken ?? (result.params?.id_token as string | undefined);
-      const accessToken =
-        result.authentication?.accessToken ?? (result.params?.access_token as string | undefined);
-
-      if (!idToken && !accessToken) {
-        console.warn('[auth] Google: token alınamadı', result.params);
+        (response as { data?: { idToken?: string | null } }).data?.idToken ??
+        (response as { idToken?: string | null }).idToken;
+      if (!idToken) {
+        console.warn('[auth] Google: idToken alınamadı', response);
         Alert.alert(t('common.appName'), t('auth.signInError'));
         return;
       }
-
-      const credential = GoogleAuthProvider.credential(idToken ?? null, accessToken ?? null);
+      const credential = GoogleAuthProvider.credential(idToken);
       await signInWithCredential(auth, credential);
     } catch (error) {
+      const code = (error as { code?: string }).code;
+      if (
+        googleStatusCodes &&
+        (code === googleStatusCodes.SIGN_IN_CANCELLED || code === googleStatusCodes.IN_PROGRESS)
+      ) {
+        return; // kullanıcı vazgeçti / giriş zaten sürüyor
+      }
       console.warn('[auth] Google ile giriş başarısız', error);
       Alert.alert(t('common.appName'), t('auth.signInError'));
     } finally {
       setSigningIn(false);
     }
-  }, [googlePrompt]);
+  }, []);
 
   const signInWithApple = useCallback(async () => {
     if (!firebaseReady || !auth) {
@@ -279,33 +291,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return (
-    <AuthContext.Provider value={value}>
-      {isGoogleAuthConfigured() ? <GoogleSignInBridge onReady={handleGoogleReady} /> : null}
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-/**
- * Google auth hook'unu izole eden köprü. Yalnızca yapılandırma mevcutken
- * mount edilir; prompt fonksiyonunu üst bileşene geri verir. Böylece client id
- * yokken useAuthRequest hiç çağrılmaz (açılış çökmesi engellenir).
- */
-function GoogleSignInBridge({ onReady }: { onReady: (run: GooglePrompt | null) => void }) {
-  const [request, , promptAsync] = Google.useAuthRequest({
-    webClientId: googleAuthConfig.webClientId,
-    iosClientId: googleAuthConfig.iosClientId,
-    androidClientId: googleAuthConfig.androidClientId,
-    // openid + e-posta/profil: Google'ın kimlik (id_token) döndürmesini ve
-    // Firebase'in kullanıcı adını/e-postasını alabilmesini garanti eder.
-    scopes: ['openid', 'profile', 'email'],
-  });
-  useEffect(() => {
-    onReady(request ? () => promptAsync() : null);
-    return () => onReady(null);
-  }, [request, promptAsync, onReady]);
-  return null;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {
