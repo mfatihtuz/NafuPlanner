@@ -179,6 +179,18 @@ export default function SettingsScreen() {
 
         <Button title={t('common.save')} onPress={() => void onSave()} loading={saving} />
 
+        {/* Hane yönetimi */}
+        <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
+          <Text variant="overline" tone="secondary">
+            {t('settings.household')}
+          </Text>
+          <Button
+            title={t('categories.title')}
+            variant="secondary"
+            onPress={() => router.push('/categories')}
+          />
+        </View>
+
         {/* Hesap silme (App Store 5.1.1 zorunluluğu) */}
         <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
           <Text variant="overline" tone="secondary">

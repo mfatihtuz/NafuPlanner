@@ -1,4 +1,13 @@
-import { addDoc, collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  updateDoc,
+} from 'firebase/firestore';
 
 import type { Category } from '@/domain/types';
 import { requireDb } from '@/services/firebase/config';
@@ -20,6 +29,20 @@ export async function addCategory(
     order: Date.now(), // varsayılanların (küçük order) arkasına düşer
   });
   return ref.id;
+}
+
+/** Kategori ad/renk/ikon günceller. */
+export async function updateCategory(
+  gid: string,
+  cid: string,
+  patch: { name?: string; color?: string; icon?: string },
+): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'categories', cid), patch);
+}
+
+/** Kategoriyi siler. (Varsayılanlar UI'da silinemez tutulur.) */
+export async function removeCategory(gid: string, cid: string): Promise<void> {
+  await deleteDoc(doc(requireDb(), 'groups', gid, 'categories', cid));
 }
 
 /** Hane kategorilerini canlı dinler (order'a göre). */

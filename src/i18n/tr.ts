@@ -199,6 +199,7 @@ export const tr = {
   'tasks.nudgeSent': 'Dürtme gönderildi!',
 
   'settings.title': 'Ayarlar',
+  'settings.household': 'Hane',
   'settings.notifications': 'Bildirimler',
   'settings.quietHours': 'Sessiz saatler',
   'settings.quietHoursHint': 'Bu aralıkta bildirim gelmez; sabaha ertelenir.',
@@ -253,6 +254,13 @@ export const tr = {
   'comments.title': 'Yorumlar',
   'comments.placeholder': 'Yorum yaz…',
   'comments.empty': 'Henüz yorum yok. İlk notu sen bırak.',
+
+  'categories.title': 'Kategoriler',
+  'categories.hint': 'Görevleri renklere göre grupla. Ada dokunup düzenle, renk seç, sil.',
+  'categories.addNew': 'Yeni kategori',
+  'categories.deleteTitle': 'Kategoriyi sil',
+  'categories.deleteBody': 'Bu kategori silinecek (görevlerdeki bağ kalkar). Emin misin?',
+  'categories.defaultTag': 'Varsayılan',
 
   'stats.title': 'İstatistikler',
   'stats.thisWeek': 'Bu hafta (puan)',
