@@ -101,6 +101,8 @@ function SetupView() {
     <ScrollView
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, flexGrow: 1 }}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      automaticallyAdjustKeyboardInsets
       showsVerticalScrollIndicator={false}
     >
       <View style={{ alignItems: 'center', marginVertical: spacing.md }}>

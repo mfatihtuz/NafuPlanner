@@ -30,6 +30,8 @@ export function Screen({
         <ScrollView
           contentContainerStyle={[{ padding, flexGrow: 1 }, contentStyle]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           {children}
