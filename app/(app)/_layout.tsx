@@ -3,6 +3,7 @@ import '@/services/notifications/config';
 import { Stack } from 'expo-router';
 
 import { CelebrationProvider } from '@/features/celebration/CelebrationProvider';
+import { WidgetSync } from '@/features/widgets/WidgetSync';
 import { t } from '@/i18n';
 import { HouseholdProvider } from '@/services/household/HouseholdProvider';
 import { colors } from '@/ui/theme/colors';
@@ -11,6 +12,7 @@ import { typography } from '@/ui/theme/typography';
 export default function AppLayout() {
   return (
     <HouseholdProvider>
+      <WidgetSync />
       <CelebrationProvider>
         <Stack
           screenOptions={{

@@ -9,6 +9,14 @@ const BRAND = {
   notificationColor: '#0E9F9A',
 };
 
+// iOS widget (kilit ekranı + ana ekran) için App Group + Apple Team. Widget,
+// uygulamanın yazdığı "günüm" anlık görüntüsünü bu App Group üzerinden okur.
+// App Group kimliği üç yerde birebir aynı olmalı: burada, targets/widget/
+// expo-target.config.js ve Swift suiteName (src/services/widgets/widgetSync.ts).
+const APP_GROUP = 'group.com.nafuplanner.app';
+const APPLE_TEAM_ID = '3GH53K2WWV';
+const WIDGET_BUNDLE_ID = `${BRAND.bundleId}.widgets`;
+
 // iOS reversed Google client id (e.g. com.googleusercontent.apps.XXXX).
 // Used to register the OAuth redirect URL scheme for native Google Sign-In.
 const googleIosUrlScheme = process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME;
@@ -32,7 +40,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: BRAND.bundleId,
+    appleTeamId: APPLE_TEAM_ID,
     usesAppleSignIn: true,
+    // App Group entitlement'ı ana uygulamaya AÇIKÇA verilir (apple-targets
+    // eklentisi bunu yalnız widget hedefine kopyalar, ana uygulamaya eklemez).
+    entitlements: {
+      'com.apple.security.application-groups': [APP_GROUP],
+    },
     infoPlist: {
       // Google iOS URL şeması artık @react-native-google-signin eklentisiyle
       // yönetiliyor (aşağıdaki plugins).
@@ -91,6 +105,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // aksi halde "Swift pods cannot be integrated as static libraries" ile pod
     // install kırılır.
     './plugins/withModularHeaders',
+    // iOS widget hedefini (targets/widget) Xcode projesine ekler. Widget Swift
+    // kodu native; App Group üzerinden "günüm" özetini okur.
+    ['@bacons/apple-targets', { appleTeamId: APPLE_TEAM_ID }],
   ],
   experiments: {
     typedRoutes: true,
@@ -100,6 +117,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       // EAS proje kimliği (eas init ile üretildi). Build + push token bunu
       // kullanır; gizli değildir.
       projectId: 'cda55d2a-1823-4010-8506-d481310b66cd',
+      build: {
+        experimental: {
+          ios: {
+            // Widget hedefini EAS'a bildir ki imzalama kimliklerini + App
+            // Group'u baştan üretsin (ilk build'de `eas credentials` ile bir
+            // kez senkron önerilir).
+            appExtensions: [
+              {
+                targetName: 'widget',
+                bundleIdentifier: WIDGET_BUNDLE_ID,
+                entitlements: {
+                  'com.apple.security.application-groups': [APP_GROUP],
+                },
+              },
+            ],
+          },
+        },
+      },
     },
   },
 });
