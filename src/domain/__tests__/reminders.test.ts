@@ -4,8 +4,9 @@ import {
   buildTaskReminderTimes,
   nextDailyDigestMs,
   shiftOutOfQuietHours,
+  shoppingReminderAt,
 } from '../reminders';
-import type { UserSettings } from '../types';
+import type { ShoppingList, UserSettings } from '../types';
 
 const at = (h: number, m = 0) => new Date(2026, 5, 10, h, m).getTime(); // 10 Haziran 2026
 
@@ -104,5 +105,40 @@ describe('buildDigestBody', () => {
     expect(buildDigestBody(['a', 'b', 'c', 'd', 'e'])).toBe(
       'Bugün 5 görev seni bekliyor: a, b, c ve 2 görev daha',
     );
+  });
+});
+
+describe('shoppingReminderAt', () => {
+  const baseList = (partial: Partial<ShoppingList>): ShoppingList => ({
+    id: 'l1',
+    householdId: 'h1',
+    name: 'Migros',
+    status: 'active',
+    createdBy: 'u1',
+    createdAtMs: at(8),
+    ...partial,
+  });
+
+  it('saatli listede tam o saatte hatırlatır', () => {
+    const list = baseList({ dueAtMs: at(15, 30), hasTime: true });
+    expect(shoppingReminderAt(list, null, at(9))).toBe(at(15, 30));
+  });
+
+  it('tarihsiz listede 09:00 kullanır', () => {
+    const list = baseList({ dueAtMs: at(12), hasTime: false });
+    expect(shoppingReminderAt(list, null, at(6))).toBe(at(9));
+  });
+
+  it('tamamlanan / tarihsiz / geçmiş listede null döner', () => {
+    expect(shoppingReminderAt(baseList({ status: 'done', dueAtMs: at(15) }), null, at(9))).toBeNull();
+    expect(shoppingReminderAt(baseList({}), null, at(9))).toBeNull();
+    expect(shoppingReminderAt(baseList({ dueAtMs: at(8), hasTime: true }), null, at(9))).toBeNull();
+  });
+
+  it('sessiz saatteki hatırlatmayı sabaha kaydırır', () => {
+    const list = baseList({ dueAtMs: at(23, 0), hasTime: true });
+    // 10 Haziran 23:00 sessiz aralıkta → ertesi sabah 07:00'a kayar.
+    const nextMorning = new Date(2026, 5, 11, 7, 0).getTime();
+    expect(shoppingReminderAt(list, quiet, at(20))).toBe(nextMorning);
   });
 });

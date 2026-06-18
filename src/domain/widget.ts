@@ -1,7 +1,8 @@
 import { formatClock, formatDueLabel, formatShortDate } from './format';
+import { shoppingListsDue } from './shopping';
 import { groupTasks } from './tasks';
 import { dayKeyFromMs } from './time';
-import type { Millis, Priority, Task } from './types';
+import type { Millis, Priority, ShoppingList, Task } from './types';
 
 /**
  * Kilit ekranı / ana ekran widget'ının okuduğu "günüm" anlık görüntüsü.
@@ -14,9 +15,12 @@ import type { Millis, Priority, Task } from './types';
 
 export interface WidgetTaskItem {
   id: string;
+  /** Görev mi alışveriş listesi mi (widget farklı simge çizer). */
+  kind: 'task' | 'shopping';
   title: string;
-  /** Saatli görevde "14:30"; geciken görevde gün etiketi ("Dün"); yoksa "". */
+  /** Saatli öğede "14:30"; gecikende gün etiketi ("Dün"); yoksa "". */
   timeLabel: string;
+  /** Görev önceliği (renk noktası için); alışverişte yok sayılır. */
   priority: Priority;
   overdue: boolean;
 }
@@ -52,50 +56,79 @@ const WEEKDAY_NAMES_TR = [
   'Cumartesi',
 ] as const;
 
-function timeLabelFor(task: Task, now: Millis): string {
-  if (task.dueAtMs == null) return '';
-  const isOverdue = dayKeyFromMs(task.dueAtMs) < dayKeyFromMs(now);
-  if (isOverdue) return formatDueLabel(task.dueAtMs, task.hasTime, now);
-  if (!task.hasTime) return '';
-  const d = new Date(task.dueAtMs);
+function timeLabelForDue(
+  due: { dueAtMs?: Millis; hasTime?: boolean },
+  now: Millis,
+): string {
+  if (due.dueAtMs == null) return '';
+  if (dayKeyFromMs(due.dueAtMs) < dayKeyFromMs(now)) {
+    return formatDueLabel(due.dueAtMs, due.hasTime ?? false, now);
+  }
+  if (!due.hasTime) return '';
+  const d = new Date(due.dueAtMs);
   return formatClock(d.getHours(), d.getMinutes());
 }
 
 /**
- * Görevlerden bugünün widget özetini üretir.
+ * Bugünün widget özetini üretir.
  *
  * Eylem listesi Bugün ekranıyla aynı kümedir: açık geciken + açık bugün
- * görevleri (groupTasks ile aynı sıralama). İlerleme halkası ise bugüne planlı
- * tüm görevlerin (tamamlanan dahil) tamamlanma oranını yansıtır.
+ * görevleri VE tarihli/aktif alışveriş listeleri (her bölümde önce görevler).
+ * İlerleme halkası bugüne planlı tüm öğelerin (görev + liste, tamamlanan dahil)
+ * tamamlanma oranını yansıtır.
  */
-export function buildWidgetSnapshot(tasks: Task[], now: Millis): WidgetSnapshot {
+export function buildWidgetSnapshot(
+  tasks: Task[],
+  lists: ShoppingList[],
+  now: Millis,
+): WidgetSnapshot {
   const todayKey = dayKeyFromMs(now);
   const sections = groupTasks(tasks, now);
+  const shopping = shoppingListsDue(lists, now);
 
-  const dueToday = tasks.filter(
+  const dueTodayTasks = tasks.filter(
     (task) =>
       task.status !== 'archived' &&
       task.dueAtMs != null &&
       dayKeyFromMs(task.dueAtMs) === todayKey,
   );
+  const dueTodayLists = lists.filter(
+    (list) => list.dueAtMs != null && dayKeyFromMs(list.dueAtMs) === todayKey,
+  );
 
-  const items: WidgetTaskItem[] = [...sections.overdue, ...sections.today]
-    .slice(0, WIDGET_MAX_ITEMS)
-    .map((task) => ({
-      id: task.id,
-      title: task.title,
-      timeLabel: timeLabelFor(task, now),
-      priority: task.priority,
-      overdue: task.dueAtMs != null && dayKeyFromMs(task.dueAtMs) < todayKey,
-    }));
+  const taskItem = (task: Task): WidgetTaskItem => ({
+    id: task.id,
+    kind: 'task',
+    title: task.title,
+    timeLabel: timeLabelForDue(task, now),
+    priority: task.priority,
+    overdue: task.dueAtMs != null && dayKeyFromMs(task.dueAtMs) < todayKey,
+  });
+  const shopItem = (list: ShoppingList): WidgetTaskItem => ({
+    id: `shop:${list.id}`,
+    kind: 'shopping',
+    title: list.name,
+    timeLabel: timeLabelForDue(list, now),
+    priority: 'medium',
+    overdue: list.dueAtMs != null && dayKeyFromMs(list.dueAtMs) < todayKey,
+  });
+
+  const items: WidgetTaskItem[] = [
+    ...sections.overdue.map(taskItem),
+    ...shopping.overdue.map(shopItem),
+    ...sections.today.map(taskItem),
+    ...shopping.today.map(shopItem),
+  ].slice(0, WIDGET_MAX_ITEMS);
 
   return {
     generatedAtMs: now,
     dateLabel: formatShortDate(now),
     weekdayLabel: WEEKDAY_NAMES_TR[new Date(now).getDay()],
-    todayTotal: dueToday.length,
-    todayDone: dueToday.filter((task) => task.status === 'done').length,
-    overdueOpen: sections.overdue.length,
+    todayTotal: dueTodayTasks.length + dueTodayLists.length,
+    todayDone:
+      dueTodayTasks.filter((task) => task.status === 'done').length +
+      dueTodayLists.filter((list) => list.status === 'done').length,
+    overdueOpen: sections.overdue.length + shopping.overdue.length,
     items,
   };
 }

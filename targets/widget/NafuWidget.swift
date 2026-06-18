@@ -11,10 +11,13 @@ private let DEEP_LINK = URL(string: "nafu:///today")!
 
 private struct WidgetItem: Codable, Identifiable {
     let id: String
+    let kind: String?      // "task" | "shopping" (eski anlık görüntüde yok → görev)
     let title: String
     let timeLabel: String
     let priority: String   // "low" | "medium" | "high" | "urgent"
     let overdue: Bool
+
+    var isShopping: Bool { kind == "shopping" }
 }
 
 private struct WidgetSnapshot: Codable {
@@ -164,7 +167,14 @@ private struct TaskRow: View {
     let item: WidgetItem
     var body: some View {
         HStack(spacing: 8) {
-            Circle().fill(Brand.priorityDot(item.priority)).frame(width: 7, height: 7)
+            if item.isShopping {
+                Image(systemName: "cart.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.95))
+                    .frame(width: 9)
+            } else {
+                Circle().fill(Brand.priorityDot(item.priority)).frame(width: 7, height: 7)
+            }
             Text(item.title)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.white)

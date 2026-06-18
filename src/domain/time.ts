@@ -49,3 +49,18 @@ export function isConsecutiveDay(previous: DayKey, current: DayKey): boolean {
   const diffDays = Math.round((cur.getTime() - prev.getTime()) / 86_400_000);
   return diffDays === 1;
 }
+
+/**
+ * Gün anahtarı (+ opsiyonel saat) → son tarih ms + hasTime. Saat verilmezse
+ * gün ortası (12:00) kullanılır (gruplama gün anahtarına göre yapılır).
+ */
+export function dueAtFromDayKey(
+  dayKey: DayKey,
+  time?: ClockTime | null,
+): { dueAtMs: Millis; hasTime: boolean } {
+  const [y, m, d] = dayKey.split('-').map(Number);
+  if (time) {
+    return { dueAtMs: new Date(y, m - 1, d, time.hour, time.minute).getTime(), hasTime: true };
+  }
+  return { dueAtMs: new Date(y, m - 1, d, 12, 0).getTime(), hasTime: false };
+}

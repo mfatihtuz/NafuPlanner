@@ -202,6 +202,10 @@ export interface ShoppingList {
   assigneeId?: Id;
   /** "Dönerken şunu da al/yap" gibi bağlı hatırlatmalar (#7). */
   reminders?: string[];
+  /** Tarihli hatırlatma (varsa). Saat içeriyorsa hasTime=true. Bu liste
+   *  "Bugün" görünümünde ve widget'ta görünür; zamanında bildirim kurulur. */
+  dueAtMs?: Millis;
+  hasTime?: boolean;
   status: ShoppingListStatus;
   createdBy: Id;
   createdAtMs: Millis;

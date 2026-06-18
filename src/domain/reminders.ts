@@ -1,5 +1,8 @@
 import { isWithinQuietHours } from './time';
-import type { ClockTime, Millis, Task, UserSettings } from './types';
+import type { ClockTime, Millis, ShoppingList, Task, UserSettings } from './types';
+
+/** Tarihsiz (yalnız gün) alışveriş hatırlatması için varsayılan saat. */
+export const SHOPPING_DEFAULT_HOUR = 9;
 
 /**
  * Yerel bildirim zamanlaması için saf kurallar: kademeli hatırlatma anları,
@@ -58,6 +61,25 @@ export function buildTaskReminderTimes(
     .map((ms) => shiftOutOfQuietHours(ms, settings))
     .filter((ms) => ms > now + 5_000);
   return [...new Set(shifted)].sort((a, b) => a - b);
+}
+
+/**
+ * Aktif + tarihli bir alışveriş listesi için bildirim anı: saatliyse o saat,
+ * değilse o günün 09:00'ı. Sessiz saat kaydırması uygulanır; geçmişse null.
+ */
+export function shoppingReminderAt(
+  list: Pick<ShoppingList, 'status' | 'dueAtMs' | 'hasTime'>,
+  settings: UserSettings | null | undefined,
+  now: Millis,
+): Millis | null {
+  if (list.status !== 'active' || list.dueAtMs == null) return null;
+  let at = list.dueAtMs;
+  if (!list.hasTime) {
+    const d = new Date(list.dueAtMs);
+    at = new Date(d.getFullYear(), d.getMonth(), d.getDate(), SHOPPING_DEFAULT_HOUR, 0).getTime();
+  }
+  at = shiftOutOfQuietHours(at, settings);
+  return at > now + 5_000 ? at : null;
 }
 
 /** Günlük özetin bir sonraki tetiklenme anı (bugünkü saat geçtiyse yarın). */

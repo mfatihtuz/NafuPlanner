@@ -2,13 +2,16 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import { shoppingListsDue } from '@/domain/shopping';
 import { groupTasks } from '@/domain/tasks';
-import type { Task } from '@/domain/types';
+import type { ShoppingList, Task } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
 import { RequireHousehold } from '@/features/household/NoHousehold';
 import { getNotifSeen, useNotifications } from '@/features/notifications/useNotifications';
 import { WelcomeCard } from '@/features/onboarding/WelcomeCard';
+import { ShoppingAgendaCard } from '@/features/shopping/ShoppingAgendaCard';
+import { useShoppingLists } from '@/features/shopping/useShoppingLists';
 import { TaskCard } from '@/features/tasks/TaskCard';
 import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
@@ -46,6 +49,7 @@ function TodayContent() {
   const { celebrate } = useCelebration();
   const { household, members, profile, myMember } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
+  const lists = useShoppingLists(household?.id ?? null);
   const categories = useCategories(household?.id ?? null);
 
   // Bildirim merkezi: bana ait atama/yorum/dürtme + okunmamış sayacı.
@@ -69,10 +73,12 @@ function TodayContent() {
     myMember
       ? { count: myMember.streakCount, lastActiveDayKey: myMember.lastActiveDayKey }
       : undefined,
+    lists,
   );
 
   const now = useNow();
   const sections = useMemo(() => (tasks ? groupTasks(tasks, now) : null), [tasks, now]);
+  const shoppingDue = useMemo(() => shoppingListsDue(lists ?? [], now), [lists, now]);
   const categoryMap = useMemo(
     () => new Map((categories ?? []).map((c) => [c.id, c])),
     [categories],
@@ -106,7 +112,19 @@ function TodayContent() {
     />
   );
 
-  const isEmpty = sections && sections.overdue.length === 0 && sections.today.length === 0;
+  const renderShopping = (list: ShoppingList) => (
+    <ShoppingAgendaCard
+      key={list.id}
+      list={list}
+      assignee={list.assigneeId ? memberMap.get(list.assigneeId) : null}
+      onPress={(l) => router.push({ pathname: '/shopping-list/[id]', params: { id: l.id } })}
+    />
+  );
+
+  const hasOverdue =
+    sections != null && (sections.overdue.length > 0 || shoppingDue.overdue.length > 0);
+  const hasToday = sections != null && (sections.today.length > 0 || shoppingDue.today.length > 0);
+  const isEmpty = sections != null && !hasOverdue && !hasToday;
 
   return (
     <View style={{ flex: 1 }}>
@@ -195,21 +213,23 @@ function TodayContent() {
           )
         ) : (
           <View style={{ gap: spacing.xl }}>
-            {sections.overdue.length > 0 ? (
+            {hasOverdue ? (
               <View style={{ gap: spacing.sm }}>
                 <Text variant="overline" tone="accent">
                   {t('today.overdue')}
                 </Text>
                 {sections.overdue.map(renderTask)}
+                {shoppingDue.overdue.map(renderShopping)}
               </View>
             ) : null}
 
-            {sections.today.length > 0 ? (
+            {hasToday ? (
               <View style={{ gap: spacing.sm }}>
                 <Text variant="overline" tone="secondary">
                   {t('today.todayTasks')}
                 </Text>
                 {sections.today.map(renderTask)}
+                {shoppingDue.today.map(renderShopping)}
               </View>
             ) : null}
           </View>

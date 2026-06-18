@@ -2,8 +2,11 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
-import type { ShoppingItem } from '@/domain/types';
+import { formatDayKey } from '@/domain/format';
+import { dayKeyFromMs, dueAtFromDayKey } from '@/domain/time';
+import type { ClockTime, DayKey, ShoppingItem } from '@/domain/types';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
+import { useNow } from '@/hooks/useNow';
 import { useShopping } from '@/features/shopping/useShopping';
 import { useShoppingLists } from '@/features/shopping/useShoppingLists';
 import { t } from '@/i18n';
@@ -23,6 +26,7 @@ import {
 import {
   Avatar,
   Button,
+  Calendar,
   Card,
   Checkbox,
   Chip,
@@ -32,6 +36,7 @@ import {
   Screen,
   Text,
   TextField,
+  TimeWheel,
 } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { radii } from '@/ui/theme/radii';
@@ -105,10 +110,32 @@ export default function ShoppingListDetailScreen() {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showReminderCal, setShowReminderCal] = useState(false);
+
+  const now = useNow();
+  const today = dayKeyFromMs(now);
+  const tomorrow = dayKeyFromMs(now + 86_400_000);
 
   const done = list?.status === 'done';
   const title = isGeneral ? t('shopping.generalList') : (list?.name ?? t('shopping.title'));
   const reminders = list?.reminders ?? [];
+
+  // Tarihli hatırlatma değerleri doğrudan listeden türetilir (tek kaynak
+  // Firestore); değişiklikler updateShoppingList ile yazılır.
+  const dueDayKey: DayKey | null = list?.dueAtMs != null ? dayKeyFromMs(list.dueAtMs) : null;
+  const dueTime: ClockTime | null =
+    list?.hasTime && list?.dueAtMs != null
+      ? { hour: new Date(list.dueAtMs).getHours(), minute: new Date(list.dueAtMs).getMinutes() }
+      : null;
+
+  const applyReminder = (dayKey: DayKey | null, time: ClockTime | null) => {
+    if (!gid || !list) return;
+    const patch =
+      dayKey == null ? { dueAtMs: null as number | null } : dueAtFromDayKey(dayKey, time);
+    updateShoppingList(gid, list.id, patch).catch((error) =>
+      console.warn('[shopping] hatırlatma güncellenemedi', error),
+    );
+  };
 
   // Liste bulunamadı (yüklendi ama yok).
   if (!isGeneral && lists != null && !list) {
@@ -300,6 +327,72 @@ export default function ShoppingListDetailScreen() {
               ))}
             </View>
           </View>
+        ) : null}
+
+        {/* Tarihli hatırlatma: listeyi "Bugün"e + widget'a düşürür, zamanında bildirir */}
+        {list ? (
+          <Card style={{ gap: spacing.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Icon name="calendar" size={16} color={colors.primaryDark} />
+              <Text variant="bodyStrong">{t('shopping.dueReminder')}</Text>
+            </View>
+            <Text variant="caption" tone="secondary">
+              {t('shopping.dueReminderHint')}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              <Chip
+                label={t('tasks.noDueDate')}
+                selected={dueDayKey === null}
+                onPress={() => {
+                  applyReminder(null, null);
+                  setShowReminderCal(false);
+                }}
+              />
+              <Chip
+                label={t('tasks.today')}
+                selected={dueDayKey === today}
+                onPress={() => applyReminder(today, dueTime)}
+              />
+              <Chip
+                label={t('tasks.tomorrow')}
+                selected={dueDayKey === tomorrow}
+                onPress={() => applyReminder(tomorrow, dueTime)}
+              />
+              <Chip
+                label={
+                  dueDayKey && dueDayKey !== today && dueDayKey !== tomorrow
+                    ? formatDayKey(dueDayKey)
+                    : t('tasks.pickDate')
+                }
+                selected={showReminderCal || Boolean(dueDayKey && dueDayKey !== today && dueDayKey !== tomorrow)}
+                onPress={() => setShowReminderCal((v) => !v)}
+              />
+            </View>
+            {showReminderCal ? (
+              <Calendar
+                selected={dueDayKey}
+                onSelect={(key) => {
+                  applyReminder(key, dueTime);
+                  setShowReminderCal(false);
+                }}
+              />
+            ) : null}
+            {dueDayKey ? (
+              <View style={{ gap: spacing.sm }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                  <Chip
+                    label={dueTime ? t('tasks.time') : t('tasks.addTime')}
+                    leftSlot={
+                      <Icon name="clock" size={14} color={dueTime ? colors.primaryDark : colors.textMuted} />
+                    }
+                    selected={dueTime !== null}
+                    onPress={() => applyReminder(dueDayKey, dueTime ? null : { hour: 9, minute: 0 })}
+                  />
+                </View>
+                {dueTime ? <TimeWheel value={dueTime} onChange={(tm) => applyReminder(dueDayKey, tm)} /> : null}
+              </View>
+            ) : null}
+          </Card>
         ) : null}
 
         {/* Bağlı hatırlatmalar (#7): "dönerken şunu da al/yap" */}

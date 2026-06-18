@@ -139,6 +139,9 @@ export const tr = {
   'shopping.emptyLists': 'Henüz liste yok. Bir alışveriş listesi oluştur.',
   'shopping.doneTag': 'Tamamlandı',
   'shopping.assignee': 'Kim alacak?',
+  'shopping.tag': 'Alışveriş',
+  'shopping.dueReminder': 'Tarihli hatırlatma',
+  'shopping.dueReminderHint': 'Belirli gün/saatte hatırlatır; bu liste “Bugün” ve widget’ta görünür.',
   'shopping.reminders': 'Bağlı hatırlatmalar',
   'shopping.remindersHint': 'Dönerken yapılacak küçük işler (ör. kuru temizlemeyi al).',
   'shopping.reminderPlaceholder': 'Hatırlatma ekle',
@@ -151,6 +154,7 @@ export const tr = {
   'activity.shoppingCompleted': '{{name}}, {{list}} alışverişini tamamladı',
   'push.shoppingDoneTitle': 'Alışveriş tamam 🛒',
   'push.shoppingDoneBody': '{{name}}, {{list}} listesini tamamladı.',
+  'push.shoppingReminderTitle': 'Alışveriş hatırlatması 🛒',
 
   'activity.taskAssigned': '{{name}}, "{{task}}" görevini atadı',
   'activity.reopenRequested': '{{name}}, "{{task}}" için geri açma onayı istedi',

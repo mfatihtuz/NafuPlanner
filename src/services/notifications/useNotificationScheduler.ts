@@ -5,9 +5,10 @@ import {
   buildDigestBody,
   buildTaskReminderTimes,
   nextDailyDigestMs,
+  shoppingReminderAt,
 } from '@/domain/reminders';
 import { dayKeyFromMs } from '@/domain/time';
-import type { Task, UserSettings } from '@/domain/types';
+import type { ShoppingList, Task, UserSettings } from '@/domain/types';
 import { t } from '@/i18n';
 
 /** iOS bekleyen bildirim sınırı 64; payımızı küçük tutuyoruz. */
@@ -41,6 +42,8 @@ export function useNotificationScheduler(
   myUid: string | null,
   /** Seri hatırlatması için: aktif seri sayısı + en son aktif gün. */
   streak?: { count: number; lastActiveDayKey?: string },
+  /** Tarihli alışveriş listeleri (bana ait/atanmamış olanlara hatırlatma kurulur). */
+  shoppingLists?: ShoppingList[] | null,
 ): void {
   // Eşzamanlı kurulum (cancelAll + schedule) çakışmasın diye çalıştırmaları
   // zincire dizer; önceki "meşgulken geleni at" yaklaşımı son değişikliği
@@ -71,6 +74,14 @@ export function useNotificationScheduler(
             });
           });
         }
+        // Tarihli alışveriş listeleri: bana ait/atanmamış olanlara tek bildirim.
+        for (const list of shoppingLists ?? []) {
+          if (list.assigneeId != null && list.assigneeId !== myUid) continue;
+          const atMs = shoppingReminderAt(list, settings, now);
+          if (atMs == null) continue;
+          reminders.push({ atMs, title: t('push.shoppingReminderTitle'), body: list.name });
+        }
+
         reminders.sort((a, b) => a.atMs - b.atMs);
         const capped = reminders.slice(0, MAX_SCHEDULED);
 
@@ -177,5 +188,5 @@ export function useNotificationScheduler(
     // bilinçli olarak alanlarını bağımlılık veriyoruz (gereksiz yeniden
     // zamanlamayı önler).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasks, settings, myUid, streak?.count, streak?.lastActiveDayKey]);
+  }, [tasks, shoppingLists, settings, myUid, streak?.count, streak?.lastActiveDayKey]);
 }

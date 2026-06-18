@@ -35,16 +35,34 @@ export async function createShoppingList(
   return ref.id;
 }
 
-/** Liste adı / atanan kişi / bağlı hatırlatmaları günceller. */
+/**
+ * Liste adı / atanan kişi / bağlı hatırlatmaları / tarihli hatırlatmayı günceller.
+ * `dueAtMs: null` tarihli hatırlatmayı (ve saatini) temizler.
+ */
 export async function updateShoppingList(
   gid: string,
   lid: string,
-  patch: { name?: string; assigneeId?: string | null; reminders?: string[] },
+  patch: {
+    name?: string;
+    assigneeId?: string | null;
+    reminders?: string[];
+    dueAtMs?: number | null;
+    hasTime?: boolean;
+  },
 ): Promise<void> {
   const data: Record<string, unknown> = {};
   if (patch.name !== undefined) data.name = patch.name.trim();
   if (patch.assigneeId !== undefined) data.assigneeId = patch.assigneeId;
   if (patch.reminders !== undefined) data.reminders = patch.reminders;
+  if (patch.dueAtMs !== undefined) {
+    if (patch.dueAtMs === null) {
+      data.dueAtMs = deleteField();
+      data.hasTime = deleteField();
+    } else {
+      data.dueAtMs = patch.dueAtMs;
+      data.hasTime = patch.hasTime ?? false;
+    }
+  }
   await updateDoc(doc(requireDb(), 'groups', gid, 'shoppingLists', lid), data);
 }
 
