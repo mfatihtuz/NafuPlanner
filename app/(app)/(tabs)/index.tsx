@@ -78,7 +78,7 @@ function TodayContent() {
 
   const now = useNow();
   const sections = useMemo(() => (tasks ? groupTasks(tasks, now) : null), [tasks, now]);
-  const shoppingDue = useMemo(() => shoppingListsDue(lists ?? [], now), [lists, now]);
+  const shoppingDue = useMemo(() => shoppingListsDue(lists ?? [], now, uid), [lists, now, uid]);
   const categoryMap = useMemo(
     () => new Map((categories ?? []).map((c) => [c.id, c])),
     [categories],

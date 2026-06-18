@@ -46,6 +46,10 @@ export default function AppTabsLayout() {
         options={{ title: t('tabs.shopping'), tabBarIcon: tabIcon('cart') }}
       />
       <Tabs.Screen
+        name="rewards"
+        options={{ title: t('tabs.rewards'), tabBarIcon: tabIcon('gift') }}
+      />
+      <Tabs.Screen
         name="household"
         options={{ title: t('tabs.household'), tabBarIcon: tabIcon('users') }}
       />

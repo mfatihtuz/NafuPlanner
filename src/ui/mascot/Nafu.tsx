@@ -34,10 +34,10 @@ const BODY_BOT = '#0E8E82';
 const EAR = '#15A091';
 const ARM = '#13988B';
 const ARM_HI = '#3CC6B7';
-const BELLY = '#F3FBF9';
-const BELLY_SHADE = '#D7F0EB';
-const EYE = '#222B2D';
-const CHEEK = '#FFAE9E';
+const BELLY = '#F5FCFA';
+const BELLY_SHADE = '#DCF2ED';
+const EYE = '#243230';
+const CHEEK = '#FF9E8A';
 const FOOT = '#0C8074';
 const CONTACT = '#08443E';
 
@@ -175,7 +175,8 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
       <Svg width={size} height={size} viewBox={`0 0 ${VIEW} ${VIEW}`} accessibilityRole="image">
         <Defs>
           <LinearGradient id="nafuBody" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#2DB9AB" />
+            <Stop offset="0" stopColor="#4FE0CF" />
+            <Stop offset="0.55" stopColor="#1FB9AA" />
             <Stop offset="1" stopColor={BODY_BOT} />
           </LinearGradient>
         </Defs>
@@ -190,7 +191,9 @@ export function Nafu({ size = 160, expression = 'happy', animated = true }: Nafu
 
         {/* Gövde */}
         <Ellipse cx="120" cy="126" rx="92" ry="86" fill="url(#nafuBody)" />
-        <Ellipse cx="94" cy="80" rx="40" ry="26" fill="#FFFFFF" opacity={0.12} transform="rotate(-16 94 80)" />
+        {/* Alt jant gölgesi (derinlik) + üst sheen (parlaklık) */}
+        <Ellipse cx="120" cy="150" rx="86" ry="64" fill={BODY_BOT} opacity={0.16} />
+        <Ellipse cx="94" cy="80" rx="44" ry="28" fill="#FFFFFF" opacity={0.22} transform="rotate(-16 94 80)" />
 
         {/* Yüz alanı */}
         <Ellipse cx="120" cy="146" rx="64" ry="58" fill={BELLY_SHADE} />
@@ -330,9 +333,9 @@ function renderFace(expression: NafuExpression, blink: boolean) {
 function openEye(cx: number, cy: number) {
   return (
     <G>
-      <Ellipse cx={cx} cy={cy} rx={12} ry={15.5} fill={EYE} />
-      <Circle cx={cx + 4} cy={cy - 5} r={4.6} fill="#FFFFFF" />
-      <Circle cx={cx - 3} cy={cy + 4} r={2.1} fill="#FFFFFF" opacity={0.9} />
+      <Ellipse cx={cx} cy={cy} rx={13.5} ry={17} fill={EYE} />
+      <Circle cx={cx + 4.5} cy={cy - 5.5} r={5.2} fill="#FFFFFF" />
+      <Circle cx={cx - 3.5} cy={cy + 4.5} r={2.4} fill="#FFFFFF" opacity={0.9} />
     </G>
   );
 }

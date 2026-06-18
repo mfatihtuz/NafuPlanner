@@ -41,7 +41,7 @@ function makeList(partial: Partial<ShoppingList>): ShoppingList {
 
 describe('buildWidgetSnapshot', () => {
   it('boş listede sıfır sayar', () => {
-    const snap = buildWidgetSnapshot([], [], NOW);
+    const snap = buildWidgetSnapshot([], [], NOW, null);
     expect(snap.todayTotal).toBe(0);
     expect(snap.todayDone).toBe(0);
     expect(snap.overdueOpen).toBe(0);
@@ -63,6 +63,7 @@ describe('buildWidgetSnapshot', () => {
       [overdue, todayTimed, todayNoTime, todayDone, future, noDate, archived],
       [],
       NOW,
+      null,
     );
 
     expect(snap.todayTotal).toBe(3);
@@ -82,7 +83,7 @@ describe('buildWidgetSnapshot', () => {
     const listTodayDone = makeList({ status: 'done', dueAtMs: NOW });
     const listNoDate = makeList({}); // tarihsiz → görünmez
 
-    const snap = buildWidgetSnapshot([taskToday], [listOverdue, listTodayDone, listNoDate], NOW);
+    const snap = buildWidgetSnapshot([taskToday], [listOverdue, listTodayDone, listNoDate], NOW, null);
 
     // Bugüne planlı: taskToday + listTodayDone = 2; tamamlanan = 1 (liste).
     expect(snap.todayTotal).toBe(2);
@@ -96,11 +97,19 @@ describe('buildWidgetSnapshot', () => {
     expect(shop?.title).toBe(listOverdue.name);
   });
 
+  it('tarihsiz ama bana ait listeyi (TODO) bugünkü eyleme katar', () => {
+    const myUndated = makeList({ createdBy: 'me' }); // tarihsiz, benim
+    const snap = buildWidgetSnapshot([], [myUndated], NOW, 'me');
+    expect(snap.items.map((i) => i.id)).toEqual([`shop:${myUndated.id}`]);
+    expect(snap.todayTotal).toBe(1);
+    expect(snap.todayDone).toBe(0);
+  });
+
   it('eylem listesini kapaklar', () => {
     const many = Array.from({ length: 15 }, (_, k) =>
       makeTask({ dueAtMs: NOW + (k + 1) * 60_000, hasTime: true }),
     );
-    const snap = buildWidgetSnapshot(many, [], NOW);
+    const snap = buildWidgetSnapshot(many, [], NOW, null);
     expect(snap.items).toHaveLength(WIDGET_MAX_ITEMS);
     expect(snap.todayTotal).toBe(15);
   });

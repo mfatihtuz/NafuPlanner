@@ -59,6 +59,7 @@ export const tr = {
   'tabs.today': 'Bugün',
   'tabs.tasks': 'Görevler',
   'tabs.shopping': 'Alışveriş',
+  'tabs.rewards': 'Ödüller',
   'tabs.household': 'Hane',
 
   'today.greetingMorning': 'Günaydın',

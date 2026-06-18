@@ -47,10 +47,6 @@ export default function AppLayout() {
             options={{ presentation: 'modal', title: t('stats.title') }}
           />
           <Stack.Screen
-            name="rewards"
-            options={{ presentation: 'modal', title: t('rewards.title') }}
-          />
-          <Stack.Screen
             name="categories"
             options={{ presentation: 'modal', title: t('categories.title') }}
           />

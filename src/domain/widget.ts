@@ -70,31 +70,36 @@ function timeLabelForDue(
 }
 
 /**
- * Bugünün widget özetini üretir.
+ * Bugünün widget özetini üretir (kullanıcı `uid` perspektifinden).
  *
  * Eylem listesi Bugün ekranıyla aynı kümedir: açık geciken + açık bugün
- * görevleri VE tarihli/aktif alışveriş listeleri (her bölümde önce görevler).
- * İlerleme halkası bugüne planlı tüm öğelerin (görev + liste, tamamlanan dahil)
- * tamamlanma oranını yansıtır.
+ * görevleri VE bugünkü alışveriş listeleri (tarihli ya da bana ait/atanmış
+ * tarihsiz). Her bölümde önce görevler, sonra listeler. İlerleme halkası
+ * bugünün açık + tamamlanmış işlerinin oranını yansıtır.
  */
 export function buildWidgetSnapshot(
   tasks: Task[],
   lists: ShoppingList[],
   now: Millis,
+  uid: string | null,
 ): WidgetSnapshot {
   const todayKey = dayKeyFromMs(now);
   const sections = groupTasks(tasks, now);
-  const shopping = shoppingListsDue(lists, now);
+  const shopping = shoppingListsDue(lists, now, uid);
 
-  const dueTodayTasks = tasks.filter(
+  // Bugüne planlı (tarihli) ve tamamlanmış öğeler — ilerleme paydası için.
+  const doneTodayTasks = tasks.filter(
     (task) =>
-      task.status !== 'archived' &&
+      task.status === 'done' &&
       task.dueAtMs != null &&
       dayKeyFromMs(task.dueAtMs) === todayKey,
-  );
-  const dueTodayLists = lists.filter(
-    (list) => list.dueAtMs != null && dayKeyFromMs(list.dueAtMs) === todayKey,
-  );
+  ).length;
+  const doneTodayLists = lists.filter(
+    (list) =>
+      list.status === 'done' &&
+      list.dueAtMs != null &&
+      dayKeyFromMs(list.dueAtMs) === todayKey,
+  ).length;
 
   const taskItem = (task: Task): WidgetTaskItem => ({
     id: task.id,
@@ -120,14 +125,16 @@ export function buildWidgetSnapshot(
     ...shopping.today.map(shopItem),
   ].slice(0, WIDGET_MAX_ITEMS);
 
+  const todayOpen = sections.today.length + shopping.today.length;
+  const todayDone = doneTodayTasks + doneTodayLists;
+
   return {
     generatedAtMs: now,
     dateLabel: formatShortDate(now),
     weekdayLabel: WEEKDAY_NAMES_TR[new Date(now).getDay()],
-    todayTotal: dueTodayTasks.length + dueTodayLists.length,
-    todayDone:
-      dueTodayTasks.filter((task) => task.status === 'done').length +
-      dueTodayLists.filter((list) => list.status === 'done').length,
+    // total = bugünün açık + tamamlanmış işleri (ilerleme halkası tutarlı kalsın).
+    todayTotal: todayOpen + todayDone,
+    todayDone,
     overdueOpen: sections.overdue.length + shopping.overdue.length,
     items,
   };
