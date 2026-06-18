@@ -9,8 +9,8 @@ import { useShoppingLists } from '@/features/shopping/useShoppingLists';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { firestoreErrorMessage } from '@/services/firestore/errors';
-import { createShoppingList } from '@/services/firestore/shoppingLists';
 import { useHousehold } from '@/services/household/HouseholdProvider';
+import { createShoppingListFlow } from '@/services/workflows/shoppingWorkflows';
 import { Avatar, Button, Card, EmptyState, Icon, Screen, Text, TextField } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { spacing } from '@/ui/theme/spacing';
@@ -112,7 +112,12 @@ function ShoppingContent() {
     if (!name || !gid || !user) return;
     setCreating(true);
     try {
-      const lid = await createShoppingList(gid, name, user.uid);
+      const lid = await createShoppingListFlow({
+        gid,
+        name,
+        actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+        members,
+      });
       setNewListName('');
       router.push({ pathname: '/shopping-list/[id]', params: { id: lid } });
     } catch (error) {

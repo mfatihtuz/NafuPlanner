@@ -14,7 +14,7 @@ import { colors } from '@/ui/theme/colors';
 import { spacing } from '@/ui/theme/spacing';
 
 function lineFor(entry: ActivityEntry): {
-  icon: 'checkSquare' | 'message' | 'bell';
+  icon: 'checkSquare' | 'message' | 'bell' | 'cart';
   text: string;
 } {
   const name = entry.actorName.split(' ')[0];
@@ -28,6 +28,8 @@ function lineFor(entry: ActivityEntry): {
       return { icon: 'bell', text: t('notifications.nudged', { name, task }) };
     case 'task_reopen_requested':
       return { icon: 'bell', text: t('notifications.reopenRequested', { name, task }) };
+    case 'shopping_assigned':
+      return { icon: 'cart', text: t('notifications.shoppingAssigned', { name, list: task }) };
     default:
       return { icon: 'bell', text: '' };
   }
@@ -61,7 +63,10 @@ export default function NotificationsScreen() {
               <Pressable
                 key={entry.id}
                 onPress={() => {
-                  if (entry.taskId) {
+                  if (!entry.taskId) return;
+                  if (entry.type === 'shopping_assigned') {
+                    router.push({ pathname: '/shopping-list/[id]', params: { id: entry.taskId } });
+                  } else {
                     router.push({ pathname: '/task/[id]', params: { id: entry.taskId } });
                   }
                 }}

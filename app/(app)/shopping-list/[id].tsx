@@ -20,6 +20,7 @@ import {
 import { deleteShoppingList, updateShoppingList } from '@/services/firestore/shoppingLists';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import {
+  assignShoppingListFlow,
   completeShoppingListFlow,
   reopenShoppingListFlow,
 } from '@/services/workflows/shoppingWorkflows';
@@ -180,9 +181,12 @@ export default function ShoppingListDetailScreen() {
   };
 
   const onAssign = (uid: string) => {
-    if (!gid || !list) return;
-    updateShoppingList(gid, list.id, {
+    if (!gid || !list || !user) return;
+    assignShoppingListFlow({
+      list,
       assigneeId: list.assigneeId === uid ? null : uid,
+      actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+      members,
     }).catch((error) => console.warn('[shopping] atama güncellenemedi', error));
   };
 

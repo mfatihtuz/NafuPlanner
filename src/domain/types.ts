@@ -255,6 +255,8 @@ export type ActivityType =
   | 'task_assigned'
   | 'task_reopen_requested'
   | 'reward_redeemed'
+  | 'shopping_created'
+  | 'shopping_assigned'
   | 'shopping_completed'
   | 'member_joined';
 

@@ -40,6 +40,10 @@ function activityLine(entry: ActivityEntry): string {
       return t('activity.reopenRequested', { name, task: entry.taskTitle ?? '' });
     case 'reward_redeemed':
       return t('activity.rewardRedeemed', { name, task: entry.taskTitle ?? '' });
+    case 'shopping_created':
+      return t('activity.shoppingCreated', { name, list: entry.taskTitle ?? '' });
+    case 'shopping_assigned':
+      return t('activity.shoppingAssigned', { name, list: entry.taskTitle ?? '' });
     case 'shopping_completed':
       return t('activity.shoppingCompleted', { name, list: entry.taskTitle ?? '' });
     case 'member_joined':
