@@ -154,6 +154,13 @@ export interface Task {
   reopenRequestedBy?: Id;
   reopenRequestedByName?: string;
   reopenRequestedAtMs?: Millis;
+  /**
+   * Bekleyen tamamlama onayı: göreve atanmamış biri "tamamladım" işaretledi,
+   * atanan kişinin onayı bekleniyor. Onaylanınca puan isteği yapana yazılır.
+   */
+  pendingCompleteBy?: Id;
+  pendingCompleteByName?: string;
+  pendingCompleteAtMs?: Millis;
 }
 
 export interface TaskComment {
@@ -256,6 +263,7 @@ export type ActivityType =
   | 'task_commented'
   | 'task_assigned'
   | 'task_reopen_requested'
+  | 'task_complete_requested'
   | 'reward_redeemed'
   | 'shopping_created'
   | 'shopping_assigned'

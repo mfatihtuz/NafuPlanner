@@ -10,7 +10,7 @@ import {
   startOfWeekMs,
   weeklyPoints,
 } from '../gamification';
-import type { Task } from '../types';
+import type { ShoppingList, Task } from '../types';
 
 describe('gamification', () => {
   it('efor tabanı × öncelik çarpanı ile puan verir', () => {
@@ -129,10 +129,34 @@ describe('weeklyPoints', () => {
     const lastWeek = new Date(2026, 5, 5, 9, 0).getTime();
     const totals = weeklyPoints(
       [mkDone('a', 10, monday), mkDone('a', 15, NOW), mkDone('b', 20, NOW), mkDone('b', 99, lastWeek)],
+      [],
       NOW,
     );
     expect(totals.get('a')).toBe(25);
     expect(totals.get('b')).toBe(20);
+  });
+
+  it('bu hafta tamamlanan alışveriş listelerini de katar (awardedPoints)', () => {
+    const mkList = (uid: string, pts: number, at: number): ShoppingList =>
+      ({
+        id: 'l',
+        householdId: 'h',
+        name: 'Migros',
+        status: 'done',
+        createdBy: uid,
+        createdAtMs: at,
+        completedBy: uid,
+        completedAtMs: at,
+        awardedPoints: pts,
+      }) as ShoppingList;
+    const lastWeek = new Date(2026, 5, 5, 9, 0).getTime();
+    const totals = weeklyPoints(
+      [mkDone('a', 10, NOW)],
+      [mkList('a', 15, NOW), mkList('b', 30, NOW), mkList('b', 99, lastWeek)],
+      NOW,
+    );
+    expect(totals.get('a')).toBe(25); // 10 görev + 15 alışveriş
+    expect(totals.get('b')).toBe(30); // yalnız bu haftaki liste
   });
 });
 

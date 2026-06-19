@@ -13,10 +13,12 @@ import {
   type NewRecurrenceInput,
 } from '@/services/firestore/recurrences';
 import {
+  clearCompletionRequest,
   clearReopenRequest,
   completeTask,
   createTask,
   reopenTask,
+  setCompletionRequest,
   setReopenRequest,
   type NewTaskInput,
 } from '@/services/firestore/tasks';
@@ -303,6 +305,90 @@ export async function rejectReopenTaskFlow(input: ReopenRequestFlowInput): Promi
 /** İsteyen kendi geri açma isteğinden vazgeçer. */
 export async function cancelReopenTaskFlow(task: Task): Promise<void> {
   await clearReopenRequest(task.householdId, task.id);
+}
+
+export interface CompleteApprovalFlowInput {
+  task: Task;
+  actor: Actor;
+  members: Member[];
+}
+
+/**
+ * Atanmamış kişi, başkasına atanmış görevi "tamamladım" işaretleyince: istek
+ * görevin üzerine işlenir, ATANAN(lar)a aktivite + push gider. Atanan onaylarsa
+ * görev tamamlanır (puan isteği yapana yazılır); reddederse istek silinir.
+ */
+export async function requestCompleteTaskFlow(input: CompleteApprovalFlowInput): Promise<void> {
+  const { task, actor, members } = input;
+  await setCompletionRequest(task.householdId, task.id, actor.uid, actor.name);
+
+  const targets = task.assigneeIds;
+  const targetNames = members
+    .filter((m) => targets.includes(m.userId))
+    .map((m) => m.displayName.split(' ')[0]);
+
+  void addActivity({
+    householdId: task.householdId,
+    type: 'task_complete_requested',
+    actorId: actor.uid,
+    actorName: actor.name,
+    taskId: task.id,
+    taskTitle: task.title,
+    targetIds: targets,
+    targetNames,
+  });
+
+  void notifyMembers({
+    householdId: task.householdId,
+    excludeUid: actor.uid,
+    onlyUids: targets,
+    title: t('push.completeRequestTitle'),
+    body: t('push.completeRequestBody', { name: actor.name, task: task.title }),
+  });
+}
+
+/**
+ * Atanan, bekleyen tamamlamayı onaylar: görev İSTEĞİ YAPAN adına tamamlanır
+ * (puan ona yazılır, completeTask bekleyen alanları temizler) ve isteyene haber
+ * verilir.
+ */
+export async function approveCompleteTaskFlow(input: CompleteApprovalFlowInput): Promise<void> {
+  const { task, actor, members } = input;
+  const requesterId = task.pendingCompleteBy;
+  if (!requesterId) return;
+  await completeTaskFlow({
+    task,
+    actor: { uid: requesterId, name: task.pendingCompleteByName ?? '' },
+    members,
+  });
+  void notifyMembers({
+    householdId: task.householdId,
+    excludeUid: actor.uid,
+    onlyUids: [requesterId],
+    title: t('push.completeApprovedTitle'),
+    body: t('push.completeApprovedBody', { name: actor.name, task: task.title }),
+  });
+}
+
+/** Atanan, bekleyen tamamlamayı reddeder: istek silinir, görev açık kalır. */
+export async function rejectCompleteTaskFlow(input: CompleteApprovalFlowInput): Promise<void> {
+  const { task, actor } = input;
+  const requesterId = task.pendingCompleteBy;
+  await clearCompletionRequest(task.householdId, task.id);
+  if (requesterId) {
+    void notifyMembers({
+      householdId: task.householdId,
+      excludeUid: actor.uid,
+      onlyUids: [requesterId],
+      title: t('push.completeRejectedTitle'),
+      body: t('push.completeRejectedBody', { name: actor.name, task: task.title }),
+    });
+  }
+}
+
+/** İsteyen kendi tamamlama isteğinden vazgeçer. */
+export async function cancelCompleteTaskFlow(task: Task): Promise<void> {
+  await clearCompletionRequest(task.householdId, task.id);
 }
 
 export interface NudgeFlowInput {

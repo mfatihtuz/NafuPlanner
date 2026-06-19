@@ -18,7 +18,7 @@ import { t, type TranslationKey } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { reopenTaskGate } from '@/features/tasks/reopenTask';
-import { completeTaskFlow } from '@/services/workflows/taskWorkflows';
+import { completeTaskGate } from '@/features/tasks/completeTask';
 import { Chip, EmptyState, FAB, Screen, Text, TextField } from '@/ui';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -69,9 +69,7 @@ function TasksContent() {
     if (task.status === 'done') {
       reopenTaskGate(task, actor, members);
     } else {
-      completeTaskFlow({ task, actor, members })
-        .then(celebrate)
-        .catch((error) => console.warn('[tasks] görev güncellenemedi', error));
+      completeTaskGate(task, actor, members, celebrate);
     }
   };
 

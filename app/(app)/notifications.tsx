@@ -28,6 +28,8 @@ function lineFor(entry: ActivityEntry): {
       return { icon: 'bell', text: t('notifications.nudged', { name, task }) };
     case 'task_reopen_requested':
       return { icon: 'bell', text: t('notifications.reopenRequested', { name, task }) };
+    case 'task_complete_requested':
+      return { icon: 'bell', text: t('notifications.completeRequested', { name, task }) };
     case 'shopping_assigned':
       return { icon: 'cart', text: t('notifications.shoppingAssigned', { name, list: task }) };
     default:

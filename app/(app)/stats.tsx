@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { weeklyPoints } from '@/domain/gamification';
 import { categoryDoneCounts, dailyDoneCounts } from '@/domain/stats';
 import { useCategories } from '@/features/categories/useCategories';
+import { useShoppingLists } from '@/features/shopping/useShoppingLists';
 import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
@@ -19,9 +20,13 @@ export default function StatsScreen() {
   const now = useNow();
   const { household, members } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
+  const shoppingLists = useShoppingLists(household?.id ?? null);
   const categories = useCategories(household?.id ?? null);
 
-  const weekly = useMemo(() => weeklyPoints(tasks ?? [], now), [tasks, now]);
+  const weekly = useMemo(
+    () => weeklyPoints(tasks ?? [], shoppingLists ?? [], now),
+    [tasks, shoppingLists, now],
+  );
   const daily = useMemo(() => dailyDoneCounts(tasks ?? [], now), [tasks, now]);
   const byCategory = useMemo(
     () => categoryDoneCounts(tasks ?? [], now - THIRTY_DAYS_MS),

@@ -14,7 +14,7 @@ import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { reopenTaskGate } from '@/features/tasks/reopenTask';
-import { completeTaskFlow } from '@/services/workflows/taskWorkflows';
+import { completeTaskGate } from '@/features/tasks/completeTask';
 import { Calendar, Screen, Text } from '@/ui';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -56,9 +56,7 @@ export default function CalendarScreen() {
     if (task.status === 'done') {
       reopenTaskGate(task, actor, members);
     } else {
-      completeTaskFlow({ task, actor, members })
-        .then(celebrate)
-        .catch((error) => console.warn('[calendar] güncellenemedi', error));
+      completeTaskGate(task, actor, members, celebrate);
     }
   };
 

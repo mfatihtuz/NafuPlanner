@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Share, View } from 're
 import { formatDueLabel } from '@/domain/format';
 import { weeklyPoints } from '@/domain/gamification';
 import type { ActivityEntry } from '@/domain/types';
+import { useShoppingLists } from '@/features/shopping/useShoppingLists';
 import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
@@ -38,6 +39,8 @@ function activityLine(entry: ActivityEntry): string {
       return t('activity.taskAssigned', { name, task: entry.taskTitle ?? '' });
     case 'task_reopen_requested':
       return t('activity.reopenRequested', { name, task: entry.taskTitle ?? '' });
+    case 'task_complete_requested':
+      return t('activity.completeRequested', { name, task: entry.taskTitle ?? '' });
     case 'reward_redeemed':
       return t('activity.rewardRedeemed', { name, task: entry.taskTitle ?? '' });
     case 'shopping_created':
@@ -170,7 +173,11 @@ function HouseholdView() {
   const [showAllActivity, setShowAllActivity] = useState(false);
   const activity = useWatch(household?.id ?? null, watchActivity);
   const tasks = useTasks(household?.id ?? null);
-  const weekly = useMemo(() => weeklyPoints(tasks ?? [], now), [tasks, now]);
+  const shoppingLists = useShoppingLists(household?.id ?? null);
+  const weekly = useMemo(
+    () => weeklyPoints(tasks ?? [], shoppingLists ?? [], now),
+    [tasks, shoppingLists, now],
+  );
   const rankedMembers = useMemo(
     () => [...members].sort((a, b) => (weekly.get(b.userId) ?? 0) - (weekly.get(a.userId) ?? 0)),
     [members, weekly],

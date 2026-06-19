@@ -70,6 +70,33 @@ export async function completeTask(gid: string, taskId: string, byUid: string): 
     status: 'done',
     completedBy: byUid,
     completedAtMs: Date.now(),
+    // Tamamlanınca bekleyen tamamlama onayı (varsa) kapanır.
+    pendingCompleteBy: deleteField(),
+    pendingCompleteByName: deleteField(),
+    pendingCompleteAtMs: deleteField(),
+  });
+}
+
+/** Tamamlama onay isteğini görevin üzerine işler. */
+export async function setCompletionRequest(
+  gid: string,
+  taskId: string,
+  byUid: string,
+  byName: string,
+): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'tasks', taskId), {
+    pendingCompleteBy: byUid,
+    pendingCompleteByName: byName,
+    pendingCompleteAtMs: Date.now(),
+  });
+}
+
+/** Bekleyen tamamlama isteğini temizler (ret / vazgeçme). */
+export async function clearCompletionRequest(gid: string, taskId: string): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'tasks', taskId), {
+    pendingCompleteBy: deleteField(),
+    pendingCompleteByName: deleteField(),
+    pendingCompleteAtMs: deleteField(),
   });
 }
 

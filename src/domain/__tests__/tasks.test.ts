@@ -1,4 +1,11 @@
-import { canDecideReopen, groupTasks, reopenNeedsApproval, subtaskProgress } from '../tasks';
+import {
+  canDecideCompletion,
+  canDecideReopen,
+  completionNeedsApproval,
+  groupTasks,
+  reopenNeedsApproval,
+  subtaskProgress,
+} from '../tasks';
 import type { Task } from '../types';
 
 const NOW = new Date(2026, 5, 10, 12, 0).getTime(); // 10 Haziran 2026 öğlen
@@ -115,5 +122,54 @@ describe('canDecideReopen', () => {
 
   it('istek yoksa karar da yoktur', () => {
     expect(canDecideReopen(makeTask({ status: 'done', completedBy: 'u1' }), 'u1')).toBe(false);
+  });
+});
+
+describe('completionNeedsApproval', () => {
+  it('atanmamış biri başkasının görevini tamamlıyorsa onay ister', () => {
+    const task = makeTask({ assigneeIds: ['u1'] });
+    expect(completionNeedsApproval(task, 'u2', 2)).toBe(true);
+  });
+
+  it('atanan kişi kendi görevini onaysız tamamlar', () => {
+    const task = makeTask({ assigneeIds: ['u1'] });
+    expect(completionNeedsApproval(task, 'u1', 2)).toBe(false);
+  });
+
+  it('atanmamış (paylaşılan) görev onaysız tamamlanır', () => {
+    const task = makeTask({ assigneeIds: [] });
+    expect(completionNeedsApproval(task, 'u2', 2)).toBe(false);
+  });
+
+  it('tek üyeli hanede onay istemez (onaylayacak kimse yok)', () => {
+    const task = makeTask({ assigneeIds: ['u1'] });
+    expect(completionNeedsApproval(task, 'u2', 1)).toBe(false);
+  });
+
+  it('zaten tamamlanmış görevde onay istemez', () => {
+    const task = makeTask({ status: 'done', assigneeIds: ['u1'] });
+    expect(completionNeedsApproval(task, 'u2', 2)).toBe(false);
+  });
+});
+
+describe('canDecideCompletion', () => {
+  it('atanan kişi bekleyen tamamlamayı karara bağlayabilir', () => {
+    const task = makeTask({ assigneeIds: ['u1'], pendingCompleteBy: 'u2' });
+    expect(canDecideCompletion(task, 'u1')).toBe(true);
+  });
+
+  it('isteyen kendi tamamlamasını onaylayamaz', () => {
+    const task = makeTask({ assigneeIds: ['u1'], pendingCompleteBy: 'u2' });
+    expect(canDecideCompletion(task, 'u2')).toBe(false);
+  });
+
+  it('atanmamış üçüncü kişi karara bağlayamaz', () => {
+    const task = makeTask({ assigneeIds: ['u1'], pendingCompleteBy: 'u2' });
+    expect(canDecideCompletion(task, 'u3')).toBe(false);
+  });
+
+  it('bekleyen istek yoksa karar da yoktur', () => {
+    const task = makeTask({ assigneeIds: ['u1'] });
+    expect(canDecideCompletion(task, 'u1')).toBe(false);
   });
 });

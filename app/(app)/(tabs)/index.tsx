@@ -22,7 +22,7 @@ import { useAuth } from '@/services/auth/AuthProvider';
 import { markOnboarded } from '@/services/firestore/users';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { reopenTaskGate } from '@/features/tasks/reopenTask';
-import { completeTaskFlow } from '@/services/workflows/taskWorkflows';
+import { completeTaskGate } from '@/features/tasks/completeTask';
 import { EmptyState, FAB, Icon, Screen, Text } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { spacing } from '@/ui/theme/spacing';
@@ -84,9 +84,7 @@ function TodayContent() {
     if (task.status === 'done') {
       reopenTaskGate(task, actor, members);
     } else {
-      completeTaskFlow({ task, actor, members })
-        .then(celebrate)
-        .catch((error) => console.warn('[today] görev güncellenemedi', error));
+      completeTaskGate(task, actor, members, celebrate);
     }
   };
 
@@ -148,18 +146,29 @@ function TodayContent() {
                 <View
                   style={{
                     position: 'absolute',
-                    top: -4,
-                    right: -4,
-                    minWidth: 16,
-                    height: 16,
-                    borderRadius: 8,
-                    paddingHorizontal: 3,
+                    top: -6,
+                    right: -7,
+                    minWidth: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    paddingHorizontal: 4,
                     backgroundColor: colors.danger,
+                    borderWidth: 1.5,
+                    borderColor: colors.surface,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: colors.onPrimary, fontSize: 10, fontWeight: '700' }}>
+                  <Text
+                    style={{
+                      color: colors.onPrimary,
+                      fontSize: 11,
+                      lineHeight: 14,
+                      fontWeight: '800',
+                      textAlign: 'center',
+                      includeFontPadding: false,
+                    }}
+                  >
                     {unread > 9 ? '9+' : String(unread)}
                   </Text>
                 </View>

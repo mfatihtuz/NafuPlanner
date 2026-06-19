@@ -13,6 +13,7 @@ import { actorOf } from '@/services/auth/actor';
 import { useMemberMap } from '@/features/household/useMemberMap';
 import { PRIORITY_META } from '@/domain/constants';
 import { formatDueLabel } from '@/domain/format';
+import { canDecideCompletion } from '@/domain/tasks';
 import type { Attachment, Subtask } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
@@ -31,13 +32,16 @@ import { deleteTask, setSubtasks } from '@/services/firestore/tasks';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { deleteStorageObject, uploadTaskImage } from '@/services/storage/attachments';
+import { completeTaskGate } from '@/features/tasks/completeTask';
 import { reopenTaskGate } from '@/features/tasks/reopenTask';
 import {
+  approveCompleteTaskFlow,
   approveReopenTaskFlow,
+  cancelCompleteTaskFlow,
   cancelReopenTaskFlow,
   commentTaskFlow,
-  completeTaskFlow,
   nudgeTaskFlow,
+  rejectCompleteTaskFlow,
   rejectReopenTaskFlow,
 } from '@/services/workflows/taskWorkflows';
 import {
@@ -158,10 +162,28 @@ export default function TaskDetailScreen() {
     if (done) {
       reopenTaskGate(task, actor, members);
     } else {
-      completeTaskFlow({ task, actor, members })
-        .then(celebrate)
-        .catch((error) => console.warn('[task] durum değiştirilemedi', error));
+      completeTaskGate(task, actor, members, celebrate);
     }
+  };
+
+  const onApproveComplete = () => {
+    if (!user) return;
+    approveCompleteTaskFlow({ task, actor: actorOf(user), members }).catch((error) =>
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))),
+    );
+  };
+
+  const onRejectComplete = () => {
+    if (!user) return;
+    rejectCompleteTaskFlow({ task, actor: actorOf(user), members }).catch((error) =>
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))),
+    );
+  };
+
+  const onCancelCompleteRequest = () => {
+    cancelCompleteTaskFlow(task).catch((error) =>
+      console.warn('[task] tamamlama isteği geri çekilemedi', error),
+    );
   };
 
   const onApproveReopen = () => {
@@ -512,10 +534,48 @@ export default function TaskDetailScreen() {
         <View style={{ flex: 1 }} />
 
         <View style={{ gap: spacing.sm }}>
-          {!done && members.length > 1 ? (
+          {!done && members.length > 1 && !task.pendingCompleteBy ? (
             <Button title={t('tasks.nudge')} variant="ghost" onPress={onNudge} />
           ) : null}
-          {done && task.reopenRequestedBy ? (
+          {!done && task.pendingCompleteBy ? (
+            task.pendingCompleteBy === user?.uid ? (
+              // Kendi tamamlama isteğim: atanan kişinin onayı bekleniyor + vazgeç.
+              <View style={{ gap: spacing.sm }}>
+                <Text variant="caption" tone="secondary" center>
+                  {t('tasks.completePending')}
+                </Text>
+                <Button
+                  title={t('tasks.completeCancelRequest')}
+                  variant="ghost"
+                  onPress={onCancelCompleteRequest}
+                />
+              </View>
+            ) : canDecideCompletion(task, user?.uid ?? '') ? (
+              // Bana atanmış görevi başkası tamamladı: onayla / reddet.
+              <View style={{ gap: spacing.sm }}>
+                <Text variant="caption" tone="secondary" center>
+                  {t('tasks.completePendingBy', {
+                    name:
+                      (task.pendingCompleteByName ?? t('common.member')).split(' ')[0],
+                  })}
+                </Text>
+                <Button title={t('tasks.completeApprove')} onPress={onApproveComplete} />
+                <Button
+                  title={t('tasks.completeReject')}
+                  variant="secondary"
+                  onPress={onRejectComplete}
+                />
+              </View>
+            ) : (
+              // Üçüncü kişi: yalnızca bilgilendir.
+              <Text variant="caption" tone="secondary" center>
+                {t('tasks.completePendingBy', {
+                  name:
+                    (task.pendingCompleteByName ?? t('common.member')).split(' ')[0],
+                })}
+              </Text>
+            )
+          ) : done && task.reopenRequestedBy ? (
             task.reopenRequestedBy === user?.uid ? (
               // Kendi isteğim: bekleme durumu + vazgeçme.
               <View style={{ gap: spacing.sm }}>

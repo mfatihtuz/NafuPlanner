@@ -124,6 +124,18 @@ export const tr = {
   'tasks.reopenApprove': 'Onayla ve geri aç',
   'tasks.reopenReject': 'Reddet',
   'tasks.reopenCancelRequest': 'İsteği geri çek',
+  'tasks.completeNeedsApprovalTitle': 'Tamamlama onayı',
+  'tasks.completeNeedsApprovalBody':
+    'Bu görev {{name}} kişisine atanmış. Tamamladığını onaya gönderelim mi? {{name}} onayladığında puan sana yazılır.',
+  'tasks.completeRequestAction': 'Onaya gönder',
+  'tasks.completeRequestSent':
+    'Onay isteği gönderildi. Atanan kişi onayladığında görev tamamlanır ve puan sana yazılır.',
+  'tasks.completeAlreadyPending': 'Bu görev için zaten bir tamamlama onayı bekliyor.',
+  'tasks.completePending': 'Tamamlama onayı bekleniyor…',
+  'tasks.completePendingBy': '{{name}} bu görevi tamamladı; onayını bekliyor.',
+  'tasks.completeApprove': 'Onayla ve tamamla',
+  'tasks.completeReject': 'Reddet',
+  'tasks.completeCancelRequest': 'İsteği geri çek',
   'tasks.deleteTitle': 'Görevi sil',
   'tasks.deleteBody': 'Bu görev kalıcı olarak silinecek. Emin misin?',
   'tasks.completedBy': '{{name}} tamamladı',
@@ -166,6 +178,7 @@ export const tr = {
 
   'activity.taskAssigned': '{{name}}, "{{task}}" görevini atadı',
   'activity.reopenRequested': '{{name}}, "{{task}}" için geri açma onayı istedi',
+  'activity.completeRequested': '{{name}}, "{{task}}" görevini tamamladı; onayını bekliyor',
   'notifications.title': 'Bildirimler',
   'notifications.empty':
     'Yeni bildirim yok. Sana atanan görevler ve gelen yorumlar burada görünür.',
@@ -173,6 +186,7 @@ export const tr = {
   'notifications.commented': '{{name}}, "{{task}}" görevine yorum yaptı',
   'notifications.nudged': '{{name}} seni "{{task}}" için dürttü',
   'notifications.reopenRequested': '{{name}}, "{{task}}" görevini geri açmak için onay istiyor',
+  'notifications.completeRequested': '{{name}}, "{{task}}" görevini tamamladı; senin onayını bekliyor',
 
   'household.title': 'Hane',
   'household.create': 'Hane oluştur',
@@ -234,6 +248,12 @@ export const tr = {
   'push.reopenApprovedBody': '{{name}}, "{{task}}" görevini geri açtı.',
   'push.reopenRejectedTitle': 'Geri açma reddedildi',
   'push.reopenRejectedBody': '{{name}}, "{{task}}" için geri açma isteğini reddetti.',
+  'push.completeRequestTitle': 'Tamamlama onayı ✓',
+  'push.completeRequestBody': '{{name}}, "{{task}}" görevini tamamladı. Onay için görevi aç.',
+  'push.completeApprovedTitle': 'Tamamlama onaylandı ✓',
+  'push.completeApprovedBody': '{{name}}, "{{task}}" görevini onayladı. Puan sana yazıldı.',
+  'push.completeRejectedTitle': 'Tamamlama reddedildi',
+  'push.completeRejectedBody': '{{name}}, "{{task}}" görevinin tamamlanmasını reddetti.',
   'push.completedTitle': 'Görev tamamlandı ✓',
   'push.completedBody': '{{name}}, "{{task}}" görevini tamamladı',
   'push.nudgeTitle': 'Nafu dürtüyor 👉',

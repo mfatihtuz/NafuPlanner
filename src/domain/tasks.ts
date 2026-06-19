@@ -86,3 +86,29 @@ export function reopenNeedsApproval(task: Task, uid: string, memberCount: number
 export function canDecideReopen(task: Task, uid: string): boolean {
   return task.reopenRequestedBy != null && task.reopenRequestedBy !== uid;
 }
+
+/**
+ * Tamamlama onay gerektirir mi? Görev belirli kişilere atanmışsa ve tamamlayan
+ * bu atananlardan biri DEĞİLSE (ve hanede başka üye varsa) atananın onayı
+ * gerekir. Atanmamış (paylaşılan) görevler serbestçe tamamlanır.
+ */
+export function completionNeedsApproval(task: Task, uid: string, memberCount: number): boolean {
+  return (
+    (task.status === 'open' || task.status === 'in_progress') &&
+    task.assigneeIds.length > 0 &&
+    !task.assigneeIds.includes(uid) &&
+    memberCount > 1
+  );
+}
+
+/**
+ * Bekleyen tamamlama onayını bu kullanıcı karara bağlayabilir mi? (Görevin
+ * atananı ve isteğin sahibi olmayan.)
+ */
+export function canDecideCompletion(task: Task, uid: string): boolean {
+  return (
+    task.pendingCompleteBy != null &&
+    task.pendingCompleteBy !== uid &&
+    task.assigneeIds.includes(uid)
+  );
+}

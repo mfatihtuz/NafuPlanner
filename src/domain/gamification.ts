@@ -1,6 +1,6 @@
 import { DIFFICULTY_META, POINTS_PER_LEVEL, PRIORITY_POINT_MULTIPLIER } from './constants';
 import { isConsecutiveDay } from './time';
-import type { Badge, DayKey, Difficulty, Millis, Priority, Task } from './types';
+import type { Badge, DayKey, Difficulty, Millis, Priority, ShoppingList, Task } from './types';
 
 /**
  * Saf oyunlaştırma kuralları — yan etkisiz, kolayca test edilebilir.
@@ -207,16 +207,28 @@ export function startOfWeekMs(now: Millis): Millis {
 }
 
 /**
- * Bu hafta tamamlanan görevlerden üye başına puan toplar
- * (puan tamamlayan kişiye yazılır).
+ * Bu hafta tamamlanan GÖREV + ALIŞVERİŞ listelerinden üye başına puan toplar.
+ * Puan, görevde tamamlayana; alışverişte tamamlanma kaydındaki kişiye (atanan
+ * yoksa tamamlayan) yazılır — yani `completedBy` ve saklanan `awardedPoints`.
  */
-export function weeklyPoints(tasks: Task[], now: Millis): Map<string, number> {
+export function weeklyPoints(
+  tasks: Task[],
+  lists: ShoppingList[],
+  now: Millis,
+): Map<string, number> {
   const weekStart = startOfWeekMs(now);
   const totals = new Map<string, number>();
+  const add = (uid: string, pts: number) => totals.set(uid, (totals.get(uid) ?? 0) + pts);
+
   for (const task of tasks) {
     if (task.status !== 'done' || !task.completedBy) continue;
     if (task.completedAtMs == null || task.completedAtMs < weekStart) continue;
-    totals.set(task.completedBy, (totals.get(task.completedBy) ?? 0) + task.points);
+    add(task.completedBy, task.points);
+  }
+  for (const list of lists) {
+    if (list.status !== 'done' || !list.completedBy) continue;
+    if (list.completedAtMs == null || list.completedAtMs < weekStart) continue;
+    add(list.completedBy, list.awardedPoints ?? 0);
   }
   return totals;
 }
