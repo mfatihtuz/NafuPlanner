@@ -9,7 +9,7 @@ import type { Category, Member, Task } from '@/domain/types';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { Avatar, Checkbox, Icon, Text } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { radii } from '@/ui/theme/radii';
 import { rowCardSurface } from '@/ui/theme/rowCard';
 import { shadows } from '@/ui/theme/shadows';
@@ -39,6 +39,7 @@ function SwipeButton({
   color: string;
   onPress: () => void;
 }) {
+  const colors = useColors();
   return (
     <Pressable
       accessibilityRole="button"
@@ -71,6 +72,7 @@ export function TaskCard({
   onReassign,
   onDelete,
 }: TaskCardProps) {
+  const colors = useColors();
   const done = task.status === 'done';
   const now = useNow();
   const swipeRef = useRef<Swipeable>(null);

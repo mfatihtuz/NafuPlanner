@@ -1,8 +1,8 @@
 import { Pressable } from 'react-native';
 
-import { colors } from '../theme/colors';
 import { shadows } from '../theme/shadows';
 import { spacing } from '../theme/spacing';
+import { useColors } from '../theme/ThemeProvider';
 import { Icon } from '../icons';
 
 export interface FABProps {
@@ -12,6 +12,7 @@ export interface FABProps {
 
 /** Sağ altta yüzen "ekle" düğmesi. */
 export function FAB({ onPress, accessibilityLabel }: FABProps) {
+  const colors = useColors();
   return (
     <Pressable
       accessibilityRole="button"

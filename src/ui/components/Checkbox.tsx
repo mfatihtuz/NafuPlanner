@@ -1,6 +1,6 @@
 import { Pressable } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { useColors } from '../theme/ThemeProvider';
 import { Icon } from '../icons';
 
 export interface CheckboxProps {
@@ -11,6 +11,7 @@ export interface CheckboxProps {
 
 /** Yuvarlak görev onay kutusu. */
 export function Checkbox({ checked, onToggle, size = 28 }: CheckboxProps) {
+  const colors = useColors();
   return (
     <Pressable
       accessibilityRole="checkbox"

@@ -1,9 +1,9 @@
 import { View, type ViewProps } from 'react-native';
 
-import { colors } from '../theme/colors';
 import { radii } from '../theme/radii';
 import { shadows } from '../theme/shadows';
 import { spacing } from '../theme/spacing';
+import { useColors } from '../theme/ThemeProvider';
 
 export interface CardProps extends ViewProps {
   padded?: boolean;
@@ -18,6 +18,7 @@ export function Card({
   style,
   ...rest
 }: CardProps) {
+  const colors = useColors();
   return (
     <View
       style={[

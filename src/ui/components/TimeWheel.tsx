@@ -2,9 +2,9 @@ import { Pressable, View } from 'react-native';
 
 import type { ClockTime } from '@/domain/types';
 
-import { colors } from '../theme/colors';
 import { radii } from '../theme/radii';
 import { spacing } from '../theme/spacing';
+import { useColors } from '../theme/ThemeProvider';
 import { Icon } from '../icons';
 import { Text } from './Text';
 
@@ -19,6 +19,7 @@ function Stepper({
   onUp: () => void;
   onDown: () => void;
 }) {
+  const colors = useColors();
   return (
     <View style={{ alignItems: 'center', gap: spacing.xs }}>
       <Pressable hitSlop={8} onPress={onUp} accessibilityLabel="+">
@@ -41,6 +42,7 @@ export interface TimeWheelProps {
 
 /** Saat:dakika stepper bloğu (görev saati, sessiz saat, özet saati). */
 export function TimeWheel({ value, onChange, minuteStep = 15 }: TimeWheelProps) {
+  const colors = useColors();
   const step = (field: 'hour' | 'minute', delta: number) => {
     if (field === 'hour') {
       onChange({ ...value, hour: (value.hour + delta + 24) % 24 });

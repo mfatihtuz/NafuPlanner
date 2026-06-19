@@ -1,8 +1,8 @@
 import { Pressable, View, type ViewStyle } from 'react-native';
 
-import { colors } from '../theme/colors';
 import { radii } from '../theme/radii';
 import { spacing } from '../theme/spacing';
+import { useColors } from '../theme/ThemeProvider';
 import { Text } from './Text';
 
 export interface ChipProps {
@@ -17,6 +17,7 @@ export interface ChipProps {
 
 /** Seçilebilir küçük etiket (kategori, öncelik, tarih kısayolları). */
 export function Chip({ label, selected = false, onPress, dotColor, leftSlot, style }: ChipProps) {
+  const colors = useColors();
   return (
     <Pressable
       accessibilityRole="button"

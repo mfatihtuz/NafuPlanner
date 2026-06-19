@@ -1,10 +1,10 @@
 import { useRef } from 'react';
 import { TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors } from '../theme/colors';
 import { radii } from '../theme/radii';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { useColors } from '../theme/ThemeProvider';
 import { useKeyboardReveal } from './KeyboardAwareScrollView';
 import { Text } from './Text';
 
@@ -24,6 +24,7 @@ export function TextField({
   // iOS'ta tek satırlık TextInput'a lineHeight verilince alt kuyruklar (y, g, p)
   // kırpılıyor. Çok satırda satır aralığı gerekli olduğundan lineHeight'ı yalnız
   // orada uygula; tek satırda doğal yüksekliğe bırak.
+  const colors = useColors();
   const { lineHeight: bodyLineHeight, ...bodyBase } = typography.body;
   const reveal = useKeyboardReveal();
   const focused = useRef(false);

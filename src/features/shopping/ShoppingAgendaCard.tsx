@@ -6,7 +6,7 @@ import type { Member, ShoppingList } from '@/domain/types';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { Avatar, Icon, Text } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { rowCardSurface } from '@/ui/theme/rowCard';
 import { shadows } from '@/ui/theme/shadows';
 import { spacing } from '@/ui/theme/spacing';
@@ -23,6 +23,7 @@ export interface ShoppingAgendaCardProps {
  * liste ayrıntısına gider (tamamlama orada, puanlı akışla yapılır).
  */
 export function ShoppingAgendaCard({ list, assignee, onPress }: ShoppingAgendaCardProps) {
+  const colors = useColors();
   const now = useNow();
   const overdue = list.dueAtMs != null && dayKeyFromMs(list.dueAtMs) < dayKeyFromMs(now);
 

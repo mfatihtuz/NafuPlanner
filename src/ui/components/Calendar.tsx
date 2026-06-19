@@ -6,9 +6,9 @@ import { dayKeyFromDate, dayKeyFromMs } from '@/domain/time';
 import type { DayKey } from '@/domain/types';
 import { useNow } from '@/hooks/useNow';
 
-import { colors } from '../theme/colors';
 import { radii } from '../theme/radii';
 import { spacing } from '../theme/spacing';
+import { useColors } from '../theme/ThemeProvider';
 import { Icon } from '../icons';
 import { Text } from './Text';
 
@@ -50,6 +50,7 @@ function buildWeeks({ year, month }: MonthCursor): (DayKey | null)[][] {
 
 /** Hafif, markaya uygun ay takvimi (tarih seçimi için). */
 export function Calendar({ selected, onSelect, markedDays }: CalendarProps) {
+  const colors = useColors();
   const [cursor, setCursor] = useState<MonthCursor>(() => cursorFrom(selected));
   const weeks = buildWeeks(cursor);
   const today = dayKeyFromMs(useNow());
