@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/services/auth/AuthProvider';
 import { ErrorBoundary } from '@/ui/ErrorBoundary';
 import { ThemeProvider } from '@/ui/theme';
+import { colors, isDark } from '@/ui/theme/colors';
 
 // Oturum durumu çözülene kadar açılış ekranı görünür kalsın.
 void SplashScreen.preventAutoHideAsync();
@@ -35,12 +36,12 @@ function AuthGate() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <ErrorBoundary>
         <SafeAreaProvider>
           <ThemeProvider>
             <AuthProvider>
-              <StatusBar style="dark" />
+              <StatusBar style={isDark ? 'light' : 'dark'} />
               <AuthGate />
             </AuthProvider>
           </ThemeProvider>

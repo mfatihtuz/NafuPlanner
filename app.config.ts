@@ -36,7 +36,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: '0.1.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
-  userInterfaceStyle: 'light',
+  // Koyu mod: OS temasını uygulamaya geçirir (Appearance ile okunur).
+  userInterfaceStyle: 'automatic',
   ios: {
     supportsTablet: true,
     bundleIdentifier: BRAND.bundleId,
@@ -77,6 +78,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         imageWidth: 200,
         resizeMode: 'contain',
         backgroundColor: BRAND.splashBackground,
+        // Koyu modda beyaz parlamayı önlemek için koyu açılış ekranı.
+        dark: {
+          image: './assets/splash-icon.png',
+          backgroundColor: '#0E1614',
+        },
       },
     ],
     'expo-secure-store',

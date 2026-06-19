@@ -1,9 +1,16 @@
+import { Appearance } from 'react-native';
+
 /**
  * Nafu Planlayıcı renk paleti.
  *
  * Sıcak, oyunbaz bir teal kimliği. Tüm UI renkleri buradan türer; tek kaynak.
  * Marka birincil rengi `teal[500]`. Oyunlaştırma/kutlama için sıcak mercan ve
  * altın aksanlar teal ile dengelenir.
+ *
+ * Koyu mod: aktif tema, modül yüklenirken cihazın görünüm tercihine
+ * (Appearance) göre seçilir. Bileşenler `colors`'ı statik import edip satır içi
+ * stil kullandığı için bu, ek bir refactor gerektirmeden hem satır içi hem de
+ * StyleSheet.create stillerini doğru renklerle besler.
  */
 
 const teal = {
@@ -50,9 +57,9 @@ const gray = {
 export const palette = { teal, coral, gold, gray } as const;
 
 /**
- * Anlamsal renkler — bileşenler bunları kullanır, ham paleti değil.
+ * Anlamsal renkler — bileşenler bunları kullanır, ham paleti değil. Açık tema.
  */
-export const colors = {
+const lightColors = {
   // Marka
   primary: teal[500],
   primaryDark: teal[600],
@@ -97,6 +104,71 @@ export const colors = {
   priorityMedium: gold[500],
   priorityHigh: coral[500],
   priorityUrgent: '#E5564D',
-} as const;
+};
 
-export type ColorToken = keyof typeof colors;
+export type ColorToken = keyof typeof lightColors;
+
+/**
+ * Koyu tema. Yüzeyler koyu teal-siyah; "ön plan" aksanları (primaryDark gibi
+ * ikon/metin renkleri) koyu zeminde görünür kalsın diye AÇIK teal tonlarına
+ * çevrilir. Marka düğmesi (primary) açık moddaki ile aynı kalır ki üstündeki
+ * beyaz metnin kontrastı korunsun.
+ */
+const darkColors: Record<ColorToken, string> = {
+  primary: teal[500],
+  primaryDark: teal[300],
+  primaryLight: teal[400],
+  primarySoft: '#123A35',
+  primaryTint: '#0F2A27',
+  onPrimary: gray[0],
+
+  accent: coral[500],
+  accentSoft: '#3A241C',
+  reward: gold[500],
+  rewardSoft: '#3A2E12',
+
+  background: '#0E1614',
+  surface: '#17211E',
+  surfaceAlt: '#1F2B27',
+  surfaceTint: '#13241F',
+  border: '#2A3733',
+  borderStrong: '#3B4A45',
+  overlay: 'rgba(0, 0, 0, 0.55)',
+
+  textPrimary: '#EAF2F0',
+  textSecondary: '#A6B6B1',
+  textMuted: '#6F807B',
+  textOnDark: gray[0],
+  textLink: teal[300],
+
+  success: '#34C07E',
+  successSoft: '#16352A',
+  warning: gold[500],
+  warningSoft: '#3A2E12',
+  danger: '#F26A60',
+  dangerSoft: '#3A1F1D',
+  info: teal[400],
+
+  priorityLow: teal[300],
+  priorityMedium: gold[500],
+  priorityHigh: coral[500],
+  priorityUrgent: '#F26A60',
+};
+
+function resolveScheme(): 'light' | 'dark' {
+  try {
+    return Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+/** Aktif tema koyu mu? (StatusBar vb. için.) */
+export const isDark = resolveScheme() === 'dark';
+
+/**
+ * Aktif anlamsal renkler. Cihaz görünümüne göre açık/koyu — uygulama açılışında
+ * (modül yüklenirken) bir kez belirlenir; OS teması uygulama açıkken değişirse
+ * yeniden başlatınca uygulanır.
+ */
+export const colors: Record<ColorToken, string> = isDark ? darkColors : lightColors;
