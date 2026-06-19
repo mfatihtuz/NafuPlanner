@@ -21,6 +21,8 @@ interface PushMessage {
   body: string;
   sound: 'default';
   data?: Record<string, unknown>;
+  /** Eyleme dönük bildirim kategorisi (Tamamla/Ertele/Onayla butonları). */
+  categoryId?: string;
 }
 
 async function sendExpoPush(messages: PushMessage[]): Promise<void> {
@@ -66,12 +68,14 @@ export const onNotificationQueued = onDocumentCreated(
       onlyUids?: string[] | null;
       requireNudges?: boolean;
       data?: Record<string, unknown> | null;
+      categoryId?: string | null;
     };
 
     const membersSnap = await db.collection(`groups/${gid}/members`).get();
     const now = Date.now();
     const immediate: PushMessage[] = [];
     const deferred: { token: string; sendAtMs: number }[] = [];
+    const deferredCategoryId = o.categoryId ?? null;
 
     for (const m of membersSnap.docs) {
       const uid = m.id;
@@ -94,6 +98,7 @@ export const onNotificationQueued = onDocumentCreated(
           body: o.body,
           sound: 'default',
           data: o.data ?? undefined,
+          categoryId: o.categoryId ?? undefined,
         });
       }
     }
@@ -109,6 +114,7 @@ export const onNotificationQueued = onDocumentCreated(
           title: o.title,
           body: o.body,
           data: o.data ?? null,
+          categoryId: deferredCategoryId,
           sendAtMs: def.sendAtMs,
         });
       }
@@ -132,8 +138,21 @@ export const flushDeferred = onSchedule('every 15 minutes', async () => {
   const messages: PushMessage[] = [];
   const batch = db.batch();
   for (const doc of due.docs) {
-    const d = doc.data() as { token: string; title: string; body: string; data?: Record<string, unknown> | null };
-    messages.push({ to: d.token, title: d.title, body: d.body, sound: 'default', data: d.data ?? undefined });
+    const d = doc.data() as {
+      token: string;
+      title: string;
+      body: string;
+      data?: Record<string, unknown> | null;
+      categoryId?: string | null;
+    };
+    messages.push({
+      to: d.token,
+      title: d.title,
+      body: d.body,
+      sound: 'default',
+      data: d.data ?? undefined,
+      categoryId: d.categoryId ?? undefined,
+    });
     batch.delete(doc.ref);
   }
   await sendExpoPush(messages);
@@ -167,6 +186,77 @@ export const weeklyReward = onSchedule({ schedule: '5 0 * * 1', timeZone: 'Etc/U
   }
   logger.info(`weeklyReward: ${created}/${groups.size} hane güncellendi (${reward.id})`);
 });
+
+/**
+ * (10) Haftalık karne: her pazartesi sabahı (06:00 UTC ≈ 09:00 TR) son 7 günün
+ * özetini hesaplar ve hane outbox'una yazar — gönderimi onNotificationQueued
+ * üstlenir (token + sessiz saat sunucuda). Hiç iş bitmediyse mesaj gönderilmez.
+ * `completedAtMs` yalnız tamamlanan görevlerde bulunduğundan tek alanlı sorgu
+ * yeterli (bileşik indeks gerekmez).
+ */
+export const weeklyRecap = onSchedule(
+  { schedule: '0 6 * * 1', timeZone: 'Etc/UTC' },
+  async () => {
+    const now = Date.now();
+    const weekAgo = now - 7 * 86_400_000;
+    const groups = await db.collection('groups').get();
+    let sent = 0;
+
+    for (const g of groups.docs) {
+      const gid = g.id;
+      const tasksSnap = await db
+        .collection(`groups/${gid}/tasks`)
+        .where('completedAtMs', '>=', weekAgo)
+        .get();
+      if (tasksSnap.empty) continue;
+
+      const byUser: Record<string, number> = {};
+      let total = 0;
+      for (const d of tasksSnap.docs) {
+        const x = d.data() as { status?: string; completedBy?: string };
+        if (x.status !== 'done' || !x.completedBy) continue;
+        byUser[x.completedBy] = (byUser[x.completedBy] ?? 0) + 1;
+        total += 1;
+      }
+      if (total === 0) continue;
+
+      let topUid = '';
+      let topCount = 0;
+      for (const [uid, count] of Object.entries(byUser)) {
+        if (count > topCount) {
+          topUid = uid;
+          topCount = count;
+        }
+      }
+      let topName = '';
+      if (topUid) {
+        const mem = await db.doc(`groups/${gid}/members/${topUid}`).get();
+        topName = ((mem.data() as { displayName?: string } | undefined)?.displayName ?? '').split(
+          ' ',
+        )[0];
+      }
+
+      const multipleContributors = Object.keys(byUser).length > 1;
+      const title = 'Haftalık karne 📊';
+      const body =
+        multipleContributors && topName
+          ? `Geçen hafta birlikte ${total} iş tamamladınız! 👏 En çok ${topName} katkı verdi (${topCount}).`
+          : `Geçen hafta ${total} iş tamamladınız! 👏 Böyle devam!`;
+
+      await db.collection(`groups/${gid}/outbox`).add({
+        title,
+        body,
+        excludeUid: null,
+        onlyUids: null,
+        requireNudges: false,
+        data: { type: 'weekly_recap' },
+        createdAtMs: now,
+      });
+      sent += 1;
+    }
+    logger.info(`weeklyRecap: ${sent}/${groups.size} haneye özet yazıldı`);
+  },
+);
 
 /**
  * (2) Puan onarımı: bir hane üyesinin isteğiyle, puan defterinden (points alt

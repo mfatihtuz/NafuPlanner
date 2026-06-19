@@ -4,6 +4,7 @@ import {
   deleteDoc,
   deleteField,
   doc,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -139,6 +140,13 @@ export async function clearReopenRequest(gid: string, taskId: string): Promise<v
 
 export async function deleteTask(gid: string, taskId: string): Promise<void> {
   await deleteDoc(doc(requireDb(), 'groups', gid, 'tasks', taskId));
+}
+
+/** Tek bir görevi getirir (bildirim aksiyonu işleyicisi için). */
+export async function getTask(gid: string, taskId: string): Promise<Task | null> {
+  const snap = await getDoc(doc(requireDb(), 'groups', gid, 'tasks', taskId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...(snap.data() as Omit<Task, 'id'>), householdId: gid };
 }
 
 /** Birden çok görevin elle sıralama indeksini tek partide günceller. */

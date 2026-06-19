@@ -68,6 +68,8 @@ export interface NotifyOptions {
   /** true ise alıcının dürtme izni (nudgesEnabled) kapalıysa atlanır. */
   requireNudges?: boolean;
   data?: Record<string, string>;
+  /** Eyleme dönük bildirim kategorisi (Tamamla/Ertele/Onayla butonları). */
+  categoryId?: string;
 }
 
 /**
@@ -84,6 +86,7 @@ export async function notifyMembers(options: NotifyOptions): Promise<void> {
       onlyUids: options.onlyUids ?? null,
       requireNudges: options.requireNudges ?? false,
       data: options.data ?? null,
+      categoryId: options.categoryId ?? null,
       createdAtMs: Date.now(),
     });
   } catch (error) {

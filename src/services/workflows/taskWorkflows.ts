@@ -24,6 +24,7 @@ import {
   type NewTaskInput,
 } from '@/services/firestore/tasks';
 import { omitUndefined } from '@/services/firestore/utils';
+import { NOTIF_CATEGORY } from '@/services/notifications/categories';
 import { notifyMembers } from '@/services/notifications/push';
 
 /**
@@ -116,6 +117,12 @@ export async function createTaskFlow(input: CreateTaskFlowInput): Promise<void> 
       onlyUids: others,
       title: t('push.assignedTitle'),
       body: t('push.assignedBody', { name: actor.name, task: task.title }),
+      ...(createdTaskId
+        ? {
+            categoryId: NOTIF_CATEGORY.task,
+            data: { gid: task.householdId, taskId: createdTaskId },
+          }
+        : {}),
     });
   }
 }
@@ -345,6 +352,8 @@ export async function requestCompleteTaskFlow(input: CompleteApprovalFlowInput):
     onlyUids: targets,
     title: t('push.completeRequestTitle'),
     body: t('push.completeRequestBody', { name: actor.name, task: task.title }),
+    categoryId: NOTIF_CATEGORY.approval,
+    data: { gid: task.householdId, taskId: task.id },
   });
 }
 
@@ -438,6 +447,8 @@ export async function reassignTaskFlow(input: ReassignFlowInput): Promise<void> 
     onlyUids: [toUserId],
     title: t('push.assignedTitle'),
     body: t('push.assignedBody', { name: actor.name, task: task.title }),
+    categoryId: NOTIF_CATEGORY.task,
+    data: { gid: task.householdId, taskId: task.id },
   });
 }
 
@@ -462,6 +473,8 @@ export async function nudgeTaskFlow(input: NudgeFlowInput): Promise<void> {
     title: t('push.nudgeTitle'),
     body: t('push.nudgeBody', { name: actor.name, task: task.title }),
     requireNudges: true,
+    categoryId: NOTIF_CATEGORY.task,
+    data: { gid: task.householdId, taskId: task.id },
   });
 
   const targetNames = members
