@@ -53,7 +53,13 @@ export function groupTasks(tasks: Task[], now: Millis): TaskSections {
     return byPriorityDesc(a, b);
   });
   sections.upcoming.sort(byDueAsc);
-  sections.noDate.sort((a, b) => byPriorityDesc(a, b) || byCreatedDesc(a, b));
+  // Tarihsiz: elle sıralama (orderIndex) önce; yoksa öncelik, sonra yeni olan.
+  sections.noDate.sort(
+    (a, b) =>
+      (a.orderIndex ?? Number.POSITIVE_INFINITY) - (b.orderIndex ?? Number.POSITIVE_INFINITY) ||
+      byPriorityDesc(a, b) ||
+      byCreatedDesc(a, b),
+  );
   sections.done.sort(byCompletedDesc);
 
   return sections;
@@ -112,6 +118,23 @@ export function canDecideCompletion(task: Task, uid: string): boolean {
     task.pendingCompleteBy !== uid &&
     task.assigneeIds.includes(uid)
   );
+}
+
+/**
+ * Bir görevi listede yukarı (-1) / aşağı (+1) taşır ve listenin TAMAMINA yeni
+ * orderIndex atar (elle sıralama). Sınır dışına taşımada boş dizi döner.
+ */
+export function reorderTasks(
+  ordered: Task[],
+  id: string,
+  direction: -1 | 1,
+): { id: string; orderIndex: number }[] {
+  const i = ordered.findIndex((task) => task.id === id);
+  const j = i + direction;
+  if (i < 0 || j < 0 || j >= ordered.length) return [];
+  const arr = [...ordered];
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  return arr.map((task, index) => ({ id: task.id, orderIndex: index }));
 }
 
 export type SnoozeChoice = 'tomorrow' | 'weekend' | 'nextWeek';

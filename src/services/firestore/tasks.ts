@@ -8,6 +8,7 @@ import {
   orderBy,
   query,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 
 import type { Subtask, Task } from '@/domain/types';
@@ -45,6 +46,7 @@ export type TaskPatch = Partial<
     | 'assigneeIds'
     | 'subtasks'
     | 'points'
+    | 'orderIndex'
   >
 > & {
   /** true gönderilirse alan Firestore'dan silinir. */
@@ -137,6 +139,20 @@ export async function clearReopenRequest(gid: string, taskId: string): Promise<v
 
 export async function deleteTask(gid: string, taskId: string): Promise<void> {
   await deleteDoc(doc(requireDb(), 'groups', gid, 'tasks', taskId));
+}
+
+/** Birden çok görevin elle sıralama indeksini tek partide günceller. */
+export async function setTaskOrder(
+  gid: string,
+  updates: { id: string; orderIndex: number }[],
+): Promise<void> {
+  if (updates.length === 0) return;
+  const db = requireDb();
+  const batch = writeBatch(db);
+  for (const u of updates) {
+    batch.update(doc(db, 'groups', gid, 'tasks', u.id), { orderIndex: u.orderIndex });
+  }
+  await batch.commit();
 }
 
 export async function setSubtasks(gid: string, taskId: string, subtasks: Subtask[]): Promise<void> {

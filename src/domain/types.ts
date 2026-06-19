@@ -140,6 +140,8 @@ export interface Task {
   recurrenceId?: Id;
   /** Tekrar eden bir kuraldan üretildiyse o günün anahtarı. */
   occurrenceDayKey?: DayKey;
+  /** Elle sıralama indeksi (tarihsiz görevler için; küçük olan üstte). */
+  orderIndex?: number;
   points: number;
   attachmentsCount: number;
   commentsCount: number;

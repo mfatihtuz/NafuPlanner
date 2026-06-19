@@ -4,6 +4,7 @@ import {
   completionNeedsApproval,
   groupTasks,
   reopenNeedsApproval,
+  reorderTasks,
   snoozeDayKeys,
   subtaskProgress,
 } from '../tasks';
@@ -190,5 +191,30 @@ describe('snoozeDayKeys', () => {
     expect(keys.tomorrow).toBe('2026-06-14');
     expect(keys.weekend).toBe('2026-06-20'); // hep ileri
     expect(keys.nextWeek).toBe('2026-06-15');
+  });
+});
+
+describe('reorderTasks', () => {
+  it('görevi yukarı taşır ve tüm indeksleri yeniler', () => {
+    const a = makeTask({});
+    const b = makeTask({});
+    const c = makeTask({});
+    const res = reorderTasks([a, b, c], b.id, -1);
+    expect(res.map((r) => r.id)).toEqual([b.id, a.id, c.id]);
+    expect(res.map((r) => r.orderIndex)).toEqual([0, 1, 2]);
+  });
+
+  it('görevi aşağı taşır', () => {
+    const a = makeTask({});
+    const b = makeTask({});
+    const res = reorderTasks([a, b], a.id, 1);
+    expect(res.map((r) => r.id)).toEqual([b.id, a.id]);
+  });
+
+  it('sınır dışına taşımada boş döner', () => {
+    const a = makeTask({});
+    const b = makeTask({});
+    expect(reorderTasks([a, b], a.id, -1)).toEqual([]);
+    expect(reorderTasks([a, b], b.id, 1)).toEqual([]);
   });
 });
