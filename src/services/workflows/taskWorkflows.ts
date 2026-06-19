@@ -1,6 +1,6 @@
 import { computeCompletionReward, type BadgeDef } from '@/domain/gamification';
-import { dayKeyFromMs } from '@/domain/time';
-import type { Member, RecurrenceRule, Reward, Task } from '@/domain/types';
+import { dayKeyFromMs, dueAtFromDayKey } from '@/domain/time';
+import type { ClockTime, DayKey, Member, RecurrenceRule, Reward, Task } from '@/domain/types';
 import { t } from '@/i18n';
 import { addActivity } from '@/services/firestore/activity';
 import { addComment } from '@/services/firestore/comments';
@@ -20,6 +20,7 @@ import {
   reopenTask,
   setCompletionRequest,
   setReopenRequest,
+  updateTask,
   type NewTaskInput,
 } from '@/services/firestore/tasks';
 import { omitUndefined } from '@/services/firestore/utils';
@@ -389,6 +390,55 @@ export async function rejectCompleteTaskFlow(input: CompleteApprovalFlowInput): 
 /** İsteyen kendi tamamlama isteğinden vazgeçer. */
 export async function cancelCompleteTaskFlow(task: Task): Promise<void> {
   await clearCompletionRequest(task.householdId, task.id);
+}
+
+/**
+ * Görevi verilen güne erteler. Saatli görevde günün saati korunur; saatsizde
+ * öğlene alınır. (Kartlardan hızlı erteleme için.)
+ */
+export async function snoozeTaskFlow(task: Task, dayKey: DayKey): Promise<void> {
+  let time: ClockTime | null = null;
+  if (task.hasTime && task.dueAtMs != null) {
+    const d = new Date(task.dueAtMs);
+    time = { hour: d.getHours(), minute: d.getMinutes() };
+  }
+  const { dueAtMs, hasTime } = dueAtFromDayKey(dayKey, time);
+  await updateTask(task.householdId, task.id, { dueAtMs, hasTime });
+}
+
+export interface ReassignFlowInput {
+  task: Task;
+  toUserId: string;
+  actor: Actor;
+  members: Member[];
+}
+
+/**
+ * Görevi tek bir kişiye devreder ("eşe ver"). Devralan sen değilsen ona atama
+ * aktivitesi + push gider (yeni atama akışıyla aynı bildirim).
+ */
+export async function reassignTaskFlow(input: ReassignFlowInput): Promise<void> {
+  const { task, toUserId, actor, members } = input;
+  await updateTask(task.householdId, task.id, { assigneeIds: [toUserId] });
+  if (toUserId === actor.uid) return;
+  const targetName = members.find((m) => m.userId === toUserId)?.displayName.split(' ')[0] ?? '';
+  void addActivity({
+    householdId: task.householdId,
+    type: 'task_assigned',
+    actorId: actor.uid,
+    actorName: actor.name,
+    taskId: task.id,
+    taskTitle: task.title,
+    targetIds: [toUserId],
+    targetNames: [targetName],
+  });
+  void notifyMembers({
+    householdId: task.householdId,
+    excludeUid: actor.uid,
+    onlyUids: [toUserId],
+    title: t('push.assignedTitle'),
+    body: t('push.assignedBody', { name: actor.name, task: task.title }),
+  });
 }
 
 export interface NudgeFlowInput {

@@ -1,4 +1,6 @@
+import { useRef, type ComponentProps } from 'react';
 import { Pressable, View } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 
 import { PRIORITY_META } from '@/domain/constants';
 import { formatDueLabel } from '@/domain/format';
@@ -8,6 +10,7 @@ import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { Avatar, Checkbox, Icon, Text } from '@/ui';
 import { colors } from '@/ui/theme/colors';
+import { radii } from '@/ui/theme/radii';
 import { rowCardSurface } from '@/ui/theme/rowCard';
 import { shadows } from '@/ui/theme/shadows';
 import { spacing } from '@/ui/theme/spacing';
@@ -18,11 +21,59 @@ export interface TaskCardProps {
   assignees?: Member[];
   onToggleComplete: (task: Task) => void;
   onPress: (task: Task) => void;
+  /** Kaydırma aksiyonları — verilirse karta hızlı erteleme/devretme/silme gelir. */
+  onSnooze?: (task: Task) => void;
+  onReassign?: (task: Task) => void;
+  onDelete?: (task: Task) => void;
 }
 
-export function TaskCard({ task, category, assignees = [], onToggleComplete, onPress }: TaskCardProps) {
+/** Kaydırınca beliren tek aksiyon düğmesi (ikon + etiket). */
+function SwipeButton({
+  icon,
+  label,
+  color,
+  onPress,
+}: {
+  icon: ComponentProps<typeof Icon>['name'];
+  label: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: 74,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        backgroundColor: color,
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      <Icon name={icon} size={20} color={colors.onPrimary} />
+      <Text variant="caption" style={{ color: colors.onPrimary, fontWeight: '700' }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+export function TaskCard({
+  task,
+  category,
+  assignees = [],
+  onToggleComplete,
+  onPress,
+  onSnooze,
+  onReassign,
+  onDelete,
+}: TaskCardProps) {
   const done = task.status === 'done';
   const now = useNow();
+  const swipeRef = useRef<Swipeable>(null);
   const overdue =
     !done &&
     task.dueAtMs != null &&
@@ -30,7 +81,17 @@ export function TaskCard({ task, category, assignees = [], onToggleComplete, onP
     formatDueLabel(task.dueAtMs, false, now) !== 'Bugün';
   const [subDone, subTotal] = subtaskProgress(task);
 
-  return (
+  // Aksiyon çalıştır: önce kaydırmayı kapat, sonra işlemi tetikle.
+  const run = (fn?: (task: Task) => void) => {
+    swipeRef.current?.close();
+    fn?.(task);
+  };
+
+  const showLeft = !done;
+  const showRight =
+    Boolean(onDelete) || (!done && (Boolean(onSnooze) || Boolean(onReassign)));
+
+  const card = (
     <Pressable
       accessibilityRole="button"
       onPress={() => onPress(task)}
@@ -126,5 +187,68 @@ export function TaskCard({ task, category, assignees = [], onToggleComplete, onP
         </View>
       ) : null}
     </Pressable>
+  );
+
+  // Hiç kaydırma aksiyonu yoksa düz kart (geriye dönük uyum).
+  if (!showLeft && !showRight) return card;
+
+  return (
+    <Swipeable
+      ref={swipeRef}
+      friction={2}
+      overshootLeft={false}
+      overshootRight={false}
+      leftThreshold={56}
+      rightThreshold={56}
+      containerStyle={{ borderRadius: radii.lg }}
+      renderLeftActions={
+        showLeft
+          ? () => (
+              <View style={{ flexDirection: 'row' }}>
+                <SwipeButton
+                  icon="check"
+                  label={t('tasks.complete')}
+                  color={colors.success}
+                  onPress={() => run(onToggleComplete)}
+                />
+              </View>
+            )
+          : undefined
+      }
+      renderRightActions={
+        showRight
+          ? () => (
+              <View style={{ flexDirection: 'row' }}>
+                {!done && onSnooze ? (
+                  <SwipeButton
+                    icon="clock"
+                    label={t('tasks.snoozeAction')}
+                    color={colors.warning}
+                    onPress={() => run(onSnooze)}
+                  />
+                ) : null}
+                {!done && onReassign ? (
+                  <SwipeButton
+                    icon="users"
+                    label={t('tasks.reassignAction')}
+                    color={colors.primary}
+                    onPress={() => run(onReassign)}
+                  />
+                ) : null}
+                {onDelete ? (
+                  <SwipeButton
+                    icon="trash"
+                    label={t('common.delete')}
+                    color={colors.danger}
+                    onPress={() => run(onDelete)}
+                  />
+                ) : null}
+              </View>
+            )
+          : undefined
+      }
+    >
+      {card}
+    </Swipeable>
   );
 }

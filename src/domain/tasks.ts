@@ -1,6 +1,7 @@
 import { PRIORITY_META } from './constants';
+import { addDaysToKey } from './recurrence';
 import { dayKeyFromMs } from './time';
-import type { Millis, Task } from './types';
+import type { DayKey, Millis, Task } from './types';
 
 /**
  * Saf görev gruplama/sıralama kuralları (liste ekranları için).
@@ -111,4 +112,25 @@ export function canDecideCompletion(task: Task, uid: string): boolean {
     task.pendingCompleteBy !== uid &&
     task.assigneeIds.includes(uid)
   );
+}
+
+export type SnoozeChoice = 'tomorrow' | 'weekend' | 'nextWeek';
+
+/**
+ * Hızlı erteleme için hedef gün anahtarları (yerel saat):
+ * - yarın
+ * - hafta sonu (gelecek Cumartesi; bugün hafta sonuysa bir sonraki)
+ * - gelecek hafta (gelecek Pazartesi)
+ * Hepsi her zaman bugünden ileri bir gün döndürür.
+ */
+export function snoozeDayKeys(now: Millis): Record<SnoozeChoice, DayKey> {
+  const today = dayKeyFromMs(now);
+  const dow = new Date(now).getDay(); // 0=Paz … 6=Cmt
+  const toSaturday = ((6 - dow + 7) % 7) || 7;
+  const toMonday = ((1 - dow + 7) % 7) || 7;
+  return {
+    tomorrow: addDaysToKey(today, 1),
+    weekend: addDaysToKey(today, toSaturday),
+    nextWeek: addDaysToKey(today, toMonday),
+  };
 }

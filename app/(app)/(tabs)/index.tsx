@@ -23,6 +23,7 @@ import { markOnboarded } from '@/services/firestore/users';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { reopenTaskGate } from '@/features/tasks/reopenTask';
 import { completeTaskGate } from '@/features/tasks/completeTask';
+import { deleteTaskGate, reassignTaskGate, snoozeTaskGate } from '@/features/tasks/quickActions';
 import { EmptyState, FAB, Icon, Screen, Text } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { spacing } from '@/ui/theme/spacing';
@@ -97,6 +98,13 @@ function TodayContent() {
         .map((id) => memberMap.get(id))
         .filter((m): m is NonNullable<typeof m> => Boolean(m))}
       onToggleComplete={onToggle}
+      onSnooze={(item) => snoozeTaskGate(item, Date.now())}
+      onReassign={
+        user && members.length > 1
+          ? (item) => reassignTaskGate(item, actorOf(user), members)
+          : undefined
+      }
+      onDelete={(item) => deleteTaskGate(item)}
       onPress={(item) => router.push({ pathname: '/task/[id]', params: { id: item.id } })}
     />
   );

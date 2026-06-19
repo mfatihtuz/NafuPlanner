@@ -19,6 +19,7 @@ import { useAuth } from '@/services/auth/AuthProvider';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { reopenTaskGate } from '@/features/tasks/reopenTask';
 import { completeTaskGate } from '@/features/tasks/completeTask';
+import { deleteTaskGate, reassignTaskGate, snoozeTaskGate } from '@/features/tasks/quickActions';
 import { Chip, EmptyState, FAB, Screen, Text, TextField } from '@/ui';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -82,6 +83,13 @@ function TasksContent() {
         .map((id) => memberMap.get(id))
         .filter((m): m is NonNullable<typeof m> => Boolean(m))}
       onToggleComplete={onToggle}
+      onSnooze={(item) => snoozeTaskGate(item, Date.now())}
+      onReassign={
+        user && members.length > 1
+          ? (item) => reassignTaskGate(item, actorOf(user), members)
+          : undefined
+      }
+      onDelete={(item) => deleteTaskGate(item)}
       onPress={(item) => router.push({ pathname: '/task/[id]', params: { id: item.id } })}
     />
   );

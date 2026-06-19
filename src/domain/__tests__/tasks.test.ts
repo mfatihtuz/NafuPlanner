@@ -4,6 +4,7 @@ import {
   completionNeedsApproval,
   groupTasks,
   reopenNeedsApproval,
+  snoozeDayKeys,
   subtaskProgress,
 } from '../tasks';
 import type { Task } from '../types';
@@ -171,5 +172,23 @@ describe('canDecideCompletion', () => {
   it('bekleyen istek yoksa karar da yoktur', () => {
     const task = makeTask({ assigneeIds: ['u1'] });
     expect(canDecideCompletion(task, 'u1')).toBe(false);
+  });
+});
+
+describe('snoozeDayKeys', () => {
+  it('Çarşamba için yarın/hafta sonu/gelecek hafta doğru', () => {
+    // NOW = 10 Haziran 2026 Çarşamba
+    const keys = snoozeDayKeys(NOW);
+    expect(keys.tomorrow).toBe('2026-06-11'); // Perşembe
+    expect(keys.weekend).toBe('2026-06-13'); // bu Cumartesi
+    expect(keys.nextWeek).toBe('2026-06-15'); // gelecek Pazartesi
+  });
+
+  it('Cumartesi ise hafta sonu bir sonraki Cumartesi olur', () => {
+    const saturday = new Date(2026, 5, 13, 12, 0).getTime();
+    const keys = snoozeDayKeys(saturday);
+    expect(keys.tomorrow).toBe('2026-06-14');
+    expect(keys.weekend).toBe('2026-06-20'); // hep ileri
+    expect(keys.nextWeek).toBe('2026-06-15');
   });
 });
