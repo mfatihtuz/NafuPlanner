@@ -4,13 +4,14 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Share, View } from 're
 
 import { formatDueLabel } from '@/domain/format';
 import { weeklyPoints } from '@/domain/gamification';
+import { REACTIONS, summarizeReactions } from '@/domain/reactions';
 import type { ActivityEntry } from '@/domain/types';
 import { useShoppingLists } from '@/features/shopping/useShoppingLists';
 import { useTasks } from '@/features/tasks/useTasks';
 import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
-import { watchActivity } from '@/services/firestore/activity';
+import { setActivityReaction, watchActivity } from '@/services/firestore/activity';
 import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { InviteError } from '@/services/firestore/households';
 import { useWatch } from '@/services/firestore/useWatch';
@@ -52,6 +53,76 @@ function activityLine(entry: ActivityEntry): string {
     case 'member_joined':
       return t('activity.memberJoined', { name });
   }
+}
+
+// Denge çubuğu renkleri (üye sırasına göre döner).
+const SHARE_COLORS = [colors.primary, colors.accent, colors.reward, colors.info, colors.success];
+
+/** Tamamlanan işlere emoji tepki çubuğu (övgü + esprili). */
+function ReactionBar({
+  entry,
+  uid,
+  open,
+  onToggleOpen,
+}: {
+  entry: ActivityEntry;
+  uid: string;
+  open: boolean;
+  onToggleOpen: (id: string | null) => void;
+}) {
+  const mine = entry.reactions?.[uid];
+  const summary = summarizeReactions(entry.reactions);
+  const react = (emoji: string) => {
+    void setActivityReaction(
+      entry.householdId,
+      entry.id,
+      uid,
+      mine === emoji ? null : emoji,
+    ).catch((error) => console.warn('[activity] tepki yazılamadı', error));
+    onToggleOpen(null);
+  };
+  return (
+    <View style={{ gap: spacing.xs, marginTop: spacing.xxs }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' }}>
+        {summary.map((s) => (
+          <Text key={s.emoji} variant="small">
+            {s.emoji}
+            {s.count > 1 ? ` ${s.count}` : ''}
+          </Text>
+        ))}
+        <Pressable
+          onPress={() => onToggleOpen(open ? null : entry.id)}
+          hitSlop={6}
+          accessibilityLabel={t('activity.react')}
+          style={{
+            paddingHorizontal: spacing.sm,
+            paddingVertical: 3,
+            borderRadius: radii.pill,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: open ? colors.primaryTint : colors.surface,
+          }}
+        >
+          <Icon name="heart" size={13} color={colors.primaryDark} />
+        </Pressable>
+      </View>
+      {open ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
+          {REACTIONS.map((r) => (
+            <Pressable
+              key={r.emoji}
+              onPress={() => react(r.emoji)}
+              accessibilityLabel={r.label}
+              hitSlop={4}
+              style={{ opacity: mine === r.emoji ? 1 : 0.9 }}
+            >
+              <Text style={{ fontSize: 24 }}>{r.emoji}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 export default function HouseholdScreen() {
@@ -171,6 +242,7 @@ function HouseholdView() {
   const [invite, setInvite] = useState<{ code: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [showAllActivity, setShowAllActivity] = useState(false);
+  const [reactingId, setReactingId] = useState<string | null>(null);
   const activity = useWatch(household?.id ?? null, watchActivity);
   const tasks = useTasks(household?.id ?? null);
   const shoppingLists = useShoppingLists(household?.id ?? null);
@@ -266,6 +338,59 @@ function HouseholdView() {
         </Card>
       </View>
 
+      {/* Denge: bu haftaki yükün üyelere dağılımı (#8) */}
+      {members.length > 1 && weekTotal > 0 ? (
+        <View style={{ gap: spacing.sm }}>
+          <Text variant="overline" tone="secondary">
+            {t('balance.title')}
+          </Text>
+          <Card style={{ gap: spacing.md }}>
+            <View style={{ flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden' }}>
+              {rankedMembers.map((member, index) => {
+                const pts = weekly.get(member.userId) ?? 0;
+                if (pts <= 0) return null;
+                return (
+                  <View
+                    key={member.userId}
+                    style={{ flex: pts, backgroundColor: SHARE_COLORS[index % SHARE_COLORS.length] }}
+                  />
+                );
+              })}
+            </View>
+            <View style={{ gap: spacing.xs }}>
+              {rankedMembers.map((member, index) => {
+                const pts = weekly.get(member.userId) ?? 0;
+                const pct = Math.round((pts / weekTotal) * 100);
+                return (
+                  <View
+                    key={member.userId}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+                  >
+                    <View
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: SHARE_COLORS[index % SHARE_COLORS.length],
+                      }}
+                    />
+                    <Text variant="small" style={{ flex: 1 }}>
+                      {member.displayName.split(' ')[0]}
+                    </Text>
+                    <Text variant="small" tone="secondary">
+                      %{pct}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+            <Text variant="caption" tone="muted">
+              {t('balance.hint')}
+            </Text>
+          </Card>
+        </View>
+      ) : null}
+
       <View style={{ gap: spacing.sm }}>
         <Text variant="overline" tone="secondary">
           {t('household.members')}
@@ -337,14 +462,27 @@ function HouseholdView() {
             {t('activity.title')}
           </Text>
           <Card style={{ gap: spacing.md }}>
-            {(showAllActivity ? activity : activity.slice(0, 5)).map((entry) => (
-              <View key={entry.id} style={{ gap: 2 }}>
-                <Text variant="small">{activityLine(entry)}</Text>
-                <Text variant="caption" tone="muted">
-                  {formatDueLabel(entry.atMs, true, now)}
-                </Text>
-              </View>
-            ))}
+            {(showAllActivity ? activity : activity.slice(0, 5)).map((entry) => {
+              const reactable =
+                (entry.type === 'task_completed' || entry.type === 'shopping_completed') &&
+                members.length > 1;
+              return (
+                <View key={entry.id} style={{ gap: 2 }}>
+                  <Text variant="small">{activityLine(entry)}</Text>
+                  <Text variant="caption" tone="muted">
+                    {formatDueLabel(entry.atMs, true, now)}
+                  </Text>
+                  {reactable && user ? (
+                    <ReactionBar
+                      entry={entry}
+                      uid={user.uid}
+                      open={reactingId === entry.id}
+                      onToggleOpen={setReactingId}
+                    />
+                  ) : null}
+                </View>
+              );
+            })}
             {activity.length > 5 ? (
               <Pressable onPress={() => setShowAllActivity((v) => !v)} hitSlop={6}>
                 <Text variant="small" style={{ color: colors.primaryDark, fontWeight: '700' }}>

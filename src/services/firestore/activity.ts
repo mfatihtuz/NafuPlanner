@@ -1,10 +1,13 @@
 import {
   addDoc,
   collection,
+  deleteField,
+  doc,
   limit,
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
 } from 'firebase/firestore';
 
 import type { ActivityEntry } from '@/domain/types';
@@ -25,6 +28,21 @@ export async function addActivity(input: NewActivityInput): Promise<void> {
   } catch (error) {
     console.warn('[activity] kayıt yazılamadı', error);
   }
+}
+
+/**
+ * Bir aktiviteye tepki ekler/değiştirir (emoji) ya da kaldırır (null).
+ * `reactions.{uid}` alanını noktalı yol ile yazar.
+ */
+export async function setActivityReaction(
+  gid: string,
+  activityId: string,
+  uid: string,
+  emoji: string | null,
+): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'activity', activityId), {
+    [`reactions.${uid}`]: emoji ?? deleteField(),
+  });
 }
 
 /** Son aktiviteleri canlı dinler (yeni → eski). */

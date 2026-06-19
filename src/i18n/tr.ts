@@ -241,6 +241,8 @@ export const tr = {
   'leaderboard.title': 'Bu hafta',
   'leaderboard.points': '{{n}} puan',
   'leaderboard.empty': 'Bu hafta henüz görev tamamlanmadı. İlk puanı kapan önde başlar!',
+  'balance.title': 'Denge',
+  'balance.hint': 'Bu haftaki yükün üyelere dağılımı.',
 
   'celebration.title': 'Harikasın!',
   'celebration.points': '+{{n}} puan',
@@ -316,6 +318,7 @@ export const tr = {
     'Güvenlik gereği yakın zamanda giriş yapılmış olmalı. Çıkış yapıp tekrar girdikten sonra yeniden dene.',
 
   'activity.title': 'Son hareketler',
+  'activity.react': 'Tepki ver',
   'activity.empty': 'Henüz hareket yok.',
   'activity.taskCreated': '{{name}}, "{{task}}" görevini ekledi',
   'activity.taskCompleted': '{{name}}, "{{task}}" görevini tamamladı ✓',

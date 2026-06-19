@@ -284,6 +284,8 @@ export interface ActivityEntry {
   targetNames?: string[];
   /** Hedef kullanıcı kimlikleri (bildirim merkezinde "bana" süzmek için). */
   targetIds?: Id[];
+  /** Üye→emoji tepkileri (tamamlanan işlere "aferin" vb.). */
+  reactions?: Record<Id, string>;
   atMs: Millis;
 }
 
