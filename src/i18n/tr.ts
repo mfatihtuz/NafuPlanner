@@ -170,6 +170,8 @@ export const tr = {
   'shopping.remindersHint': 'Dönerken yapılacak küçük işler (ör. kuru temizlemeyi al).',
   'shopping.reminderPlaceholder': 'Hatırlatma ekle',
   'shopping.suggestions': 'Sık alınanlar',
+  'shopping.recategorize': 'Kategori',
+  'shopping.pickAisle': 'Kategori seç',
   'shopping.spendTitle': 'Harcama',
   'shopping.spendPlaceholder': 'Tutar',
   'shopping.monthlySpend': 'Bu ay harcanan: ₺{{amount}}',

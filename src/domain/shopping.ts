@@ -100,11 +100,14 @@ export type Aisle =
   | 'firin'
   | 'temel'
   | 'atistirmalik'
+  | 'icecek'
+  | 'donuk'
   | 'temizlik'
   | 'kisisel'
+  | 'bebekEvcil'
   | 'diger';
 
-/** Markette dolaşma sırasına yakın reyon sırası. */
+/** Markette dolaşma sırasına yakın reyon sırası (gösterim + eşleşme önceliği). */
 export const AISLE_ORDER: readonly Aisle[] = [
   'manav',
   'kasap',
@@ -112,43 +115,146 @@ export const AISLE_ORDER: readonly Aisle[] = [
   'firin',
   'temel',
   'atistirmalik',
+  'icecek',
+  'donuk',
   'temizlik',
   'kisisel',
+  'bebekEvcil',
   'diger',
 ];
 
 export const AISLE_LABELS: Record<Aisle, string> = {
   manav: 'Manav (meyve & sebze)',
-  kasap: 'Kasap & şarküteri',
-  sutKahvalti: 'Süt & kahvaltılık',
+  kasap: 'Et, tavuk, balık & şarküteri',
+  sutKahvalti: 'Süt ürünleri & kahvaltılık',
   firin: 'Fırın & ekmek',
-  temel: 'Temel gıda',
-  atistirmalik: 'Atıştırmalık & içecek',
-  temizlik: 'Temizlik & kağıt',
+  temel: 'Temel gıda (bakliyat, baharat, konserve)',
+  atistirmalik: 'Atıştırmalık & tatlı',
+  icecek: 'İçecek',
+  donuk: 'Donuk & dondurma',
+  temizlik: 'Temizlik & kâğıt',
   kisisel: 'Kişisel bakım',
+  bebekEvcil: 'Bebek & evcil hayvan',
   diger: 'Diğer',
 };
 
+/**
+ * Reyon anahtar kelimeleri. Eşleşme kuralı (groceryAisle):
+ * - Tek kelimelik anahtar: ürün adındaki bir kelimeyle birebir ya da (3+ harfse)
+ *   önek eşleşir — Türkçe ekleri yakalar (elma→elmalar), kısa kelimelerde (su, et,
+ *   un) yanlış eşleşmeyi önler.
+ * - Boşluklu anahtar: ürün adının tamamında aranır (ör. "tuvalet kağıdı").
+ * AISLE_ORDER sırası öncelik belirler; çakışan kelimelerde önce gelen kazanır.
+ */
 const AISLE_KEYWORDS: Record<Exclude<Aisle, 'diger'>, readonly string[]> = {
-  manav: ['elma','muz','domates','salatalık','salatalik','patates','soğan','sogan','biber','limon','portakal','marul','havuç','havuc','sarımsak','sarimsak','meyve','sebze','yeşillik','yesillik','maydanoz','mandalina','çilek','cilek','üzüm','uzum','karpuz','kavun','avokado','ıspanak','ispanak','patlıcan','patlican','kabak','brokoli','mantar','nar','kayısı','kayisi','şeftali','seftali','armut'],
-  kasap: ['et ','kıyma','kiyma','tavuk','balık','balik','köfte','kofte','sucuk','sosis','salam','pastırma','pastirma','hindi','kuzu','dana','bonfile','but','kanat','ciğer','ciger','jambon'],
-  sutKahvalti: ['süt','sut','yoğurt','yogurt','peynir','yumurta','tereyağ','tereyag','kaymak','bal','reçel','recel','zeytin','ayran','kahvaltılık','kahvaltilik','krema','labne','kaşar','kasar','tahin','pekmez'],
-  firin: ['ekmek','simit','poğaça','pogaca','börek','borek','lavaş','lavas','bazlama','kek','pasta','un','maya','galeta','kraker','tost'],
-  temel: ['pirinç','pirinc','makarna','mercimek','nohut','fasulye','bulgur','salça','salca','yağ','zeytinyağ','zeytinyag','şeker','seker','tuz','baharat','konserve','sirke','irmik','nişasta','nisasta','bakliyat','un '],
-  atistirmalik: ['cips','çikolata','cikolata','bisküvi','biskuvi','gofret','kola','soda','meşrubat','mesrubat','çay','cay','kahve','su ','içecek','icecek','kuruyemiş','kuruyemis','fındık','findik','fıstık','fistik','gazoz','meyve suyu','dondurma','sakız','sakiz','şekerleme','sekerleme'],
-  temizlik: ['deterjan','çamaşır','camasir','bulaşık','bulasik','sabun','temizlik','peçete','pecete','havlu','tuvalet kağıdı','tuvalet kagidi','kağıt','kagit','çöp','cop','poşet','poset','yumuşatıcı','yumusatici','camsil','çamaşır suyu','kireç','kirec','sünger','sunger'],
-  kisisel: ['şampuan','sampuan','diş','dis ','macun','jilet','ped','deodorant','duş jeli','dus jeli','krem','parfüm','parfum','tıraş','tiras','bakım','bakim','kolonya','mendil','bebek bezi','pomat'],
+  manav: [
+    // Meyve
+    'elma', 'armut', 'muz', 'portakal', 'mandalina', 'limon', 'greyfurt', 'üzüm', 'uzum',
+    'çilek', 'cilek', 'kiraz', 'vişne', 'visne', 'erik', 'kayısı', 'kayisi', 'şeftali', 'seftali',
+    'nektarin', 'kavun', 'karpuz', 'nar', 'incir', 'ayva', 'avokado', 'avakado', 'ananas', 'kivi',
+    'mango', 'hurma', 'dut', 'böğürtlen', 'ahududu', 'mersin', 'narenciye', 'meyve',
+    // Sebze
+    'domates', 'salatalık', 'salatalik', 'biber', 'patlıcan', 'patlican', 'kabak', 'patates',
+    'soğan', 'sogan', 'sarımsak', 'sarimsak', 'havuç', 'havuc', 'marul', 'kıvırcık', 'kivircik',
+    'maydanoz', 'dereotu', 'nane', 'roka', 'ıspanak', 'ispanak', 'pırasa', 'pirasa', 'lahana',
+    'karnabahar', 'karnıbahar', 'brokoli', 'bezelye', 'bamya', 'enginar', 'turp', 'pancar',
+    'kereviz', 'mantar', 'mısır', 'misir', 'börülce', 'semizotu', 'zencefil', 'balkabağı',
+    'balkabagi', 'sebze', 'yeşillik', 'yesillik', 'zerzevat', 'manav',
+  ],
+  kasap: [
+    'et', 'kıyma', 'kiyma', 'biftek', 'bonfile', 'antrikot', 'kuşbaşı', 'kusbasi', 'pirzola',
+    'kuzu', 'dana', 'sığır', 'sigir', 'köfte', 'kofte', 'tavuk', 'but', 'göğüs', 'gogus', 'kanat',
+    'hindi', 'balık', 'balik', 'somon', 'levrek', 'çipura', 'cipura', 'hamsi', 'uskumru',
+    'midye', 'karides', 'sucuk', 'sosis', 'salam', 'jambon', 'pastırma', 'pastirma', 'kavurma',
+    'ciğer', 'ciger', 'döner', 'doner', 'şarküteri', 'sarkuteri',
+  ],
+  sutKahvalti: [
+    'süt', 'sut', 'yoğurt', 'yogurt', 'ayran', 'kefir', 'peynir', 'kaşar', 'kasar', 'lor',
+    'labne', 'krema', 'kaymak', 'tereyağ', 'tereyag', 'tereyağı', 'margarin', 'yumurta', 'bal',
+    'reçel', 'recel', 'pekmez', 'tahin', 'helva', 'zeytin', 'kahvaltılık', 'kahvaltilik',
+    'çökelek', 'cokelek', 'muhallebi', 'sütlaç', 'sutlac',
+  ],
+  firin: [
+    'ekmek', 'somun', 'baget', 'lavaş', 'lavas', 'pide', 'simit', 'poğaça', 'pogaca', 'açma',
+    'acma', 'börek', 'borek', 'çörek', 'corek', 'kek', 'pasta', 'galeta', 'grissini', 'tost',
+    'yufka', 'kruvasan', 'kruasan', 'bazlama', 'milföy', 'milfoy',
+  ],
+  temel: [
+    'pirinç', 'pirinc', 'bulgur', 'makarna', 'şehriye', 'sehriye', 'erişte', 'eriste', 'mercimek',
+    'nohut', 'fasulye', 'barbunya', 'bakliyat', 'un', 'irmik', 'nişasta', 'nisasta', 'yağ', 'yag',
+    'ayçiçek', 'aycicek', 'zeytinyağ', 'zeytinyag', 'zeytinyağı', 'salça', 'salca', 'sirke', 'tuz',
+    'şeker', 'seker', 'baharat', 'karabiber', 'kimyon', 'pul biber', 'kekik', 'tarçın', 'tarcin',
+    'vanilya', 'maya', 'kabartma', 'konserve', 'ketçap', 'ketcap', 'mayonez', 'hardal', 'sos',
+    'soya sosu', 'bulyon', 'çorba', 'corba', 'turşu', 'tursu',
+  ],
+  atistirmalik: [
+    'cips', 'çikolata', 'cikolata', 'gofret', 'bisküvi', 'biskuvi', 'kraker', 'kuruyemiş',
+    'kuruyemis', 'fındık', 'findik', 'fıstık', 'fistik', 'ceviz', 'badem', 'leblebi', 'çekirdek',
+    'cekirdek', 'kaju', 'şekerleme', 'sekerleme', 'sakız', 'sakiz', 'lokum', 'jelibon', 'draje',
+    'marshmallow', 'patlamış', 'patlamis', 'tatlı', 'tatli', 'kurabiye', 'gevrek', 'granola',
+  ],
+  icecek: [
+    'su', 'soda', 'maden suyu', 'kola', 'gazoz', 'meşrubat', 'mesrubat', 'içecek', 'icecek',
+    'meyve suyu', 'çay', 'cay', 'kahve', 'nescafe', 'ıhlamur', 'ihlamur', 'limonata', 'şalgam',
+    'salgam', 'buzlu çay', 'soğuk çay', 'smoothie', 'şıra', 'sira', 'enerji içeceği',
+  ],
+  donuk: [
+    'dondurma', 'donmuş', 'donmus', 'donuk', 'buz', 'parmak patates', 'donmuş pizza',
+    'donmuş sebze', 'donmuş mantı', 'hazır mantı',
+  ],
+  temizlik: [
+    'deterjan', 'çamaşır', 'camasir', 'bulaşık', 'bulasik', 'çamaşır suyu', 'yumuşatıcı',
+    'yumusatici', 'sabun', 'temizlik', 'yüzey', 'yuzey', 'camsil', 'kireç', 'kirec', 'sünger',
+    'sunger', 'eldiven', 'çöp', 'cop', 'poşet', 'poset', 'peçete', 'pecete', 'kağıt havlu',
+    'kagit havlu', 'tuvalet kağıdı', 'tuvalet kagidi', 'havlu', 'ıslak mendil', 'oda spreyi',
+    'koku giderici', 'çamaşır deterjanı', 'bulaşık deterjanı',
+  ],
+  kisisel: [
+    'şampuan', 'sampuan', 'saç kremi', 'sac kremi', 'duş jeli', 'dus jeli', 'diş macunu',
+    'dis macunu', 'macun', 'diş fırçası', 'dis fircasi', 'jilet', 'tıraş', 'tiras', 'deodorant',
+    'parfüm', 'parfum', 'kolonya', 'krem', 'nemlendirici', 'güneş kremi', 'gunes kremi', 'makyaj',
+    'ruj', 'fondöten', 'fondoten', 'ped', 'tampon', 'pamuk', 'oje', 'el kremi',
+  ],
+  bebekEvcil: [
+    'bebek bezi', 'bebek maması', 'bebek mamasi', 'bebek', 'biberon', 'emzik', 'mama',
+    'kedi maması', 'kedi mamasi', 'köpek maması', 'kopek mamasi', 'kedi kumu', 'kuş yemi',
+    'kus yemi', 'balık yemi', 'evcil', 'pet shop',
+  ],
 };
+
+function tokenize(lower: string): string[] {
+  return lower.split(/[\s,./()\-–_]+/).filter(Boolean);
+}
 
 /** Bir ürün adının düştüğü reyon (anahtar kelimeye göre; bulunamazsa "diğer"). */
 export function groceryAisle(name: string): Aisle {
-  const n = ` ${name.toLocaleLowerCase('tr')} `;
+  const lower = name.toLocaleLowerCase('tr').trim();
+  if (!lower) return 'diger';
+  const tokens = tokenize(lower);
   for (const aisle of AISLE_ORDER) {
     if (aisle === 'diger') continue;
-    const kws = AISLE_KEYWORDS[aisle];
-    if (kws.some((kw) => n.includes(kw))) return aisle;
+    for (const kw of AISLE_KEYWORDS[aisle]) {
+      if (kw.includes(' ')) {
+        if (lower.includes(kw)) return aisle;
+      } else if (tokens.some((tok) => tok === kw || (kw.length >= 3 && tok.startsWith(kw)))) {
+        return aisle;
+      }
+    }
   }
   return 'diger';
+}
+
+/** Geçerli bir Aisle anahtarı mı? (manuel kategori doğrulaması) */
+export function isAisle(value: string | undefined | null): value is Aisle {
+  return value != null && (AISLE_ORDER as readonly string[]).includes(value);
+}
+
+/**
+ * Bir ürünün reyonu: kullanıcı elle bir kategori seçtiyse (geçerliyse) o; yoksa
+ * ada göre otomatik tahmin.
+ */
+export function aisleOf(item: { name: string; aisle?: string }): Aisle {
+  return isAisle(item.aisle) ? item.aisle : groceryAisle(item.name);
 }
 
 export interface AisleGroup<T> {
@@ -158,10 +264,12 @@ export interface AisleGroup<T> {
 }
 
 /** Ürünleri reyona göre, markette dolaşma sırasıyla gruplar. */
-export function groupItemsByAisle<T extends { name: string }>(items: T[]): AisleGroup<T>[] {
+export function groupItemsByAisle<T extends { name: string; aisle?: string }>(
+  items: T[],
+): AisleGroup<T>[] {
   const buckets = new Map<Aisle, T[]>();
   for (const it of items) {
-    const a = groceryAisle(it.name);
+    const a = aisleOf(it);
     const arr = buckets.get(a);
     if (arr) arr.push(it);
     else buckets.set(a, [it]);

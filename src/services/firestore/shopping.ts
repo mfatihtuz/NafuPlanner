@@ -49,6 +49,15 @@ export async function removeShoppingItem(gid: string, itemId: string): Promise<v
   await deleteDoc(doc(requireDb(), 'groups', gid, 'shopping', itemId));
 }
 
+/** Bir ürünün reyonunu (manuel kategori) ayarlar. */
+export async function setShoppingItemAisle(
+  gid: string,
+  itemId: string,
+  aisle: string,
+): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'shopping', itemId), { aisle });
+}
+
 /** Alışveriş listesini canlı dinler (yeni → eski). */
 export function watchShopping(
   gid: string,

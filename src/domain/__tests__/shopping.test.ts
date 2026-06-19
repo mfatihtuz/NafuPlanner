@@ -1,4 +1,5 @@
 import {
+  aisleOf,
   groceryAisle,
   groupItemsByAisle,
   monthlySpend,
@@ -132,6 +133,45 @@ describe('groceryAisle / groupItemsByAisle', () => {
     ]);
     // manav < sutKahvalti < temizlik sırası
     expect(groups.map((g) => g.aisle)).toEqual(['manav', 'sutKahvalti', 'temizlik']);
+  });
+
+  it('genişletilmiş kapsam: erik/kiraz/avokado manava düşer', () => {
+    expect(groceryAisle('erik')).toBe('manav');
+    expect(groceryAisle('kiraz')).toBe('manav');
+    expect(groceryAisle('avokado')).toBe('manav');
+    expect(groceryAisle('avakado')).toBe('manav'); // yaygın yazım
+    expect(groceryAisle('yeşil elma')).toBe('manav'); // çok kelimeli
+  });
+
+  it('tüm ana reyonlar için örnekler doğru', () => {
+    expect(groceryAisle('kola')).toBe('icecek');
+    expect(groceryAisle('maden suyu')).toBe('icecek');
+    expect(groceryAisle('dondurma')).toBe('donuk');
+    expect(groceryAisle('diş macunu')).toBe('kisisel');
+    expect(groceryAisle('bebek bezi')).toBe('bebekEvcil');
+    expect(groceryAisle('kedi maması')).toBe('bebekEvcil');
+    expect(groceryAisle('makarna')).toBe('temel');
+    expect(groceryAisle('çikolata')).toBe('atistirmalik');
+  });
+
+  it('kısa adlar yanlış eşleşmez (su/et/süt)', () => {
+    expect(groceryAisle('su')).toBe('icecek');
+    expect(groceryAisle('et')).toBe('kasap');
+    expect(groceryAisle('süt')).toBe('sutKahvalti'); // "et" ile karışmaz
+    expect(groceryAisle('balık')).toBe('kasap'); // "bal" (sütKahvaltı) ile karışmaz
+    expect(groceryAisle('bal')).toBe('sutKahvalti');
+  });
+});
+
+describe('aisleOf (manuel kategori)', () => {
+  it('geçerli manuel kategori önceliklidir', () => {
+    expect(aisleOf({ name: 'elma', aisle: 'temizlik' })).toBe('temizlik');
+  });
+  it('manuel yoksa addan tahmin eder', () => {
+    expect(aisleOf({ name: 'elma' })).toBe('manav');
+  });
+  it('geçersiz manuel kategori yok sayılır', () => {
+    expect(aisleOf({ name: 'elma', aisle: 'olmayan' })).toBe('manav');
   });
 });
 

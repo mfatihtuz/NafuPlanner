@@ -196,6 +196,8 @@ export interface ShoppingItem {
   quantity?: string;
   note?: string;
   categoryId?: Id;
+  /** Reyon (manuel kategori): kullanıcı kaydırarak değiştirebilir; yoksa addan tahmin. */
+  aisle?: string;
   checked: boolean;
   addedBy: Id;
   addedAtMs: Millis;

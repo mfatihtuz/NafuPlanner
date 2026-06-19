@@ -1,10 +1,17 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, Pressable, View } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 
 import { actorOf } from '@/services/auth/actor';
 import { formatDayKey } from '@/domain/format';
-import { groupItemsByAisle, suggestItemNames } from '@/domain/shopping';
+import {
+  AISLE_LABELS,
+  AISLE_ORDER,
+  aisleOf,
+  groupItemsByAisle,
+  suggestItemNames,
+} from '@/domain/shopping';
 import { dayKeyFromMs, dueAtFromDayKey } from '@/domain/time';
 import type { ClockTime, DayKey, ShoppingItem } from '@/domain/types';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
@@ -17,6 +24,7 @@ import { firestoreErrorMessage } from '@/services/firestore/errors';
 import {
   addShoppingItem,
   removeShoppingItem,
+  setShoppingItemAisle,
   setShoppingItemChecked,
 } from '@/services/firestore/shopping';
 import { deleteShoppingList, updateShoppingList } from '@/services/firestore/shoppingLists';
@@ -42,6 +50,7 @@ import {
   TimeWheel,
 } from '@/ui';
 import { useColors } from '@/ui/theme';
+import { radii } from '@/ui/theme/radii';
 import { rowCardSurface } from '@/ui/theme/rowCard';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -49,13 +58,18 @@ function ItemRow({
   item,
   onToggle,
   onRemove,
+  onRecategorize,
 }: {
   item: ShoppingItem;
   onToggle: (item: ShoppingItem) => void;
   onRemove: (item: ShoppingItem) => void;
+  /** Verilirse satır sola kaydırılıp kategorisi değiştirilebilir. */
+  onRecategorize?: (item: ShoppingItem) => void;
 }) {
   const colors = useColors();
-  return (
+  const swipeRef = useRef<Swipeable>(null);
+
+  const row = (
     <View
       style={{
         flexDirection: 'row',
@@ -80,6 +94,43 @@ function ItemRow({
         <Icon name="x" size={18} color={colors.textMuted} />
       </Pressable>
     </View>
+  );
+
+  if (!onRecategorize) return row;
+
+  return (
+    <Swipeable
+      ref={swipeRef}
+      friction={2}
+      overshootRight={false}
+      rightThreshold={48}
+      containerStyle={{ borderRadius: radii.md }}
+      renderRightActions={() => (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('shopping.recategorize')}
+          onPress={() => {
+            swipeRef.current?.close();
+            onRecategorize(item);
+          }}
+          style={({ pressed }) => ({
+            width: 84,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            backgroundColor: colors.primary,
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <Icon name="tag" size={18} color={colors.onPrimary} />
+          <Text variant="caption" style={{ color: colors.onPrimary, fontWeight: '700' }}>
+            {t('shopping.recategorize')}
+          </Text>
+        </Pressable>
+      )}
+    >
+      {row}
+    </Swipeable>
   );
 }
 
@@ -117,6 +168,7 @@ export default function ShoppingListDetailScreen() {
   const [showReminderCal, setShowReminderCal] = useState(false);
   const [spendDraft, setSpendDraft] = useState('');
   const [spentSynced, setSpentSynced] = useState<number | undefined>(undefined);
+  const [recatItem, setRecatItem] = useState<ShoppingItem | null>(null);
 
   // Sık alınanlar: tüm hane geçmişinden, bu listede açık olmayan adlardan öner.
   const suggestions = useMemo(
@@ -190,6 +242,14 @@ export default function ShoppingListDetailScreen() {
     addShoppingItem(gid, name, user.uid, isGeneral ? undefined : id).catch((error) =>
       console.warn('[shopping] eklenemedi', error),
     );
+  };
+
+  const onPickAisle = (aisle: string) => {
+    if (!gid || !recatItem) return;
+    setShoppingItemAisle(gid, recatItem.id, aisle).catch((error) =>
+      console.warn('[shopping] kategori değiştirilemedi', error),
+    );
+    setRecatItem(null);
   };
 
   const onSaveSpend = () => {
@@ -530,12 +590,24 @@ export default function ShoppingListDetailScreen() {
                   {group.label}
                 </Text>
                 {group.items.map((item) => (
-                  <ItemRow key={item.id} item={item} onToggle={onToggle} onRemove={onRemove} />
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    onToggle={onToggle}
+                    onRemove={onRemove}
+                    onRecategorize={setRecatItem}
+                  />
                 ))}
               </View>
             ))
           : open.map((item) => (
-              <ItemRow key={item.id} item={item} onToggle={onToggle} onRemove={onRemove} />
+              <ItemRow
+                key={item.id}
+                item={item}
+                onToggle={onToggle}
+                onRemove={onRemove}
+                onRecategorize={setRecatItem}
+              />
             ))}
 
         {checkedItems.length > 0 ? (
@@ -598,6 +670,67 @@ export default function ShoppingListDetailScreen() {
           </View>
         ) : null}
       </KeyboardAwareScrollView>
+
+      {/* Reyon (kategori) seçici — ürünü sola kaydırınca açılır */}
+      <Modal
+        visible={recatItem != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRecatItem(null)}
+      >
+        <Pressable
+          onPress={() => setRecatItem(null)}
+          style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}
+        >
+          <Pressable
+            onPress={() => undefined}
+            style={{
+              backgroundColor: colors.surface,
+              borderTopLeftRadius: radii.xl,
+              borderTopRightRadius: radii.xl,
+              paddingHorizontal: spacing.lg,
+              paddingTop: spacing.lg,
+              paddingBottom: spacing.xxl,
+              gap: spacing.xs,
+            }}
+          >
+            <Text variant="title">{t('shopping.pickAisle')}</Text>
+            {recatItem ? (
+              <Text variant="caption" tone="muted" style={{ marginBottom: spacing.sm }}>
+                {recatItem.name}
+              </Text>
+            ) : null}
+            {AISLE_ORDER.map((a) => {
+              const current = recatItem ? aisleOf(recatItem) === a : false;
+              return (
+                <Pressable
+                  key={a}
+                  onPress={() => onPickAisle(a)}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    paddingVertical: spacing.md,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Icon
+                    name={current ? 'checkSquare' : 'tag'}
+                    size={18}
+                    color={current ? colors.primary : colors.textMuted}
+                  />
+                  <Text
+                    variant="body"
+                    style={current ? { color: colors.primaryDark, fontWeight: '700' } : undefined}
+                  >
+                    {AISLE_LABELS[a]}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
