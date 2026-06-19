@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
 import { actorOf } from '@/services/auth/actor';
 import { formatDayKey } from '@/domain/format';
+import { groupItemsByAisle, suggestItemNames } from '@/domain/shopping';
 import { dayKeyFromMs, dueAtFromDayKey } from '@/domain/time';
 import type { ClockTime, DayKey, ShoppingItem } from '@/domain/types';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
@@ -101,8 +102,10 @@ export default function ShoppingListDetailScreen() {
     () => (allItems ?? []).filter((it) => (isGeneral ? it.listId == null : it.listId === id)),
     [allItems, id, isGeneral],
   );
-  const open = items.filter((i) => !i.checked);
-  const checkedItems = items.filter((i) => i.checked);
+  const open = useMemo(() => items.filter((i) => !i.checked), [items]);
+  const checkedItems = useMemo(() => items.filter((i) => i.checked), [items]);
+  // Açık ürünler reyona göre gruplanır (2+ reyon varsa başlıklı gösterilir).
+  const openGroups = useMemo(() => groupItemsByAisle(open), [open]);
 
   const [draft, setDraft] = useState('');
   const [reminderDraft, setReminderDraft] = useState('');
@@ -110,6 +113,14 @@ export default function ShoppingListDetailScreen() {
   const [nameDraft, setNameDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [showReminderCal, setShowReminderCal] = useState(false);
+  const [spendDraft, setSpendDraft] = useState('');
+  const [spentSynced, setSpentSynced] = useState<number | undefined>(undefined);
+
+  // Sık alınanlar: tüm hane geçmişinden, bu listede açık olmayan adlardan öner.
+  const suggestions = useMemo(
+    () => suggestItemNames(allItems ?? [], draft, open.map((i) => i.name), 6),
+    [allItems, draft, open],
+  );
 
   const now = useNow();
   const today = dayKeyFromMs(now);
@@ -118,6 +129,13 @@ export default function ShoppingListDetailScreen() {
   const done = list?.status === 'done';
   const title = isGeneral ? t('shopping.generalList') : (list?.name ?? t('shopping.title'));
   const reminders = list?.reminders ?? [];
+
+  // Harcama taslağını sunucudaki değerle eşitle (efektsiz: değer değişince
+  // render sırasında ayarlanır — React'in önerdiği desen).
+  if (list && list.spentAmount !== spentSynced) {
+    setSpentSynced(list.spentAmount);
+    setSpendDraft(list.spentAmount != null ? String(list.spentAmount) : '');
+  }
 
   // Tarihli hatırlatma değerleri doğrudan listeden türetilir (tek kaynak
   // Firestore); değişiklikler updateShoppingList ile yazılır.
@@ -161,6 +179,24 @@ export default function ShoppingListDetailScreen() {
     setDraft('');
     addShoppingItem(gid, name, user.uid, isGeneral ? undefined : id).catch((error) =>
       console.warn('[shopping] eklenemedi', error),
+    );
+  };
+
+  // Öneriden (sık alınan) doğrudan ekle.
+  const onAddNamed = (name: string) => {
+    if (!gid || !user) return;
+    addShoppingItem(gid, name, user.uid, isGeneral ? undefined : id).catch((error) =>
+      console.warn('[shopping] eklenemedi', error),
+    );
+  };
+
+  const onSaveSpend = () => {
+    if (!gid || !list) return;
+    const raw = spendDraft.trim().replace(',', '.');
+    const num = raw === '' ? null : Number(raw);
+    if (num != null && (Number.isNaN(num) || num < 0)) return; // geçersiz → yok say
+    updateShoppingList(gid, list.id, { spentAmount: num }).catch((error) =>
+      console.warn('[shopping] harcama kaydedilemedi', error),
     );
   };
 
@@ -465,9 +501,40 @@ export default function ShoppingListDetailScreen() {
           />
         </View>
 
-        {open.map((item) => (
-          <ItemRow key={item.id} item={item} onToggle={onToggle} onRemove={onRemove} />
-        ))}
+        {/* Sık alınanlar (#4): tek dokunuşla ekle */}
+        {!done && suggestions.length > 0 ? (
+          <View style={{ gap: spacing.xs }}>
+            <Text variant="caption" tone="muted">
+              {t('shopping.suggestions')}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+              {suggestions.map((name) => (
+                <Chip
+                  key={name}
+                  label={name}
+                  onPress={() => onAddNamed(name)}
+                  leftSlot={<Icon name="plus" size={14} color={colors.primaryDark} />}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {/* Açık ürünler — 2+ reyon varsa reyona göre gruplanır (#5) */}
+        {openGroups.length > 1
+          ? openGroups.map((group) => (
+              <View key={group.aisle} style={{ gap: spacing.sm }}>
+                <Text variant="overline" tone="secondary">
+                  {group.label}
+                </Text>
+                {group.items.map((item) => (
+                  <ItemRow key={item.id} item={item} onToggle={onToggle} onRemove={onRemove} />
+                ))}
+              </View>
+            ))
+          : open.map((item) => (
+              <ItemRow key={item.id} item={item} onToggle={onToggle} onRemove={onRemove} />
+            ))}
 
         {checkedItems.length > 0 ? (
           <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
@@ -484,6 +551,32 @@ export default function ShoppingListDetailScreen() {
           <Text variant="caption" tone="muted" center style={{ marginTop: spacing.md }}>
             {t('shopping.empty')}
           </Text>
+        ) : null}
+
+        {/* Harcama (#13): bu alışverişe ne harcandı (opsiyonel) */}
+        {list ? (
+          <Card style={{ gap: spacing.sm, marginTop: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Icon name="receipt" size={16} color={colors.primaryDark} />
+              <Text variant="bodyStrong">{t('shopping.spendTitle')}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Text variant="h2" tone="secondary">
+                ₺
+              </Text>
+              <View style={{ flex: 1 }}>
+                <TextField
+                  value={spendDraft}
+                  onChangeText={setSpendDraft}
+                  onBlur={onSaveSpend}
+                  placeholder={t('shopping.spendPlaceholder')}
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                  onSubmitEditing={onSaveSpend}
+                />
+              </View>
+            </View>
+          </Card>
         ) : null}
 
         {/* Tamamla / geri aç (yalnız gerçek listelerde, puanlı) */}

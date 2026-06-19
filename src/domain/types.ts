@@ -222,6 +222,8 @@ export interface ShoppingList {
   completedAtMs?: Millis;
   /** Tamamlanınca yazılan puan (geri açmada düşmek için saklanır). */
   awardedPoints?: number;
+  /** Bu alışverişe harcanan tutar (₺, opsiyonel — basit bütçe takibi). */
+  spentAmount?: number;
 }
 
 // --- Tekrar (esnek kalıplar) --------------------------------------------------

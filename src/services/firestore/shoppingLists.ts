@@ -48,12 +48,16 @@ export async function updateShoppingList(
     reminders?: string[];
     dueAtMs?: number | null;
     hasTime?: boolean;
+    spentAmount?: number | null;
   },
 ): Promise<void> {
   const data: Record<string, unknown> = {};
   if (patch.name !== undefined) data.name = patch.name.trim();
   if (patch.assigneeId !== undefined) data.assigneeId = patch.assigneeId;
   if (patch.reminders !== undefined) data.reminders = patch.reminders;
+  if (patch.spentAmount !== undefined) {
+    data.spentAmount = patch.spentAmount === null ? deleteField() : patch.spentAmount;
+  }
   if (patch.dueAtMs !== undefined) {
     if (patch.dueAtMs === null) {
       data.dueAtMs = deleteField();

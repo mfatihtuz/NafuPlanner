@@ -1,5 +1,11 @@
-import { shoppingListsDue } from '../shopping';
-import type { ShoppingList } from '../types';
+import {
+  groceryAisle,
+  groupItemsByAisle,
+  monthlySpend,
+  shoppingListsDue,
+  suggestItemNames,
+} from '../shopping';
+import type { ShoppingItem, ShoppingList } from '../types';
 
 const NOW = new Date(2026, 5, 10, 12, 0).getTime(); // 10 Haziran 2026
 const DAY = 86_400_000;
@@ -72,5 +78,69 @@ describe('shoppingListsDue', () => {
     const datedToday = makeList({ dueAtMs: NOW, createdBy: 'x' });
     const due = shoppingListsDue([mineUndated, datedToday], NOW, null);
     expect(due.today.map((l) => l.id)).toEqual([datedToday.id]);
+  });
+});
+
+let iseq = 0;
+function makeItem(name: string, addedAtMs: number, checked = false): ShoppingItem {
+  iseq += 1;
+  return {
+    id: `i${iseq}`,
+    householdId: 'h1',
+    name,
+    checked,
+    addedBy: ME,
+    addedAtMs,
+  };
+}
+
+describe('suggestItemNames', () => {
+  it('sıklığa göre sıralar, eşitlikte yeni olan; listedekini eler', () => {
+    const history = [
+      makeItem('Süt', 100),
+      makeItem('Süt', 300),
+      makeItem('Ekmek', 200),
+      makeItem('Yumurta', 400),
+    ];
+    // Süt 2 kez (en sık) → ilk; sonra tekil olanlar yeniye göre (Yumurta>Ekmek).
+    expect(suggestItemNames(history, '', [], 6)).toEqual(['Süt', 'Yumurta', 'Ekmek']);
+    // Zaten listede olan elenir.
+    expect(suggestItemNames(history, '', ['süt'], 6)).toEqual(['Yumurta', 'Ekmek']);
+  });
+
+  it('taslak metnine göre süzer (büyük/küçük harf duyarsız)', () => {
+    const history = [makeItem('Süt', 100), makeItem('Ekmek', 200), makeItem('Peçete', 300)];
+    expect(suggestItemNames(history, 'ek', [], 6)).toEqual(['Ekmek']);
+  });
+});
+
+describe('groceryAisle / groupItemsByAisle', () => {
+  it('ürünleri reyona ayırır', () => {
+    expect(groceryAisle('domates')).toBe('manav');
+    expect(groceryAisle('tavuk but')).toBe('kasap');
+    expect(groceryAisle('Süt')).toBe('sutKahvalti');
+    expect(groceryAisle('bulaşık deterjanı')).toBe('temizlik');
+    expect(groceryAisle('havlu')).toBe('temizlik');
+    expect(groceryAisle('bilinmeyen şey')).toBe('diger');
+  });
+
+  it('markette dolaşma sırasıyla gruplar', () => {
+    const groups = groupItemsByAisle([
+      makeItem('deterjan', 1),
+      makeItem('elma', 2),
+      makeItem('süt', 3),
+    ]);
+    // manav < sutKahvalti < temizlik sırası
+    expect(groups.map((g) => g.aisle)).toEqual(['manav', 'sutKahvalti', 'temizlik']);
+  });
+});
+
+describe('monthlySpend', () => {
+  it('yalnız bu ayki harcamaları toplar', () => {
+    const thisMonth = makeList({ spentAmount: 250, completedAtMs: NOW });
+    const alsoThisMonth = makeList({ spentAmount: 100, completedAtMs: new Date(2026, 5, 2).getTime() });
+    const lastMonth = makeList({ spentAmount: 999, completedAtMs: new Date(2026, 4, 20).getTime() });
+    const noSpend = makeList({ completedAtMs: NOW });
+    expect(monthlySpend([thisMonth, alsoThisMonth, lastMonth, noSpend], NOW)).toBe(350);
   });
 });

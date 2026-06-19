@@ -4,10 +4,12 @@ import { Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { actorOf } from '@/services/auth/actor';
 import { useMemberMap } from '@/features/household/useMemberMap';
+import { monthlySpend } from '@/domain/shopping';
 import type { Member, ShoppingList } from '@/domain/types';
 import { RequireHousehold } from '@/features/household/NoHousehold';
 import { useShopping } from '@/features/shopping/useShopping';
 import { useShoppingLists } from '@/features/shopping/useShoppingLists';
+import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { firestoreErrorMessage } from '@/services/firestore/errors';
@@ -93,6 +95,8 @@ function ShoppingContent() {
   const [creating, setCreating] = useState(false);
 
   const memberMap = useMemberMap(members);
+  const now = useNow();
+  const monthSpend = useMemo(() => monthlySpend(lists ?? [], now), [lists, now]);
 
   // Ürünleri liste bazında say (listId yoksa "general" kovası).
   const countByList = useMemo(() => {
@@ -155,6 +159,15 @@ function ShoppingContent() {
         />
       </View>
 
+      {monthSpend > 0 ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+          <Icon name="receipt" size={14} color={colors.textSecondary} />
+          <Text variant="caption" tone="secondary">
+            {t('shopping.monthlySpend', { amount: monthSpend })}
+          </Text>
+        </View>
+      ) : null}
+
       {emptyEverything ? (
         <EmptyState expression="happy" title={t('shopping.title')} body={t('shopping.emptyLists')} />
       ) : (
@@ -178,7 +191,10 @@ function ShoppingContent() {
               <ListCard
                 key={list.id}
                 title={list.name}
-                subtitle={t('shopping.itemProgress', { done: c.checked, total: c.total })}
+                subtitle={
+                  t('shopping.itemProgress', { done: c.checked, total: c.total }) +
+                  (list.spentAmount ? ` · ₺${list.spentAmount}` : '')
+                }
                 done={list.status === 'done'}
                 assignee={list.assigneeId ? memberMap.get(list.assigneeId) : null}
                 hasReminders={(list.reminders ?? []).length > 0}

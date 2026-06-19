@@ -103,11 +103,11 @@ export default function TaskDetailScreen() {
   );
   const nextOccurrenceLabel = useMemo(() => {
     if (!recurrence) return null;
-    const after = task?.occurrenceDayKey ?? dayKeyFromMs(Date.now());
+    const after = task?.occurrenceDayKey ?? dayKeyFromMs(now);
     const nextKey = nextOccurrenceDayKey(recurrence, after);
     if (!nextKey) return null;
-    return formatDueLabel(dueAtFromDayKey(nextKey).dueAtMs, false, Date.now());
-  }, [recurrence, task]);
+    return formatDueLabel(dueAtFromDayKey(nextKey).dueAtMs, false, now);
+  }, [recurrence, task, now]);
 
   if (tasks == null) {
     return (
