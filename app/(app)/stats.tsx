@@ -10,13 +10,15 @@ import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Avatar, Card, Screen, Text } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
+import { palette } from '@/ui/theme/colors';
 import { spacing } from '@/ui/theme/spacing';
 
 const CHART_HEIGHT = 110;
 const THIRTY_DAYS_MS = 30 * 86_400_000;
 
 export default function StatsScreen() {
+  const colors = useColors();
   const now = useNow();
   const { household, members } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
@@ -46,7 +48,8 @@ export default function StatsScreen() {
       return {
         key: categoryId ?? 'none',
         name: category?.name ?? t('stats.uncategorized'),
-        color: category?.color ?? colors.textMuted,
+        // Kategorisiz için temadan bağımsız sabit gri (memo'da canlı renk okunmaz).
+        color: category?.color ?? palette.gray[400],
         count,
       };
     });

@@ -4,7 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { t } from '@/i18n';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Button, EmptyState } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { spacing } from '@/ui/theme/spacing';
 
 /**
@@ -12,6 +12,7 @@ import { spacing } from '@/ui/theme/spacing';
  * yönlendirme içeren boş durum, varsa children.
  */
 export function RequireHousehold({ children }: { children: React.ReactNode }) {
+  const colors = useColors();
   const { profileLoaded, household, householdLoaded } = useHousehold();
   const router = useRouter();
 

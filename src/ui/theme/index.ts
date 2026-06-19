@@ -22,9 +22,10 @@ export type Theme = typeof theme;
 
 export { colors, palette, radii, shadows, spacing, typography, fontWeights };
 export { rowCardSurface } from './rowCard';
-export type { ColorToken } from './colors';
+export { applyColorScheme, systemScheme } from './colors';
+export type { ColorToken, ColorScheme } from './colors';
 export type { SpacingToken } from './spacing';
 export type { RadiusToken } from './radii';
 export type { ShadowToken } from './shadows';
 export type { TextVariant } from './typography';
-export { ThemeProvider, useTheme } from './ThemeProvider';
+export { ThemeProvider, useTheme, useColors, type ThemePref } from './ThemeProvider';

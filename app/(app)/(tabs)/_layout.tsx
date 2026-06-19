@@ -3,7 +3,7 @@ import type { ColorValue } from 'react-native';
 
 import { t } from '@/i18n';
 import { Icon, type IconName } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { typography } from '@/ui/theme/typography';
 
 function tabIcon(name: IconName) {
@@ -14,6 +14,7 @@ function tabIcon(name: IconName) {
 }
 
 export default function AppTabsLayout() {
+  const colors = useColors();
   return (
     <Tabs
       screenOptions={{

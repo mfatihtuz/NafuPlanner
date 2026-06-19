@@ -12,7 +12,8 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import type { CompletionReward } from '@/services/workflows/taskWorkflows';
 import { t } from '@/i18n';
 import { Icon, Nafu, Text } from '@/ui';
-import { colors, palette } from '@/ui/theme/colors';
+import { palette } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme/ThemeProvider';
 import { radii } from '@/ui/theme/radii';
 import { shadows } from '@/ui/theme/shadows';
 import { spacing } from '@/ui/theme/spacing';
@@ -81,6 +82,7 @@ function CelebrationOverlay({
   reward: CompletionReward;
   onDismiss: () => void;
 }) {
+  const colors = useColors();
   const [pop] = useState(() => new Animated.Value(0));
   const [burst] = useState(() => new Animated.Value(0));
 
@@ -112,6 +114,7 @@ function CelebrationOverlay({
           styles.card,
           shadows.lg,
           {
+            backgroundColor: colors.surface,
             opacity: pop,
             transform: [
               { scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
@@ -145,7 +148,7 @@ function CelebrationOverlay({
         ) : null}
 
         {badge ? (
-          <View style={styles.badgeRow}>
+          <View style={[styles.badgeRow, { backgroundColor: colors.primaryTint }]}>
             <Icon name={badge.icon as never} size={18} color={colors.reward} />
             <Text variant="small" style={{ color: colors.textPrimary, fontWeight: '600' }}>
               {t('celebration.newBadge', { name: badge.name })}
@@ -194,7 +197,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 320,
     alignItems: 'center',
-    backgroundColor: colors.surface,
     borderRadius: radii.xl,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
@@ -204,7 +206,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     marginTop: spacing.sm,
-    backgroundColor: colors.primaryTint,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,

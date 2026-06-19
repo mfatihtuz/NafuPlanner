@@ -12,7 +12,8 @@ import {
 import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Button, Card, Icon, Screen, Text, TextField } from '@/ui';
-import { colors, palette } from '@/ui/theme/colors';
+import { palette } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { spacing } from '@/ui/theme/spacing';
 
 const COLORS = [
@@ -27,6 +28,7 @@ const COLORS = [
 ];
 
 function ColorDots({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+  const colors = useColors();
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
       {COLORS.map((color) => (
@@ -49,6 +51,7 @@ function ColorDots({ value, onChange }: { value: string; onChange: (color: strin
 
 /** Tek kategori: ad düzenleme (odak kaybında kaydeder), renk, silme. */
 function CategoryRow({ category, gid }: { category: Category; gid: string }) {
+  const colors = useColors();
   const [name, setName] = useState(category.name);
 
   const saveName = () => {

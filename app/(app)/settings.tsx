@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Switch, View } from 'react-native';
+import { Alert, Pressable, Switch, View } from 'react-native';
 
 import type { ClockTime, UserSettings } from '@/domain/types';
 import { t } from '@/i18n';
@@ -9,7 +9,8 @@ import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { deleteUserData, saveUserSettings } from '@/services/firestore/users';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Button, Card, Screen, Text, TimeWheel } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors, useTheme, type ThemePref } from '@/ui/theme';
+import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
 
 const DEFAULT_QUIET_START: ClockTime = { hour: 22, minute: 0 };
@@ -27,6 +28,7 @@ function SettingRow({
   value: boolean;
   onChange: (next: boolean) => void;
 }) {
+  const colors = useColors();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
       <View style={{ flex: 1 }}>
@@ -46,6 +48,8 @@ function SettingRow({
 }
 
 export default function SettingsScreen() {
+  const colors = useColors();
+  const { pref: themePref, setPref: setThemePref } = useTheme();
   const router = useRouter();
   const { user, deleteAccount } = useAuth();
   const { profile, household } = useHousehold();
@@ -123,6 +127,54 @@ export default function SettingsScreen() {
   return (
     <Screen scroll padded edges={['left', 'right', 'bottom']}>
       <View style={{ gap: spacing.lg, paddingBottom: spacing.xxl }}>
+        {/* Görünüm: tema seçimi (canlı geçiş) */}
+        <Text variant="overline" tone="secondary">
+          {t('settings.appearance')}
+        </Text>
+        <Card style={{ gap: spacing.sm }}>
+          <Text variant="caption" tone="secondary">
+            {t('settings.appearanceHint')}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            {(['system', 'light', 'dark'] as ThemePref[]).map((opt) => {
+              const selected = themePref === opt;
+              const label =
+                opt === 'system'
+                  ? t('settings.themeSystem')
+                  : opt === 'light'
+                    ? t('settings.themeLight')
+                    : t('settings.themeDark');
+              return (
+                <Pressable
+                  key={opt}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => setThemePref(opt)}
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    paddingVertical: spacing.sm,
+                    borderRadius: radii.md,
+                    borderWidth: 1.5,
+                    borderColor: selected ? colors.primary : colors.border,
+                    backgroundColor: selected ? colors.primaryTint : colors.surface,
+                  }}
+                >
+                  <Text
+                    variant="small"
+                    style={{
+                      color: selected ? colors.primaryDark : colors.textSecondary,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+
         <Text variant="overline" tone="secondary">
           {t('settings.notifications')}
         </Text>

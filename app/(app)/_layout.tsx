@@ -8,10 +8,11 @@ import { NotificationScheduler } from '@/features/notifications/NotificationSche
 import { WidgetSync } from '@/features/widgets/WidgetSync';
 import { t } from '@/i18n';
 import { HouseholdProvider } from '@/services/household/HouseholdProvider';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { typography } from '@/ui/theme/typography';
 
 export default function AppLayout() {
+  const colors = useColors();
   return (
     <HouseholdProvider>
       <WidgetSync />

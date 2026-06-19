@@ -22,7 +22,7 @@ import { completeTaskGate } from '@/features/tasks/completeTask';
 import { deleteTaskGate, reassignTaskGate, snoozeTaskGate } from '@/features/tasks/quickActions';
 import { setTaskOrder } from '@/services/firestore/tasks';
 import { Chip, EmptyState, FAB, Screen, Text, TextField } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { radii } from '@/ui/theme/radii';
 import { rowCardSurface } from '@/ui/theme/rowCard';
 import { spacing } from '@/ui/theme/spacing';
@@ -37,6 +37,7 @@ function ArrowButton({
   disabled: boolean;
   onPress: () => void;
 }) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
@@ -114,6 +115,7 @@ export default function TasksScreen() {
 }
 
 function TasksContent() {
+  const colors = useColors();
   const router = useRouter();
   const { user } = useAuth();
   const { celebrate } = useCelebration();

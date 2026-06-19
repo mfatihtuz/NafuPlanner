@@ -35,6 +35,7 @@ import { deleteTask, setSubtasks } from '@/services/firestore/tasks';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { deleteStorageObject, uploadTaskImage } from '@/services/storage/attachments';
+import { useColors } from '@/ui/theme';
 import { completeTaskGate } from '@/features/tasks/completeTask';
 import { reopenTaskGate } from '@/features/tasks/reopenTask';
 import {
@@ -59,11 +60,11 @@ import {
   Text,
   TextField,
 } from '@/ui';
-import { colors } from '@/ui/theme/colors';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
 
 export default function TaskDetailScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const now = useNow();

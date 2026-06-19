@@ -25,7 +25,7 @@ import { reopenTaskGate } from '@/features/tasks/reopenTask';
 import { completeTaskGate } from '@/features/tasks/completeTask';
 import { deleteTaskGate, reassignTaskGate, snoozeTaskGate } from '@/features/tasks/quickActions';
 import { EmptyState, FAB, Icon, Screen, Text } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { spacing } from '@/ui/theme/spacing';
 
 function greetingKey(): TranslationKey {
@@ -46,6 +46,7 @@ export default function TodayScreen() {
 }
 
 function TodayContent() {
+  const colors = useColors();
   const router = useRouter();
   const { user } = useAuth();
   const { celebrate } = useCelebration();

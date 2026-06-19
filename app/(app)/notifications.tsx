@@ -10,7 +10,7 @@ import { t } from '@/i18n';
 import { useAuth } from '@/services/auth/AuthProvider';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Card, EmptyState, Icon, Screen, Text } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { spacing } from '@/ui/theme/spacing';
 
 function lineFor(entry: ActivityEntry): {
@@ -38,6 +38,7 @@ function lineFor(entry: ActivityEntry): {
 }
 
 export default function NotificationsScreen() {
+  const colors = useColors();
   const router = useRouter();
   const now = useNow();
   const { user } = useAuth();

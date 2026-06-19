@@ -31,7 +31,8 @@ import {
   TextField,
   TimeWheel,
 } from '@/ui';
-import { colors, palette } from '@/ui/theme/colors';
+import { palette } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -50,6 +51,7 @@ const NEW_CATEGORY_COLORS = [
 ];
 
 export default function TaskFormScreen() {
+  const colors = useColors();
   const { id, title } = useLocalSearchParams<{ id?: string; title?: string }>();
   const { household } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
@@ -76,6 +78,7 @@ function TaskFormInner({
   editing: Task | null;
   initialTitle?: string;
 }) {
+  const colors = useColors();
   const router = useRouter();
   const { user } = useAuth();
   const { household, members } = useHousehold();

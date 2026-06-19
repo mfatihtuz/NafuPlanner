@@ -299,6 +299,11 @@ export const tr = {
 
   'settings.title': 'Ayarlar',
   'settings.household': 'Hane',
+  'settings.appearance': 'Görünüm',
+  'settings.appearanceHint': 'Uygulama temasını seç. Anında uygulanır.',
+  'settings.themeSystem': 'Sistem',
+  'settings.themeLight': 'Açık',
+  'settings.themeDark': 'Koyu',
   'settings.notifications': 'Bildirimler',
   'settings.quietHours': 'Sessiz saatler',
   'settings.quietHoursHint': 'Bu aralıkta bildirim gelmez; sabaha ertelenir.',

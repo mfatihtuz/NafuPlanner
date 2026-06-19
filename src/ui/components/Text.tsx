@@ -1,19 +1,9 @@
 import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 
-import { colors } from '../theme/colors';
 import { typography, type TextVariant } from '../theme/typography';
+import { useColors } from '../theme/ThemeProvider';
 
 type Tone = 'primary' | 'secondary' | 'muted' | 'onDark' | 'link' | 'accent' | 'inverse';
-
-const TONE_COLOR: Record<Tone, string> = {
-  primary: colors.textPrimary,
-  secondary: colors.textSecondary,
-  muted: colors.textMuted,
-  onDark: colors.textOnDark,
-  inverse: colors.textOnDark,
-  link: colors.textLink,
-  accent: colors.accent,
-};
 
 export interface TextProps extends RNTextProps {
   variant?: TextVariant;
@@ -31,11 +21,21 @@ export function Text({
   style,
   ...rest
 }: TextProps) {
+  const colors = useColors();
+  const toneColor: Record<Tone, string> = {
+    primary: colors.textPrimary,
+    secondary: colors.textSecondary,
+    muted: colors.textMuted,
+    onDark: colors.textOnDark,
+    inverse: colors.textOnDark,
+    link: colors.textLink,
+    accent: colors.accent,
+  };
   return (
     <RNText
       style={[
         typography[variant],
-        { color: color ?? TONE_COLOR[tone] },
+        { color: color ?? toneColor[tone] },
         center && { textAlign: 'center' },
         style,
       ]}

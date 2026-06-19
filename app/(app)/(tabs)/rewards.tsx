@@ -12,7 +12,7 @@ import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { redeemRewardFlow } from '@/services/workflows/taskWorkflows';
 import { Button, Card, Icon, Screen, Text, TextField } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { spacing } from '@/ui/theme/spacing';
 
 const COST_STEP = 25;
@@ -20,6 +20,7 @@ const COST_MIN = 25;
 const COST_MAX = 1000;
 
 export default function RewardsScreen() {
+  const colors = useColors();
   const { user } = useAuth();
   const { household, members, myMember } = useHousehold();
   const rewards = useWatch(household?.id ?? null, watchRewards);

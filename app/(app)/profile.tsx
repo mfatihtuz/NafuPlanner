@@ -13,11 +13,12 @@ import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { updateMemberDisplayName } from '@/services/firestore/households';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Avatar, Button, Card, Icon, Screen, Text, TextField } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
 
 function StatBox({ label, value }: { label: string; value: string }) {
+  const colors = useColors();
   return (
     <Card padded={false} style={{ flex: 1, alignItems: 'center', paddingVertical: spacing.md }}>
       <Text variant="h2" style={{ color: colors.primaryDark }}>
@@ -31,6 +32,7 @@ function StatBox({ label, value }: { label: string; value: string }) {
 }
 
 export default function ProfileScreen() {
+  const colors = useColors();
   const { user, updateDisplayName } = useAuth();
   const { myMember, household } = useHousehold();
 

@@ -155,7 +155,10 @@ const darkColors: Record<ColorToken, string> = {
   priorityUrgent: '#F26A60',
 };
 
-function resolveScheme(): 'light' | 'dark' {
+export type ColorScheme = 'light' | 'dark';
+
+/** Cihazın o anki sistem renk şeması. */
+export function systemScheme(): ColorScheme {
   try {
     return Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
   } catch {
@@ -163,12 +166,18 @@ function resolveScheme(): 'light' | 'dark' {
   }
 }
 
-/** Aktif tema koyu mu? (StatusBar vb. için.) */
-export const isDark = resolveScheme() === 'dark';
-
 /**
- * Aktif anlamsal renkler. Cihaz görünümüne göre açık/koyu — uygulama açılışında
- * (modül yüklenirken) bir kez belirlenir; OS teması uygulama açıkken değişirse
- * yeniden başlatınca uygulanır.
+ * Aktif anlamsal renkler — DEĞİŞTİRİLEBİLİR tek nesne (singleton). Tüm bileşenler
+ * bunu okur; tema değişince `applyColorScheme` ile YERİNDE güncellenir (referans
+ * sabit kalır). Canlı tema geçişi: ThemeProvider önce bunu günceller, sonra
+ * context değişimiyle abone bileşenler yeniden render olup taze renkleri okur.
+ * Başlangıç değeri sistem şemasına göre (ilk boyamada doğru renk).
  */
-export const colors: Record<ColorToken, string> = isDark ? darkColors : lightColors;
+export const colors: Record<ColorToken, string> = {
+  ...(systemScheme() === 'dark' ? darkColors : lightColors),
+};
+
+/** Verilen şemayı uygular: `colors` singleton'ını yerinde günceller. */
+export function applyColorScheme(scheme: ColorScheme): void {
+  Object.assign(colors, scheme === 'dark' ? darkColors : lightColors);
+}

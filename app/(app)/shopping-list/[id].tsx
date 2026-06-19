@@ -41,7 +41,7 @@ import {
   TextField,
   TimeWheel,
 } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { rowCardSurface } from '@/ui/theme/rowCard';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -54,6 +54,7 @@ function ItemRow({
   onToggle: (item: ShoppingItem) => void;
   onRemove: (item: ShoppingItem) => void;
 }) {
+  const colors = useColors();
   return (
     <View
       style={{
@@ -83,6 +84,7 @@ function ItemRow({
 }
 
 export default function ShoppingListDetailScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();

@@ -7,10 +7,10 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors } from '../theme/colors';
 import { radii } from '../theme/radii';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { useColors } from '../theme/ThemeProvider';
 import { Text } from './Text';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -26,20 +26,6 @@ export interface ButtonProps extends Omit<PressableProps, 'style' | 'children'> 
   style?: ViewStyle;
 }
 
-const BG: Record<Variant, string> = {
-  primary: colors.primary,
-  secondary: colors.primarySoft,
-  ghost: 'transparent',
-  danger: colors.danger,
-};
-
-const FG: Record<Variant, string> = {
-  primary: colors.onPrimary,
-  secondary: colors.primaryDark,
-  ghost: colors.primaryDark,
-  danger: colors.onPrimary,
-};
-
 export function Button({
   title,
   variant = 'primary',
@@ -51,6 +37,19 @@ export function Button({
   style,
   ...rest
 }: ButtonProps) {
+  const colors = useColors();
+  const bg: Record<Variant, string> = {
+    primary: colors.primary,
+    secondary: colors.primarySoft,
+    ghost: 'transparent',
+    danger: colors.danger,
+  };
+  const fg: Record<Variant, string> = {
+    primary: colors.onPrimary,
+    secondary: colors.primaryDark,
+    ghost: colors.primaryDark,
+    danger: colors.onPrimary,
+  };
   const isDisabled = disabled || loading;
   const height = size === 'lg' ? 54 : 44;
 
@@ -63,7 +62,7 @@ export function Button({
         styles.base,
         {
           height,
-          backgroundColor: BG[variant],
+          backgroundColor: bg[variant],
           borderColor: variant === 'ghost' ? colors.border : 'transparent',
           borderWidth: variant === 'ghost' ? 1.5 : 0,
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
@@ -76,11 +75,11 @@ export function Button({
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={FG[variant]} />
+        <ActivityIndicator color={fg[variant]} />
       ) : (
         <View style={styles.content}>
           {leftSlot ? <View style={styles.leftSlot}>{leftSlot}</View> : null}
-          <Text style={[typography.button, { color: FG[variant] }]}>{title}</Text>
+          <Text style={[typography.button, { color: fg[variant] }]}>{title}</Text>
         </View>
       )}
     </Pressable>

@@ -16,7 +16,7 @@ import { firestoreErrorMessage } from '@/services/firestore/errors';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { createShoppingListFlow } from '@/services/workflows/shoppingWorkflows';
 import { Avatar, Button, Card, EmptyState, Icon, Screen, Text, TextField } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { spacing } from '@/ui/theme/spacing';
 
 export default function ShoppingScreen() {
@@ -44,6 +44,7 @@ function ListCard({
   hasReminders?: boolean;
   onPress: () => void;
 }) {
+  const colors = useColors();
   return (
     <Pressable onPress={onPress}>
       {({ pressed }) => (
@@ -85,6 +86,7 @@ function ListCard({
 }
 
 function ShoppingContent() {
+  const colors = useColors();
   const router = useRouter();
   const { user } = useAuth();
   const { household, members } = useHousehold();

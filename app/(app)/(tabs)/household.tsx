@@ -17,7 +17,8 @@ import { InviteError } from '@/services/firestore/households';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { Avatar, Button, Card, Icon, KeyboardAwareScrollView, Nafu, Screen, Text, TextField } from '@/ui';
-import { colors } from '@/ui/theme/colors';
+import { palette } from '@/ui/theme/colors';
+import { useColors } from '@/ui/theme';
 import { radii } from '@/ui/theme/radii';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -55,8 +56,14 @@ function activityLine(entry: ActivityEntry): string {
   }
 }
 
-// Denge çubuğu renkleri (üye sırasına göre döner).
-const SHARE_COLORS = [colors.primary, colors.accent, colors.reward, colors.info, colors.success];
+// Denge çubuğu renkleri (üye sırasına göre döner; temadan bağımsız palet).
+const SHARE_COLORS = [
+  palette.teal[500],
+  palette.coral[500],
+  palette.gold[500],
+  palette.teal[300],
+  '#2BB673',
+];
 
 /** Tamamlanan işlere emoji tepki çubuğu (övgü + esprili). */
 function ReactionBar({
@@ -70,6 +77,7 @@ function ReactionBar({
   open: boolean;
   onToggleOpen: (id: string | null) => void;
 }) {
+  const colors = useColors();
   const mine = entry.reactions?.[uid];
   const summary = summarizeReactions(entry.reactions);
   const react = (emoji: string) => {
@@ -126,6 +134,7 @@ function ReactionBar({
 }
 
 export default function HouseholdScreen() {
+  const colors = useColors();
   const { profileLoaded, household, householdLoaded } = useHousehold();
 
   return (
@@ -235,6 +244,7 @@ function SetupView() {
 
 /** Hane varken: üyeler, davet, aktivite, profil, ayarlar, çıkış. */
 function HouseholdView() {
+  const colors = useColors();
   const router = useRouter();
   const now = useNow();
   const { user, signOut } = useAuth();
