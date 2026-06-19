@@ -3,10 +3,11 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
 
+import { actorOf } from '@/services/auth/actor';
 import { CALENDAR_WEEKDAYS_TR, DIFFICULTY_META, PRIORITY_META } from '@/domain/constants';
 import { formatDayKey } from '@/domain/format';
 import { pointsForTask } from '@/domain/gamification';
-import { dayKeyFromMs } from '@/domain/time';
+import { dayKeyFromMs, dueAtFromDayKey } from '@/domain/time';
 import type { ClockTime, DayKey, Difficulty, Priority, Subtask, Task } from '@/domain/types';
 import { useNow } from '@/hooks/useNow';
 import { useCategories } from '@/features/categories/useCategories';
@@ -166,13 +167,9 @@ function TaskFormInner({
     let dueAtMs: number | undefined;
     let hasTime = false;
     if (dayKey) {
-      const [y, m, d] = dayKey.split('-').map(Number);
-      if (time) {
-        dueAtMs = new Date(y, m - 1, d, time.hour, time.minute).getTime();
-        hasTime = true;
-      } else {
-        dueAtMs = new Date(y, m - 1, d, 12, 0).getTime();
-      }
+      const due = dueAtFromDayKey(dayKey, time);
+      dueAtMs = due.dueAtMs;
+      hasTime = due.hasTime;
     }
 
     setSaving(true);
@@ -236,7 +233,7 @@ function TaskFormInner({
         await createTaskFlow({
           task: input,
           recurrence: recurrenceInput,
-          actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+          actor: actorOf(user),
           members,
         });
       }

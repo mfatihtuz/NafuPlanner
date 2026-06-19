@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
+import { actorOf } from '@/services/auth/actor';
 import { SYSTEM_REWARD_AUTHOR } from '@/domain/systemRewards';
 import type { Reward } from '@/domain/types';
 import { t } from '@/i18n';
@@ -47,7 +48,7 @@ export default function RewardsScreen() {
 
   const onRedeem = (reward: Reward) => {
     if (!user) return;
-    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    const actor = actorOf(user);
     redeemRewardFlow({ reward, actor, members })
       .then(() =>
         Alert.alert(t('common.appName'), t('rewards.redeemed', { reward: reward.title })),

@@ -2,6 +2,8 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
+import { actorOf } from '@/services/auth/actor';
+import { useMemberMap } from '@/features/household/useMemberMap';
 import { QUICK_START_TASKS } from '@/domain/quickStart';
 import { filterTasksByQuery } from '@/domain/search';
 import { groupTasks, type TaskSections } from '@/domain/tasks';
@@ -59,11 +61,11 @@ function TasksContent() {
     () => new Map((categories ?? []).map((c) => [c.id, c])),
     [categories],
   );
-  const memberMap = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
+  const memberMap = useMemberMap(members);
 
   const onToggle = (task: Task) => {
     if (!household || !user) return;
-    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    const actor = actorOf(user);
     if (task.status === 'done') {
       reopenTaskGate(task, actor, members);
     } else {

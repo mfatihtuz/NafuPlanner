@@ -2,6 +2,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import { actorOf } from '@/services/auth/actor';
+import { useMemberMap } from '@/features/household/useMemberMap';
 import { shoppingListsDue } from '@/domain/shopping';
 import { groupTasks } from '@/domain/tasks';
 import type { ShoppingList, Task } from '@/domain/types';
@@ -72,13 +74,13 @@ function TodayContent() {
     () => new Map((categories ?? []).map((c) => [c.id, c])),
     [categories],
   );
-  const memberMap = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
+  const memberMap = useMemberMap(members);
 
   const firstName = user?.displayName?.split(' ')[0] ?? '';
 
   const onToggle = (task: Task) => {
     if (!household || !user) return;
-    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    const actor = actorOf(user);
     if (task.status === 'done') {
       reopenTaskGate(task, actor, members);
     } else {

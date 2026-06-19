@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 
+import { actorOf } from '@/services/auth/actor';
+import { useMemberMap } from '@/features/household/useMemberMap';
 import { PRIORITY_META } from '@/domain/constants';
 import { formatDueLabel } from '@/domain/format';
 import type { Attachment, Subtask } from '@/domain/types';
@@ -68,7 +70,7 @@ export default function TaskDetailScreen() {
   const commentsKey = household && id ? `${household.id}/${id}` : null;
   const comments = useWatch(commentsKey, watchComments);
   const attachments = useWatch(commentsKey, watchAttachments);
-  const memberMap = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
+  const memberMap = useMemberMap(members);
   const [commentDraft, setCommentDraft] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -152,7 +154,7 @@ export default function TaskDetailScreen() {
 
   const onToggleComplete = () => {
     if (!user) return;
-    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    const actor = actorOf(user);
     if (done) {
       reopenTaskGate(task, actor, members);
     } else {
@@ -166,7 +168,7 @@ export default function TaskDetailScreen() {
     if (!user) return;
     approveReopenTaskFlow({
       task,
-      actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+      actor: actorOf(user),
       members,
     }).catch((error) =>
       Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))),
@@ -177,7 +179,7 @@ export default function TaskDetailScreen() {
     if (!user) return;
     rejectReopenTaskFlow({
       task,
-      actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+      actor: actorOf(user),
       members,
     }).catch((error) =>
       Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error'))),
@@ -192,7 +194,7 @@ export default function TaskDetailScreen() {
 
   const onNudge = () => {
     if (!user) return;
-    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    const actor = actorOf(user);
     nudgeTaskFlow({ task, actor, members })
       .then(() => Alert.alert(t('common.appName'), t('tasks.nudgeSent')))
       .catch((error) =>
@@ -203,7 +205,7 @@ export default function TaskDetailScreen() {
   const onSendComment = () => {
     const body = commentDraft.trim();
     if (!body || !user || sendingComment) return;
-    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    const actor = actorOf(user);
     setSendingComment(true);
     setCommentDraft('');
     commentTaskFlow({ task, body, actor, members })

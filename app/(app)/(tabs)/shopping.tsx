@@ -2,6 +2,8 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
+import { actorOf } from '@/services/auth/actor';
+import { useMemberMap } from '@/features/household/useMemberMap';
 import type { Member, ShoppingList } from '@/domain/types';
 import { RequireHousehold } from '@/features/household/NoHousehold';
 import { useShopping } from '@/features/shopping/useShopping';
@@ -90,7 +92,7 @@ function ShoppingContent() {
   const [newListName, setNewListName] = useState('');
   const [creating, setCreating] = useState(false);
 
-  const memberMap = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
+  const memberMap = useMemberMap(members);
 
   // Ürünleri liste bazında say (listId yoksa "general" kovası).
   const countByList = useMemo(() => {
@@ -115,7 +117,7 @@ function ShoppingContent() {
       const lid = await createShoppingListFlow({
         gid,
         name,
-        actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+        actor: actorOf(user),
         members,
       });
       setNewListName('');

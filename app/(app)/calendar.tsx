@@ -2,6 +2,8 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { actorOf } from '@/services/auth/actor';
+import { useMemberMap } from '@/features/household/useMemberMap';
 import { dayKeyFromMs, todayKey } from '@/domain/time';
 import type { Task } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
@@ -46,11 +48,11 @@ export default function CalendarScreen() {
     () => new Map((categories ?? []).map((c) => [c.id, c])),
     [categories],
   );
-  const memberMap = useMemo(() => new Map(members.map((m) => [m.userId, m])), [members]);
+  const memberMap = useMemberMap(members);
 
   const onToggle = (task: Task) => {
     if (!household || !user) return;
-    const actor = { uid: user.uid, name: user.displayName ?? 'Üye' };
+    const actor = actorOf(user);
     if (task.status === 'done') {
       reopenTaskGate(task, actor, members);
     } else {

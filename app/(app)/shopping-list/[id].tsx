@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
+import { actorOf } from '@/services/auth/actor';
 import { formatDayKey } from '@/domain/format';
 import { dayKeyFromMs, dueAtFromDayKey } from '@/domain/time';
 import type { ClockTime, DayKey, ShoppingItem } from '@/domain/types';
@@ -185,7 +186,7 @@ export default function ShoppingListDetailScreen() {
     assignShoppingListFlow({
       list,
       assigneeId: list.assigneeId === uid ? null : uid,
-      actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+      actor: actorOf(user),
       members,
     }).catch((error) => console.warn('[shopping] atama güncellenemedi', error));
   };
@@ -225,7 +226,7 @@ export default function ShoppingListDetailScreen() {
       const reward = await completeShoppingListFlow({
         list,
         itemCount: items.length,
-        actor: { uid: user.uid, name: user.displayName ?? 'Üye' },
+        actor: actorOf(user),
         members,
       });
       celebrate(reward);
