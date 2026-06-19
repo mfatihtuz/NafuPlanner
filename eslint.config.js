@@ -5,7 +5,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    // scripts/ Node tabanlı geliştirme araçlarıdır (RN lint kapsamı dışında).
-    ignores: ['dist/*', '.expo/*', 'node_modules/*', 'scripts/*'],
+    // scripts/ ve functions/ Node tabanlı (RN lint kapsamı dışında).
+    ignores: ['dist/*', '.expo/*', 'node_modules/*', 'scripts/*', 'functions/*'],
   },
 ]);

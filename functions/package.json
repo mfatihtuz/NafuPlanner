@@ -1,0 +1,19 @@
+{
+  "name": "nafu-functions",
+  "description": "Nafu Planlayıcı — Cloud Functions (push gönderimi, haftalık ödül, puan onarımı)",
+  "private": true,
+  "engines": { "node": "20" },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

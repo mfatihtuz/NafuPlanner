@@ -96,6 +96,18 @@ service cloud.firestore {
       match /rewards/{rid} {
         allow read, write: if isMember(gid);
       }
+
+      // Bildirim kuyruğu: üye yalnız istek OLUŞTURUR; gönderimi Cloud Function
+      // (admin) yapar ve belgeyi siler. İstemci okuyamaz/silemez.
+      match /outbox/{oid} {
+        allow create: if isMember(gid);
+        allow read, update, delete: if false;
+      }
+
+      // Ertelenen (sessiz saat) bildirimler — yalnızca sunucu (admin) erişir.
+      match /deferred/{did} {
+        allow read, write: if false;
+      }
     }
   }
 }

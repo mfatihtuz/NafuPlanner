@@ -108,7 +108,7 @@ export async function createTaskFlow(input: CreateTaskFlowInput): Promise<void> 
       targetNames,
     });
     void notifyMembers({
-      members,
+      householdId: task.householdId,
       excludeUid: actor.uid,
       onlyUids: others,
       title: t('push.assignedTitle'),
@@ -176,7 +176,7 @@ export async function completeTaskFlow(
     });
 
     void notifyMembers({
-      members,
+      householdId: task.householdId,
       excludeUid: actor.uid,
       title: t('push.completedTitle'),
       body: t('push.completedBody', { name: actor.name, task: task.title }),
@@ -261,7 +261,7 @@ export async function requestReopenTaskFlow(input: ReopenRequestFlowInput): Prom
   });
 
   void notifyMembers({
-    members,
+    householdId: task.householdId,
     excludeUid: actor.uid,
     title: t('push.reopenRequestTitle'),
     body: t('push.reopenRequestBody', { name: actor.name, task: task.title }),
@@ -270,12 +270,12 @@ export async function requestReopenTaskFlow(input: ReopenRequestFlowInput): Prom
 
 /** İsteği onaylar: görevi geri açar (puan döner) ve isteyene haber verir. */
 export async function approveReopenTaskFlow(input: ReopenRequestFlowInput): Promise<void> {
-  const { task, actor, members } = input;
+  const { task, actor } = input;
   const requesterId = task.reopenRequestedBy;
   await reopenTaskFlow(task);
   if (requesterId) {
     void notifyMembers({
-      members,
+      householdId: task.householdId,
       excludeUid: actor.uid,
       onlyUids: [requesterId],
       title: t('push.reopenApprovedTitle'),
@@ -286,12 +286,12 @@ export async function approveReopenTaskFlow(input: ReopenRequestFlowInput): Prom
 
 /** İsteği reddeder: istek silinir, görev tamamlanmış kalır; isteyene haber gider. */
 export async function rejectReopenTaskFlow(input: ReopenRequestFlowInput): Promise<void> {
-  const { task, actor, members } = input;
+  const { task, actor } = input;
   const requesterId = task.reopenRequestedBy;
   await clearReopenRequest(task.householdId, task.id);
   if (requesterId) {
     void notifyMembers({
-      members,
+      householdId: task.householdId,
       excludeUid: actor.uid,
       onlyUids: [requesterId],
       title: t('push.reopenRejectedTitle'),
@@ -320,7 +320,7 @@ export async function nudgeTaskFlow(input: NudgeFlowInput): Promise<void> {
       : members.map((m) => m.userId).filter((id) => id !== actor.uid);
 
   await notifyMembers({
-    members,
+    householdId: task.householdId,
     excludeUid: actor.uid,
     onlyUids: targets,
     title: t('push.nudgeTitle'),
@@ -353,7 +353,7 @@ export interface CommentFlowInput {
 
 /** Göreve yorum ekler; aktiviteye işler ve diğer üyelere haber verir. */
 export async function commentTaskFlow(input: CommentFlowInput): Promise<void> {
-  const { task, body, actor, members } = input;
+  const { task, body, actor } = input;
   await addComment(task.householdId, task.id, actor.uid, body);
 
   void addActivity({
@@ -366,7 +366,7 @@ export async function commentTaskFlow(input: CommentFlowInput): Promise<void> {
   });
 
   void notifyMembers({
-    members,
+    householdId: task.householdId,
     excludeUid: actor.uid,
     title: t('push.commentTitle', { task: task.title }),
     body: t('push.commentBody', { name: actor.name, text: body.trim().slice(0, 80) }),
@@ -394,7 +394,7 @@ export async function redeemRewardFlow(input: RedeemRewardFlowInput): Promise<vo
   });
 
   void notifyMembers({
-    members,
+    householdId: reward.householdId,
     excludeUid: actor.uid,
     title: t('push.rewardTitle'),
     body: t('push.rewardBody', {

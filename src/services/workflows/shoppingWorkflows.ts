@@ -39,7 +39,7 @@ export interface CreateShoppingListFlowInput {
 export async function createShoppingListFlow(
   input: CreateShoppingListFlowInput,
 ): Promise<string> {
-  const { gid, name, actor, members } = input;
+  const { gid, name, actor } = input;
   const trimmed = name.trim();
   const lid = await createShoppingList(gid, trimmed, actor.uid);
 
@@ -52,7 +52,7 @@ export async function createShoppingListFlow(
   });
 
   void notifyMembers({
-    members,
+    householdId: gid,
     excludeUid: actor.uid,
     title: t('push.shoppingCreatedTitle'),
     body: t('push.shoppingCreatedBody', { name: actor.name, list: trimmed }),
@@ -97,7 +97,7 @@ export async function assignShoppingListFlow(
   });
 
   void notifyMembers({
-    members,
+    householdId: gid,
     excludeUid: actor.uid,
     onlyUids: [assigneeId],
     title: t('push.shoppingAssignedTitle'),
@@ -166,7 +166,7 @@ export async function completeShoppingListFlow(
     });
 
     void notifyMembers({
-      members,
+      householdId: gid,
       excludeUid: actor.uid,
       title: t('push.shoppingDoneTitle'),
       body: t('push.shoppingDoneBody', { name: actor.name, list: list.name }),
