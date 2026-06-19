@@ -285,62 +285,13 @@ export interface ActivityEntry {
   atMs: Millis;
 }
 
-// --- Hatırlatma & Bildirim ----------------------------------------------------
-
-export type ReminderKind = 'due' | 'pre' | 'nudge' | 'escalation' | 'digest';
-
-export interface Reminder {
-  id: Id;
-  householdId: Id;
-  taskId?: Id;
-  atMs: Millis;
-  kind: ReminderKind;
-  sent: boolean;
-}
-
-export type DevicePlatform = 'ios' | 'android' | 'web';
-
-export interface PushToken {
-  id: Id;
-  userId: Id;
-  token: string;
-  platform: DevicePlatform;
-  createdAtMs: Millis;
-}
-
-export interface NotificationSettings {
-  userId: Id;
-  quietHoursStart?: ClockTime;
-  quietHoursEnd?: ClockTime;
-  dailyDigestEnabled: boolean;
-  dailyDigestTime?: ClockTime;
-  nudgesEnabled: boolean;
-  /** Geciken görevde eşe/diğer üyeye haber verilsin mi. */
-  escalateToPartner: boolean;
-}
-
 // --- Oyunlaştırma -------------------------------------------------------------
-
-export interface PointsEntry {
-  id: Id;
-  householdId: Id;
-  userId: Id;
-  delta: number;
-  reason: string;
-  taskId?: Id;
-  createdAtMs: Millis;
-}
 
 export interface Badge {
   key: string;
   name: string;
   description: string;
   icon: string;
-}
-
-export interface MemberBadge {
-  badgeKey: string;
-  awardedAtMs: Millis;
 }
 
 /** Kullanıcı tanımlı gerçek ödüller (örn. "kazanan filmi seçer"). */
@@ -355,30 +306,4 @@ export interface Reward {
   createdBy: Id;
   createdAtMs: Millis;
   status: RewardStatus;
-  winnerId?: Id;
-}
-
-// --- Aktivite akışı -----------------------------------------------------------
-
-export type ActivityKind =
-  | 'task_created'
-  | 'task_completed'
-  | 'task_assigned'
-  | 'task_commented'
-  | 'shopping_added'
-  | 'shopping_checked'
-  | 'nudge'
-  | 'badge_awarded'
-  | 'reward_won'
-  | 'member_joined';
-
-export interface Activity {
-  id: Id;
-  householdId: Id;
-  actorId: Id;
-  kind: ActivityKind;
-  targetTaskId?: Id;
-  targetUserId?: Id;
-  message?: string;
-  createdAtMs: Millis;
 }
