@@ -1,9 +1,4 @@
-import {
-  advanceStreak,
-  levelForPoints,
-  newlyEarnedBadges,
-  type BadgeDef,
-} from '@/domain/gamification';
+import { computeCompletionReward, type BadgeDef } from '@/domain/gamification';
 import { dayKeyFromMs } from '@/domain/time';
 import type { Member, RecurrenceRule, Reward, Task } from '@/domain/types';
 import { t } from '@/i18n';
@@ -38,6 +33,12 @@ interface Actor {
   uid: string;
   name: string;
 }
+
+// Aynı görev için eşzamanlı tamamlama/geri açma çağrılarını engeller (hızlı çift
+// dokunuş veya yeniden giriş → çift puan / negatif puan olmasın). Modül düzeyinde
+// tutulur; akış bitince temizlenir.
+const completing = new Set<string>();
+const reopening = new Set<string>();
 
 export interface CreateTaskFlowInput {
   task: NewTaskInput;
@@ -134,94 +135,97 @@ export interface CompletionReward {
  * Görevi tamamlar; puan/seri/rozet ödüllerini işler; tekrar kuralı varsa
  * sıradaki örneği üretir; eşe haber verir. Kutlama için ödül özetini döndürür.
  */
-export async function completeTaskFlow(input: CompleteTaskFlowInput): Promise<CompletionReward> {
+export async function completeTaskFlow(
+  input: CompleteTaskFlowInput,
+): Promise<CompletionReward | null> {
   const { task, actor, members } = input;
-  await completeTask(task.householdId, task.id, actor.uid);
-
-  // Ödüller: mevcut üyelik durumundan saf kurallarla hesapla, tek seferde yaz.
-  const me = members.find((m) => m.userId === actor.uid);
-  const beforePoints = me?.points ?? 0;
-  const afterPoints = beforePoints + task.points;
-  const streak = advanceStreak(
-    { streakCount: me?.streakCount ?? 0, lastActiveDayKey: me?.lastActiveDayKey },
-    dayKeyFromMs(Date.now()),
-  );
-  const newBadges = newlyEarnedBadges(
-    {
-      tasksCompleted: (me?.tasksCompleted ?? 0) + 1,
-      points: afterPoints,
-      streakCount: streak.streakCount,
-    },
-    me?.earnedBadgeKeys ?? [],
-  );
-  const levelBefore = levelForPoints(beforePoints);
-  const levelAfter = levelForPoints(afterPoints);
-
+  if (completing.has(task.id)) return null; // çift dokunuş / yeniden giriş → yok say
+  completing.add(task.id);
   try {
-    await applyCompletionRewards({
-      householdId: task.householdId,
-      userId: actor.uid,
-      taskId: task.id,
+    await completeTask(task.householdId, task.id, actor.uid);
+
+    // Ödül hesabı görev + alışverişte ortak (saf); görev rozetlerini sayar.
+    const reward = computeCompletionReward({
+      member: members.find((m) => m.userId === actor.uid),
       pointsDelta: task.points,
-      level: levelAfter,
-      streak,
-      newBadgeKeys: newBadges.map((b) => b.key),
+      todayKey: dayKeyFromMs(Date.now()),
+      countsTowardTaskBadges: true,
     });
-  } catch (error) {
-    console.warn('[workflow] ödüller işlenemedi', error);
-  }
 
-  void addActivity({
-    householdId: task.householdId,
-    type: 'task_completed',
-    actorId: actor.uid,
-    actorName: actor.name,
-    taskId: task.id,
-    taskTitle: task.title,
-  });
-
-  void notifyMembers({
-    members,
-    excludeUid: actor.uid,
-    title: t('push.completedTitle'),
-    body: t('push.completedBody', { name: actor.name, task: task.title }),
-  });
-
-  if (task.recurrenceId) {
     try {
-      const rule = await getRecurrence(task.householdId, task.recurrenceId);
-      if (rule) {
-        const after = task.occurrenceDayKey ?? dayKeyFromMs(Date.now());
-        await spawnNextOccurrence(rule, after);
-      }
+      await applyCompletionRewards({
+        householdId: task.householdId,
+        userId: actor.uid,
+        taskId: task.id,
+        pointsDelta: task.points,
+        level: reward.levelAfter,
+        streak: reward.streak,
+        newBadgeKeys: reward.newBadges.map((b) => b.key),
+      });
     } catch (error) {
-      console.warn('[workflow] tekrar ilerletilemedi', error);
+      console.warn('[workflow] ödüller işlenemedi', error);
     }
-  }
 
-  return {
-    pointsAwarded: task.points,
-    newLevel: levelAfter > levelBefore ? levelAfter : null,
-    newBadges,
-    streakCount: streak.streakCount,
-  };
+    void addActivity({
+      householdId: task.householdId,
+      type: 'task_completed',
+      actorId: actor.uid,
+      actorName: actor.name,
+      taskId: task.id,
+      taskTitle: task.title,
+    });
+
+    void notifyMembers({
+      members,
+      excludeUid: actor.uid,
+      title: t('push.completedTitle'),
+      body: t('push.completedBody', { name: actor.name, task: task.title }),
+    });
+
+    if (task.recurrenceId) {
+      try {
+        const rule = await getRecurrence(task.householdId, task.recurrenceId);
+        if (rule) {
+          const after = task.occurrenceDayKey ?? dayKeyFromMs(Date.now());
+          await spawnNextOccurrence(rule, after);
+        }
+      } catch (error) {
+        console.warn('[workflow] tekrar ilerletilemedi', error);
+      }
+    }
+
+    return {
+      pointsAwarded: task.points,
+      newLevel: reward.levelAfter > reward.levelBefore ? reward.levelAfter : null,
+      newBadges: reward.newBadges,
+      streakCount: reward.streak.streakCount,
+    };
+  } finally {
+    completing.delete(task.id);
+  }
 }
 
 /** Görevi geri açar ve puanı tamamlayandan geri alır (rozetler kalıcıdır). */
 export async function reopenTaskFlow(task: Task): Promise<void> {
-  const completedBy = task.completedBy;
-  await reopenTask(task.householdId, task.id);
-  if (completedBy) {
-    try {
-      await revertCompletionRewards({
-        householdId: task.householdId,
-        userId: completedBy,
-        taskId: task.id,
-        pointsDelta: task.points,
-      });
-    } catch (error) {
-      console.warn('[workflow] puan geri alınamadı', error);
+  if (reopening.has(task.id)) return; // çift dokunuş → çift geri alma olmasın
+  reopening.add(task.id);
+  try {
+    const completedBy = task.completedBy;
+    await reopenTask(task.householdId, task.id);
+    if (completedBy) {
+      try {
+        await revertCompletionRewards({
+          householdId: task.householdId,
+          userId: completedBy,
+          taskId: task.id,
+          pointsDelta: task.points,
+        });
+      } catch (error) {
+        console.warn('[workflow] puan geri alınamadı', error);
+      }
     }
+  } finally {
+    reopening.delete(task.id);
   }
 }
 

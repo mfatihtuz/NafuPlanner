@@ -25,6 +25,8 @@ export interface CompletionRewardWrite {
   level: number;
   streak: StreakState;
   newBadgeKeys: string[];
+  /** Artırılacak sayaç (görev rozetleri yalnız tasksCompleted'i sayar). */
+  counterField?: 'tasksCompleted' | 'shoppingCompleted';
 }
 
 export async function applyCompletionRewards(input: CompletionRewardWrite): Promise<void> {
@@ -33,7 +35,7 @@ export async function applyCompletionRewards(input: CompletionRewardWrite): Prom
 
   const update: Record<string, unknown> = {
     points: increment(input.pointsDelta),
-    tasksCompleted: increment(1),
+    [input.counterField ?? 'tasksCompleted']: increment(1),
     level: input.level,
     streakCount: input.streak.streakCount,
   };
@@ -55,6 +57,8 @@ export interface RevertRewardWrite {
   userId: string;
   taskId: string;
   pointsDelta: number;
+  /** Azaltılacak sayaç (apply ile aynı olmalı). */
+  counterField?: 'tasksCompleted' | 'shoppingCompleted';
 }
 
 /** Geri açmada puan ve sayaç geri alınır; seri ve rozetler kalıcıdır. */
@@ -63,7 +67,7 @@ export async function revertCompletionRewards(input: RevertRewardWrite): Promise
   const memberRef = doc(db, 'groups', input.householdId, 'members', input.userId);
   await updateDoc(memberRef, {
     points: increment(-input.pointsDelta),
-    tasksCompleted: increment(-1),
+    [input.counterField ?? 'tasksCompleted']: increment(-1),
   });
   await addDoc(collection(db, 'groups', input.householdId, 'points'), {
     userId: input.userId,

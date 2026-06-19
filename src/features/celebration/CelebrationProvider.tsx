@@ -18,8 +18,9 @@ import { shadows } from '@/ui/theme/shadows';
 import { spacing } from '@/ui/theme/spacing';
 
 interface CelebrationContextValue {
-  /** Görev tamamlanma ödülünü kısa bir kutlama kartıyla gösterir. */
-  celebrate: (reward: CompletionReward) => void;
+  /** Görev tamamlanma ödülünü kısa bir kutlama kartıyla gösterir. null = yok say
+   *  (ör. çift dokunuşta akış no-op döndürdü). */
+  celebrate: (reward: CompletionReward | null) => void;
 }
 
 const CelebrationContext = createContext<CelebrationContextValue | undefined>(undefined);
@@ -159,7 +160,8 @@ function CelebrationOverlay({
 export function CelebrationProvider({ children }: { children: ReactNode }) {
   const [reward, setReward] = useState<CompletionReward | null>(null);
 
-  const celebrate = useCallback((next: CompletionReward) => {
+  const celebrate = useCallback((next: CompletionReward | null) => {
+    if (!next) return;
     setReward(next);
   }, []);
   const dismiss = useCallback(() => setReward(null), []);

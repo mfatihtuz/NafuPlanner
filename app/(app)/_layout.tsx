@@ -3,6 +3,7 @@ import '@/services/notifications/config';
 import { Stack } from 'expo-router';
 
 import { CelebrationProvider } from '@/features/celebration/CelebrationProvider';
+import { NotificationScheduler } from '@/features/notifications/NotificationScheduler';
 import { WidgetSync } from '@/features/widgets/WidgetSync';
 import { t } from '@/i18n';
 import { HouseholdProvider } from '@/services/household/HouseholdProvider';
@@ -13,6 +14,7 @@ export default function AppLayout() {
   return (
     <HouseholdProvider>
       <WidgetSync />
+      <NotificationScheduler />
       <CelebrationProvider>
         <Stack
           screenOptions={{

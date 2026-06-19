@@ -1,5 +1,6 @@
 import {
   advanceStreak,
+  computeCompletionReward,
   levelForPoints,
   levelProgress,
   newlyEarnedBadges,
@@ -132,5 +133,53 @@ describe('weeklyPoints', () => {
     );
     expect(totals.get('a')).toBe(25);
     expect(totals.get('b')).toBe(20);
+  });
+});
+
+describe('computeCompletionReward', () => {
+  const TODAY = '2026-06-10';
+
+  it('görev tamamlamada görev rozetini sayar (ilk görev rozeti)', () => {
+    const r = computeCompletionReward({
+      member: { points: 0, tasksCompleted: 0, streakCount: 0 },
+      pointsDelta: 12,
+      todayKey: TODAY,
+      countsTowardTaskBadges: true,
+    });
+    expect(r.afterPoints).toBe(12);
+    expect(r.newBadges.map((b) => b.key)).toContain('first_task'); // tasksCompleted 0+1 ≥ 1
+  });
+
+  it('alışveriş tamamlamada görev rozeti VERİLMEZ (adalet)', () => {
+    const r = computeCompletionReward({
+      member: { points: 0, tasksCompleted: 0, streakCount: 0 },
+      pointsDelta: 12,
+      todayKey: TODAY,
+      countsTowardTaskBadges: false,
+    });
+    expect(r.newBadges.map((b) => b.key)).not.toContain('first_task');
+  });
+
+  it('puan rozetleri her iki türde de verilir (görev sayacından bağımsız)', () => {
+    const r = computeCompletionReward({
+      member: { points: 495, tasksCompleted: 0, streakCount: 0 },
+      pointsDelta: 12,
+      todayKey: TODAY,
+      countsTowardTaskBadges: false,
+    });
+    expect(r.afterPoints).toBe(507);
+    expect(r.newBadges.map((b) => b.key)).toContain('points_500');
+    expect(r.levelBefore).toBe(levelForPoints(495));
+    expect(r.levelAfter).toBe(levelForPoints(507));
+  });
+
+  it('seriyi ilerletir', () => {
+    const r = computeCompletionReward({
+      member: { points: 0, streakCount: 2, lastActiveDayKey: '2026-06-09' },
+      pointsDelta: 5,
+      todayKey: TODAY,
+      countsTowardTaskBadges: true,
+    });
+    expect(r.streak.streakCount).toBe(3);
   });
 });

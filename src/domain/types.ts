@@ -68,6 +68,8 @@ export interface Member {
   lastActiveDayKey?: DayKey;
   /** Toplam tamamlanan görev (rozetler için sayaç). */
   tasksCompleted?: number;
+  /** Toplam tamamlanan alışveriş listesi (görev rozetlerinden ayrı sayaç). */
+  shoppingCompleted?: number;
   /** Kazanılan rozet anahtarları (kalıcı; bkz. domain/gamification BADGES). */
   earnedBadgeKeys?: string[];
   joinedAtMs: Millis;

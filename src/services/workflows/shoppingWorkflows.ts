@@ -1,9 +1,4 @@
-import {
-  advanceStreak,
-  levelForPoints,
-  newlyEarnedBadges,
-  shoppingListPoints,
-} from '@/domain/gamification';
+import { computeCompletionReward, shoppingListPoints } from '@/domain/gamification';
 import { dayKeyFromMs } from '@/domain/time';
 import type { Member, ShoppingList } from '@/domain/types';
 import { t } from '@/i18n';
@@ -23,6 +18,11 @@ interface Actor {
   uid: string;
   name: string;
 }
+
+// Aynı liste için eşzamanlı tamamlama/geri açmayı engeller (çift puan / negatif
+// puan koruması).
+const completingLists = new Set<string>();
+const reopeningLists = new Set<string>();
 
 export interface CreateShoppingListFlowInput {
   gid: string;
@@ -119,87 +119,91 @@ export interface CompleteShoppingListFlowInput {
  */
 export async function completeShoppingListFlow(
   input: CompleteShoppingListFlowInput,
-): Promise<CompletionReward> {
+): Promise<CompletionReward | null> {
   const { list, itemCount, actor, members } = input;
   const gid = list.householdId;
-  const recipientId = list.assigneeId ?? actor.uid;
-  const points = shoppingListPoints(itemCount);
+  if (completingLists.has(list.id)) return null; // çift dokunuş → yok say
+  completingLists.add(list.id);
+  try {
+    const recipientId = list.assigneeId ?? actor.uid;
+    const points = shoppingListPoints(itemCount);
 
-  await markShoppingListCompleted(gid, list.id, recipientId, points);
+    await markShoppingListCompleted(gid, list.id, recipientId, points);
 
-  const me = members.find((m) => m.userId === recipientId);
-  const beforePoints = me?.points ?? 0;
-  const afterPoints = beforePoints + points;
-  const streak = advanceStreak(
-    { streakCount: me?.streakCount ?? 0, lastActiveDayKey: me?.lastActiveDayKey },
-    dayKeyFromMs(Date.now()),
-  );
-  const newBadges = newlyEarnedBadges(
-    {
-      tasksCompleted: (me?.tasksCompleted ?? 0) + 1,
-      points: afterPoints,
-      streakCount: streak.streakCount,
-    },
-    me?.earnedBadgeKeys ?? [],
-  );
-  const levelBefore = levelForPoints(beforePoints);
-  const levelAfter = levelForPoints(afterPoints);
+    // Ortak ödül hesabı; alışveriş GÖREV rozetini saymaz (adalet).
+    const reward = computeCompletionReward({
+      member: members.find((m) => m.userId === recipientId),
+      pointsDelta: points,
+      todayKey: dayKeyFromMs(Date.now()),
+      countsTowardTaskBadges: false,
+    });
 
-  if (points > 0) {
-    try {
-      await applyCompletionRewards({
-        householdId: gid,
-        userId: recipientId,
-        taskId: `shop:${list.id}`,
-        pointsDelta: points,
-        level: levelAfter,
-        streak,
-        newBadgeKeys: newBadges.map((b) => b.key),
-      });
-    } catch (error) {
-      console.warn('[workflow] alışveriş ödülü işlenemedi', error);
+    if (points > 0) {
+      try {
+        await applyCompletionRewards({
+          householdId: gid,
+          userId: recipientId,
+          taskId: `shop:${list.id}`,
+          pointsDelta: points,
+          level: reward.levelAfter,
+          streak: reward.streak,
+          newBadgeKeys: reward.newBadges.map((b) => b.key),
+          counterField: 'shoppingCompleted',
+        });
+      } catch (error) {
+        console.warn('[workflow] alışveriş ödülü işlenemedi', error);
+      }
     }
+
+    // Aktivitede eylemi YAPAN görünür (puan atanana gitse bile); push metniyle
+    // tutarlı kalır.
+    void addActivity({
+      householdId: gid,
+      type: 'shopping_completed',
+      actorId: actor.uid,
+      actorName: actor.name,
+      taskTitle: list.name,
+    });
+
+    void notifyMembers({
+      members,
+      excludeUid: actor.uid,
+      title: t('push.shoppingDoneTitle'),
+      body: t('push.shoppingDoneBody', { name: actor.name, list: list.name }),
+    });
+
+    return {
+      pointsAwarded: points,
+      newLevel: reward.levelAfter > reward.levelBefore ? reward.levelAfter : null,
+      newBadges: reward.newBadges,
+      streakCount: reward.streak.streakCount,
+    };
+  } finally {
+    completingLists.delete(list.id);
   }
-
-  // Aktivitede eylemi YAPAN görünür (puan atanana gitse bile); push metniyle
-  // tutarlı kalır.
-  void addActivity({
-    householdId: gid,
-    type: 'shopping_completed',
-    actorId: actor.uid,
-    actorName: actor.name,
-    taskTitle: list.name,
-  });
-
-  void notifyMembers({
-    members,
-    excludeUid: actor.uid,
-    title: t('push.shoppingDoneTitle'),
-    body: t('push.shoppingDoneBody', { name: actor.name, list: list.name }),
-  });
-
-  return {
-    pointsAwarded: points,
-    newLevel: levelAfter > levelBefore ? levelAfter : null,
-    newBadges,
-    streakCount: streak.streakCount,
-  };
 }
 
 /** Listeyi geri açar ve yazılan puanı atanan kişiden geri alır. */
 export async function reopenShoppingListFlow(list: ShoppingList): Promise<void> {
   const gid = list.householdId;
-  await markShoppingListReopened(gid, list.id);
-  if (list.completedBy && list.awardedPoints) {
-    try {
-      await revertCompletionRewards({
-        householdId: gid,
-        userId: list.completedBy,
-        taskId: `shop:${list.id}`,
-        pointsDelta: list.awardedPoints,
-      });
-    } catch (error) {
-      console.warn('[workflow] alışveriş puanı geri alınamadı', error);
+  if (reopeningLists.has(list.id)) return; // çift dokunuş → çift geri alma olmasın
+  reopeningLists.add(list.id);
+  try {
+    await markShoppingListReopened(gid, list.id);
+    if (list.completedBy && list.awardedPoints) {
+      try {
+        await revertCompletionRewards({
+          householdId: gid,
+          userId: list.completedBy,
+          taskId: `shop:${list.id}`,
+          pointsDelta: list.awardedPoints,
+          counterField: 'shoppingCompleted',
+        });
+      } catch (error) {
+        console.warn('[workflow] alışveriş puanı geri alınamadı', error);
+      }
     }
+  } finally {
+    reopeningLists.delete(list.id);
   }
 }

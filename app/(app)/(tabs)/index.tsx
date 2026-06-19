@@ -21,7 +21,6 @@ import { markOnboarded } from '@/services/firestore/users';
 import { useHousehold } from '@/services/household/HouseholdProvider';
 import { reopenTaskGate } from '@/features/tasks/reopenTask';
 import { completeTaskFlow } from '@/services/workflows/taskWorkflows';
-import { useNotificationScheduler } from '@/services/notifications/useNotificationScheduler';
 import { EmptyState, FAB, Icon, Screen, Text } from '@/ui';
 import { colors } from '@/ui/theme/colors';
 import { spacing } from '@/ui/theme/spacing';
@@ -47,7 +46,7 @@ function TodayContent() {
   const router = useRouter();
   const { user } = useAuth();
   const { celebrate } = useCelebration();
-  const { household, members, profile, myMember } = useHousehold();
+  const { household, members, profile } = useHousehold();
   const tasks = useTasks(household?.id ?? null);
   const lists = useShoppingLists(household?.id ?? null);
   const categories = useCategories(household?.id ?? null);
@@ -64,16 +63,6 @@ function TodayContent() {
   const unread = useMemo(
     () => (notifications ?? []).filter((n) => n.atMs > seenMs).length,
     [notifications, seenMs],
-  );
-
-  useNotificationScheduler(
-    tasks,
-    profile?.settings,
-    user?.uid ?? null,
-    myMember
-      ? { count: myMember.streakCount, lastActiveDayKey: myMember.lastActiveDayKey }
-      : undefined,
-    lists,
   );
 
   const now = useNow();

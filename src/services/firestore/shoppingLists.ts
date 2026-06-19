@@ -66,16 +66,21 @@ export async function updateShoppingList(
   await updateDoc(doc(requireDb(), 'groups', gid, 'shoppingLists', lid), data);
 }
 
-/** Listeyi ve içindeki tüm ürünleri tek seferde siler. */
+/** Listeyi ve içindeki tüm ürünleri siler (Firestore 500 batch sınırı için parçalı). */
 export async function deleteShoppingList(gid: string, lid: string): Promise<void> {
   const db = requireDb();
   const itemsSnap = await getDocs(
     query(collection(db, 'groups', gid, 'shopping'), where('listId', '==', lid)),
   );
-  const batch = writeBatch(db);
-  itemsSnap.forEach((d) => batch.delete(d.ref));
-  batch.delete(doc(db, 'groups', gid, 'shoppingLists', lid));
-  await batch.commit();
+  const refs = itemsSnap.docs.map((d) => d.ref);
+  refs.push(doc(db, 'groups', gid, 'shoppingLists', lid));
+
+  const CHUNK = 450; // 500 sınırının altında güvenli pay
+  for (let i = 0; i < refs.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    for (const ref of refs.slice(i, i + CHUNK)) batch.delete(ref);
+    await batch.commit();
+  }
 }
 
 /** Listeyi tamamlandı olarak işaretler (kazanılan puanı saklar). */

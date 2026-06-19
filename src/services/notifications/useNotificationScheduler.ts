@@ -49,6 +49,9 @@ export function useNotificationScheduler(
   // zincire dizer; önceki "meşgulken geleni at" yaklaşımı son değişikliği
   // kaybediyordu (görev güncellense de takvim eski kalabiliyordu).
   const chain = useRef<Promise<void>>(Promise.resolve());
+  // Son kurulan takvimin imzası; aynıysa cancelAll + yeniden kurma atlanır
+  // (alakasız re-render'larda 28+ bildirimi boşuna sil-yeniden kurma).
+  const lastSig = useRef<string | null>(null);
 
   useEffect(() => {
     if (!myUid) return;
@@ -112,6 +115,18 @@ export function useNotificationScheduler(
           return;
         }
         if (!(await ensurePermission())) return;
+
+        // Kurulacak takvimin imzası değişmediyse hiç dokunma (sil-yeniden kurma
+        // maliyeti + iOS bildirim bütçesi). Haftalık ödül sabit olduğundan
+        // imzaya katılmaz; ilk kurulumda zaten eklenir.
+        const signature = JSON.stringify({
+          reminders: capped.map((r) => `${r.atMs}|${r.title}`),
+          digestAt,
+          digestBody,
+          streak: streak ? `${streak.count}|${streak.lastActiveDayKey ?? ''}` : '',
+        });
+        if (signature === lastSig.current) return;
+        lastSig.current = signature;
 
         await Notifications.cancelAllScheduledNotificationsAsync();
         const schedule = capped.map((reminder) =>

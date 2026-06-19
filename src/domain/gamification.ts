@@ -145,6 +145,58 @@ export function newlyEarnedBadges(stats: BadgeStats, owned: string[]): BadgeDef[
   return BADGES.filter((b) => stats[b.metric] >= b.threshold && !ownedSet.has(b.key));
 }
 
+// --- Tamamlama ödülü (görev + alışveriş ortak) ---------------------------------
+
+export interface MemberRewardState {
+  points?: number;
+  streakCount?: number;
+  lastActiveDayKey?: DayKey;
+  tasksCompleted?: number;
+  earnedBadgeKeys?: string[];
+}
+
+export interface CompletionComputation {
+  beforePoints: number;
+  afterPoints: number;
+  streak: StreakState;
+  newBadges: BadgeDef[];
+  levelBefore: number;
+  levelAfter: number;
+}
+
+/**
+ * Bir tamamlama için puan/seri/seviye/rozet hesaplaması (saf). Görev ve
+ * alışveriş akışları bunu paylaşır. `countsTowardTaskBadges` yalnız GÖREVLER
+ * için true'dur; alışveriş tamamlama görev rozeti sayacını şişirmez (adalet).
+ */
+export function computeCompletionReward(opts: {
+  member: MemberRewardState | undefined;
+  pointsDelta: number;
+  todayKey: DayKey;
+  countsTowardTaskBadges: boolean;
+}): CompletionComputation {
+  const m = opts.member;
+  const beforePoints = m?.points ?? 0;
+  const afterPoints = beforePoints + opts.pointsDelta;
+  const streak = advanceStreak(
+    { streakCount: m?.streakCount ?? 0, lastActiveDayKey: m?.lastActiveDayKey },
+    opts.todayKey,
+  );
+  const taskCount = (m?.tasksCompleted ?? 0) + (opts.countsTowardTaskBadges ? 1 : 0);
+  const newBadges = newlyEarnedBadges(
+    { tasksCompleted: taskCount, points: afterPoints, streakCount: streak.streakCount },
+    m?.earnedBadgeKeys ?? [],
+  );
+  return {
+    beforePoints,
+    afterPoints,
+    streak,
+    newBadges,
+    levelBefore: levelForPoints(beforePoints),
+    levelAfter: levelForPoints(afterPoints),
+  };
+}
+
 // --- Haftalık lider tablosu -----------------------------------------------------
 
 /** Haftanın başlangıcı (Pazartesi 00:00, yerel saat). */
