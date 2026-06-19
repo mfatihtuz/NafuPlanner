@@ -163,6 +163,10 @@ export default function ProfileScreen() {
             value={t('profile.streakDays', { n: myMember?.streakCount ?? 0 })}
           />
           <StatBox label={t('profile.tasksDone')} value={String(myMember?.tasksCompleted ?? 0)} />
+          <StatBox
+            label={t('profile.shoppingDone')}
+            value={String(myMember?.shoppingCompleted ?? 0)}
+          />
         </View>
 
         {/* Rozetler */}

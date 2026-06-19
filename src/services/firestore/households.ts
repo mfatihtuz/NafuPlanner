@@ -106,6 +106,15 @@ export async function joinHousehold(user: AuthUserLike, rawCode: string): Promis
   });
   await updateDoc(doc(db, 'groups', gid), { memberIds: arrayUnion(user.uid) });
   await setDoc(doc(db, 'users', user.uid), { householdId: gid }, { merge: true });
+  // Tek kullanımlık: kod "kabul edildi" olarak işaretlenir; aynı kod ikinci kez
+  // kullanılamaz (isInviteUsable + kurallar status === 'pending' arar). Üye
+  // belgesi az önce oluştuğundan isMember(gid) artık doğru → güncelleme izinli.
+  // En iyi-çaba: işaretleme başarısız olsa bile katılım tamamlanmış sayılır.
+  await updateDoc(doc(db, 'invitations', code), {
+    status: 'accepted',
+    acceptedBy: user.uid,
+    acceptedAtMs: Date.now(),
+  }).catch((error) => console.warn('[household] davet işaretlenemedi', error));
   return gid;
 }
 

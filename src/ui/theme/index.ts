@@ -21,6 +21,7 @@ export const theme = {
 export type Theme = typeof theme;
 
 export { colors, palette, radii, shadows, spacing, typography, fontWeights };
+export { rowCardSurface } from './rowCard';
 export type { ColorToken } from './colors';
 export type { SpacingToken } from './spacing';
 export type { RadiusToken } from './radii';

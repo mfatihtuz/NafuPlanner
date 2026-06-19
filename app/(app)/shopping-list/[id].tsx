@@ -41,7 +41,7 @@ import {
   TimeWheel,
 } from '@/ui';
 import { colors } from '@/ui/theme/colors';
-import { radii } from '@/ui/theme/radii';
+import { rowCardSurface } from '@/ui/theme/rowCard';
 import { spacing } from '@/ui/theme/spacing';
 
 function ItemRow({
@@ -58,10 +58,7 @@ function ItemRow({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: radii.md,
-        borderWidth: 1,
-        borderColor: colors.border,
+        ...rowCardSurface(false),
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
         gap: spacing.md,

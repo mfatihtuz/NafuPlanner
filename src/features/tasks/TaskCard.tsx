@@ -8,7 +8,7 @@ import { useNow } from '@/hooks/useNow';
 import { t } from '@/i18n';
 import { Avatar, Checkbox, Icon, Text } from '@/ui';
 import { colors } from '@/ui/theme/colors';
-import { radii } from '@/ui/theme/radii';
+import { rowCardSurface } from '@/ui/theme/rowCard';
 import { shadows } from '@/ui/theme/shadows';
 import { spacing } from '@/ui/theme/spacing';
 
@@ -38,10 +38,7 @@ export function TaskCard({ task, category, assignees = [], onToggleComplete, onP
         {
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: colors.surface,
-          borderRadius: radii.lg,
-          borderWidth: 1,
-          borderColor: colors.border,
+          ...rowCardSurface(true),
           padding: spacing.md,
           gap: spacing.md,
         },
