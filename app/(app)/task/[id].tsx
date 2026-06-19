@@ -13,7 +13,9 @@ import { actorOf } from '@/services/auth/actor';
 import { useMemberMap } from '@/features/household/useMemberMap';
 import { PRIORITY_META } from '@/domain/constants';
 import { formatDueLabel } from '@/domain/format';
+import { describeRecurrenceTr, nextOccurrenceDayKey } from '@/domain/recurrence';
 import { canDecideCompletion } from '@/domain/tasks';
+import { dayKeyFromMs, dueAtFromDayKey } from '@/domain/time';
 import type { Attachment, Subtask } from '@/domain/types';
 import { useCategories } from '@/features/categories/useCategories';
 import { useCelebration } from '@/features/celebration/CelebrationProvider';
@@ -28,6 +30,7 @@ import {
 } from '@/services/firestore/attachments';
 import { watchComments } from '@/services/firestore/comments';
 import { firestoreErrorMessage } from '@/services/firestore/errors';
+import { watchRecurrences } from '@/services/firestore/recurrences';
 import { deleteTask, setSubtasks } from '@/services/firestore/tasks';
 import { useWatch } from '@/services/firestore/useWatch';
 import { useHousehold } from '@/services/household/HouseholdProvider';
@@ -90,6 +93,21 @@ export default function TaskDetailScreen() {
     () => members.find((m) => m.userId === task?.completedBy)?.displayName,
     [members, task],
   );
+  const recurrences = useWatch(household?.id ?? null, watchRecurrences);
+  const recurrence = useMemo(
+    () =>
+      task?.recurrenceId
+        ? (recurrences ?? []).find((r) => r.id === task.recurrenceId) ?? null
+        : null,
+    [recurrences, task],
+  );
+  const nextOccurrenceLabel = useMemo(() => {
+    if (!recurrence) return null;
+    const after = task?.occurrenceDayKey ?? dayKeyFromMs(Date.now());
+    const nextKey = nextOccurrenceDayKey(recurrence, after);
+    if (!nextKey) return null;
+    return formatDueLabel(dueAtFromDayKey(nextKey).dueAtMs, false, Date.now());
+  }, [recurrence, task]);
 
   if (tasks == null) {
     return (
@@ -341,6 +359,22 @@ export default function TaskDetailScreen() {
             <Text variant="body" tone="secondary">
               {task.description}
             </Text>
+          </Card>
+        ) : null}
+
+        {recurrence ? (
+          <Card padded style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Icon name="repeat" size={20} color={colors.primaryDark} />
+            <View style={{ flex: 1 }}>
+              <Text variant="small" style={{ fontWeight: '600' }}>
+                {describeRecurrenceTr(recurrence)}
+              </Text>
+              {nextOccurrenceLabel ? (
+                <Text variant="caption" tone="muted">
+                  {t('tasks.nextOccurrence', { date: nextOccurrenceLabel })}
+                </Text>
+              ) : null}
+            </View>
           </Card>
         ) : null}
 

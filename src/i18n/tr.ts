@@ -145,6 +145,7 @@ export const tr = {
   'tasks.reassignTitle': 'Görevi devret',
   'tasks.reassignBody': 'Bu görevi kime vermek istersin?',
   'tasks.reassignToMe': 'Bana al',
+  'tasks.nextOccurrence': 'Sonraki: {{date}}',
   'tasks.deleteTitle': 'Görevi sil',
   'tasks.deleteBody': 'Bu görev kalıcı olarak silinecek. Emin misin?',
   'tasks.completedBy': '{{name}} tamamladı',
