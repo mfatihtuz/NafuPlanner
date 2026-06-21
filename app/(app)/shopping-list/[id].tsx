@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
 import { actorOf } from '@/services/auth/actor';
@@ -33,6 +33,7 @@ import {
   assignShoppingListFlow,
   completeShoppingListFlow,
   reopenShoppingListFlow,
+  splitShoppingListFlow,
 } from '@/services/workflows/shoppingWorkflows';
 import {
   Avatar,
@@ -169,6 +170,8 @@ export default function ShoppingListDetailScreen() {
   const [spendDraft, setSpendDraft] = useState('');
   const [spentSynced, setSpentSynced] = useState<number | undefined>(undefined);
   const [recatItem, setRecatItem] = useState<ShoppingItem | null>(null);
+  const [splitting, setSplitting] = useState(false);
+  const [splitName, setSplitName] = useState('');
 
   // Sık alınanlar: tüm hane geçmişinden, bu listede açık olmayan adlardan öner.
   const suggestions = useMemo(
@@ -262,11 +265,43 @@ export default function ShoppingListDetailScreen() {
     );
   };
 
+  const doComplete = async (itemCount: number) => {
+    if (!gid || !user || !list) return;
+    setBusy(true);
+    try {
+      const reward = await completeShoppingListFlow({
+        list,
+        itemCount,
+        actor: actorOf(user),
+        members,
+      });
+      celebrate(reward);
+    } catch (error) {
+      console.warn('[shopping] tamamlanamadı', error);
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmCompleteAll = () => {
+    Alert.alert(title, t('shopping.completeAllConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('shopping.completeAction'), onPress: () => void doComplete(items.length) },
+    ]);
+  };
+
   const onToggle = (item: ShoppingItem) => {
     if (!gid || !user) return;
     setShoppingItemChecked(gid, item.id, !item.checked, user.uid).catch((error) =>
       console.warn('[shopping] güncellenemedi', error),
     );
+    // Bu işaretleme listedeki TÜM maddeleri alınmış yapıyorsa otomatik "tamamla?" sor.
+    if (list && !item.checked) {
+      const willAllBeChecked =
+        items.length > 0 && items.every((i) => i.id === item.id || i.checked);
+      if (willAllBeChecked) confirmCompleteAll();
+    }
   };
 
   const onRemove = (item: ShoppingItem) => {
@@ -314,19 +349,44 @@ export default function ShoppingListDetailScreen() {
     }).catch((error) => console.warn('[shopping] hatırlatma silinemedi', error));
   };
 
-  const onComplete = async () => {
-    if (!gid || !user || !list) return;
+  const confirmRemaining = () => {
+    Alert.alert(t('shopping.remainingTitle'), t('shopping.remainingBody', { n: open.length }), [
+      { text: t('common.no'), style: 'cancel' },
+      {
+        text: t('common.yes'),
+        onPress: () => {
+          setSplitName('');
+          setSplitting(true);
+        },
+      },
+    ]);
+  };
+
+  // Tamamla'ya basınca: hepsi alındıysa onayla; eksik varsa kalanları yeni listeye devret.
+  const attemptComplete = () => {
+    if (!list) return;
+    if (open.length === 0) confirmCompleteAll();
+    else confirmRemaining();
+  };
+
+  const onConfirmSplit = async () => {
+    const name = splitName.trim();
+    if (!gid || !user || !list || !name) return;
+    setSplitting(false);
     setBusy(true);
     try {
-      const reward = await completeShoppingListFlow({
-        list,
-        itemCount: items.length,
+      const reward = await splitShoppingListFlow({
+        gid,
+        sourceList: list,
+        newListName: name,
+        remainingItemIds: open.map((i) => i.id),
+        completedCount: items.length - open.length,
         actor: actorOf(user),
         members,
       });
       celebrate(reward);
     } catch (error) {
-      console.warn('[shopping] tamamlanamadı', error);
+      console.warn('[shopping] devredilemedi', error);
       Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
     } finally {
       setBusy(false);
@@ -661,7 +721,7 @@ export default function ShoppingListDetailScreen() {
             ) : (
               <Button
                 title={t('shopping.completeList')}
-                onPress={() => void onComplete()}
+                onPress={attemptComplete}
                 loading={busy}
                 disabled={items.length === 0 || busy}
                 leftSlot={<Icon name="check" size={18} color={colors.onPrimary} />}
@@ -730,6 +790,58 @@ export default function ShoppingListDetailScreen() {
             })}
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* "Kalanları yeni listeye devret" — yeni liste adı girişi */}
+      <Modal
+        visible={splitting}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSplitting(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <Pressable
+            onPress={() => setSplitting(false)}
+            style={{
+              flex: 1,
+              backgroundColor: colors.overlay,
+              justifyContent: 'center',
+              padding: spacing.lg,
+            }}
+          >
+            <Pressable
+              onPress={() => undefined}
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: radii.xl,
+                padding: spacing.lg,
+                gap: spacing.sm,
+              }}
+            >
+              <Text variant="title">{t('shopping.splitTitle')}</Text>
+              <Text variant="caption" tone="muted">
+                {t('shopping.splitHint', { n: open.length })}
+              </Text>
+              <TextField
+                value={splitName}
+                onChangeText={setSplitName}
+                placeholder={t('shopping.splitPlaceholder')}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={onConfirmSplit}
+              />
+              <Button
+                title={t('shopping.splitAction')}
+                onPress={onConfirmSplit}
+                disabled={splitName.trim().length === 0}
+                leftSlot={<Icon name="cart" size={18} color={colors.onPrimary} />}
+              />
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   );

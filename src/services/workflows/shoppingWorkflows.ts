@@ -4,6 +4,7 @@ import type { Member, ShoppingList } from '@/domain/types';
 import { t } from '@/i18n';
 import { addActivity } from '@/services/firestore/activity';
 import { applyCompletionRewards, revertCompletionRewards } from '@/services/firestore/members';
+import { moveShoppingItemsToList } from '@/services/firestore/shopping';
 import {
   createShoppingList,
   markShoppingListCompleted,
@@ -181,6 +182,35 @@ export async function completeShoppingListFlow(
   } finally {
     completingLists.delete(list.id);
   }
+}
+
+export interface SplitShoppingListFlowInput {
+  gid: string;
+  sourceList: ShoppingList;
+  newListName: string;
+  /** Yeni listeye taşınacak (alınmamış) ürün kimlikleri. */
+  remainingItemIds: string[];
+  /** Kaynak listede kalan (alınan) ürün sayısı — puan buna göre. */
+  completedCount: number;
+  actor: Actor;
+  members: Member[];
+}
+
+/**
+ * "Pazardan eksik döndüm" akışı: kalan (alınmamış) ürünler için YENİ bir liste
+ * açar, o ürünleri oraya taşır ve kaynak listeyi (alınan ürün sayısına göre
+ * puanla) tamamlar. Kutlama için ödül özetini döndürür.
+ */
+export async function splitShoppingListFlow(
+  input: SplitShoppingListFlowInput,
+): Promise<CompletionReward | null> {
+  const { gid, sourceList, newListName, remainingItemIds, completedCount, actor, members } = input;
+  // 1) Kalanlar için yeni liste (üyelere bildirim + aktivite).
+  const newListId = await createShoppingListFlow({ gid, name: newListName, actor, members });
+  // 2) Alınmamış ürünleri yeni listeye taşı.
+  await moveShoppingItemsToList(gid, remainingItemIds, newListId);
+  // 3) Kaynak listeyi alınanlarla tamamla.
+  return completeShoppingListFlow({ list: sourceList, itemCount: completedCount, actor, members });
 }
 
 /** Listeyi geri açar ve yazılan puanı atanan kişiden geri alır. */

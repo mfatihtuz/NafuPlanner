@@ -8,6 +8,7 @@ import {
   orderBy,
   query,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 
 import type { ShoppingItem } from '@/domain/types';
@@ -47,6 +48,21 @@ export async function setShoppingItemChecked(
 
 export async function removeShoppingItem(gid: string, itemId: string): Promise<void> {
   await deleteDoc(doc(requireDb(), 'groups', gid, 'shopping', itemId));
+}
+
+/** Verilen ürünleri başka bir listeye taşır (listId değiştirir; tek partide). */
+export async function moveShoppingItemsToList(
+  gid: string,
+  itemIds: string[],
+  toListId: string,
+): Promise<void> {
+  if (itemIds.length === 0) return;
+  const db = requireDb();
+  const batch = writeBatch(db);
+  for (const id of itemIds) {
+    batch.update(doc(db, 'groups', gid, 'shopping', id), { listId: toListId });
+  }
+  await batch.commit();
 }
 
 /** Bir ürünün reyonunu (manuel kategori) ayarlar. */
