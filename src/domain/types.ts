@@ -303,7 +303,7 @@ export interface Badge {
 }
 
 /** Kullanıcı tanımlı gerçek ödüller (örn. "kazanan filmi seçer"). */
-export type RewardStatus = 'active' | 'won' | 'archived';
+export type RewardStatus = 'active' | 'claimed' | 'completed';
 
 export interface Reward {
   id: Id;
@@ -314,4 +314,14 @@ export interface Reward {
   createdBy: Id;
   createdAtMs: Millis;
   status: RewardStatus;
+  /** Ödülü alan (bozduran) kişi — tek seferlik sahiplik. */
+  claimedBy?: Id;
+  claimedByName?: string;
+  claimedAtMs?: Millis;
+  /** Ödülü "uygulayan" (herhangi bir üye); sahibinin onayına gider. */
+  fulfilledBy?: Id;
+  fulfilledByName?: string;
+  fulfilledAtMs?: Millis;
+  /** Sahibi onaylayınca (Tamamlanan'a geçince). */
+  completedAtMs?: Millis;
 }

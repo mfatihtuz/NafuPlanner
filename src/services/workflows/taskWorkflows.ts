@@ -1,11 +1,10 @@
 import { computeCompletionReward, type BadgeDef } from '@/domain/gamification';
 import { dayKeyFromMs, dueAtFromDayKey } from '@/domain/time';
-import type { ClockTime, DayKey, Member, RecurrenceRule, Reward, Task } from '@/domain/types';
+import type { ClockTime, DayKey, Member, RecurrenceRule, Task } from '@/domain/types';
 import { t } from '@/i18n';
 import { addActivity } from '@/services/firestore/activity';
 import { addComment } from '@/services/firestore/comments';
 import { applyCompletionRewards, revertCompletionRewards } from '@/services/firestore/members';
-import { redeemReward } from '@/services/firestore/rewards';
 import {
   createRecurrence,
   getRecurrence,
@@ -522,34 +521,3 @@ export async function commentTaskFlow(input: CommentFlowInput): Promise<void> {
   });
 }
 
-export interface RedeemRewardFlowInput {
-  reward: Reward;
-  actor: Actor;
-  members: Member[];
-}
-
-/** Ödülü kullanır: puan düşer, aktiviteye işlenir, eşe haber gider. */
-export async function redeemRewardFlow(input: RedeemRewardFlowInput): Promise<void> {
-  const { reward, actor, members } = input;
-  const me = members.find((m) => m.userId === actor.uid);
-  await redeemReward(reward.householdId, actor.uid, reward, me?.points ?? 0);
-
-  void addActivity({
-    householdId: reward.householdId,
-    type: 'reward_redeemed',
-    actorId: actor.uid,
-    actorName: actor.name,
-    taskTitle: reward.title,
-  });
-
-  void notifyMembers({
-    householdId: reward.householdId,
-    excludeUid: actor.uid,
-    title: t('push.rewardTitle'),
-    body: t('push.rewardBody', {
-      name: actor.name,
-      reward: reward.title,
-      cost: reward.costPoints ?? 0,
-    }),
-  });
-}

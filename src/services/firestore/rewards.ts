@@ -2,12 +2,14 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   increment,
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
@@ -59,38 +61,87 @@ export async function ensureWeeklySystemReward(gid: string): Promise<void> {
   });
 }
 
+export class RewardError extends Error {
+  constructor(public reason: 'already-claimed' | 'insufficient' | 'missing') {
+    super(reason);
+    this.name = 'RewardError';
+  }
+}
+
 /**
- * Ödülü kullanır: puanı düşer ve puan defterine işler. Ödül tekrar
- * kullanılabilir kalır (haneler "film seçme hakkı" gibi ödülleri yeniden
- * kullanır); kalıcı silme ayrı işlemdir.
+ * Ödülü ALIR (tek seferlik): bir transaction içinde ödül hâlâ 'active' mi ve
+ * puan yeterli mi diye bakar; öyleyse puanı düşer ve ödülü 'claimed' + sahibi
+ * bilgisiyle işaretler. Böylece aynı ödül iki kez alınıp puan boşa gitmez.
+ * (Çevrimdışıyken transaction başarısız olur → çevrimiçi olunca tekrar denenir.)
  */
-export async function redeemReward(
+export async function claimReward(
   gid: string,
   uid: string,
+  uidName: string,
   reward: Reward,
-  currentPoints: number,
 ): Promise<void> {
   const db = requireDb();
-  const cost = reward.costPoints ?? 0;
-  await updateDoc(doc(db, 'groups', gid, 'members', uid), {
-    points: increment(-cost),
-    level: levelForPoints(currentPoints - cost),
+  const rewardRef = doc(db, 'groups', gid, 'rewards', reward.id);
+  const memberRef = doc(db, 'groups', gid, 'members', uid);
+  await runTransaction(db, async (tx) => {
+    const rSnap = await tx.get(rewardRef);
+    if (!rSnap.exists()) throw new RewardError('missing');
+    const r = rSnap.data() as Reward;
+    if (r.status !== 'active') throw new RewardError('already-claimed');
+    const cost = r.costPoints ?? 0;
+    const mSnap = await tx.get(memberRef);
+    const points = (mSnap.data()?.points as number | undefined) ?? 0;
+    if (points < cost) throw new RewardError('insufficient');
+    tx.update(memberRef, {
+      points: increment(-cost),
+      level: levelForPoints(points - cost),
+    });
+    tx.update(rewardRef, {
+      status: 'claimed',
+      claimedBy: uid,
+      claimedByName: uidName,
+      claimedAtMs: Date.now(),
+    });
   });
+  // Puan defterine işle (transaction dışı; en iyi çaba — rebuildPoints ile tutarlı).
   await addDoc(collection(db, 'groups', gid, 'points'), {
     userId: uid,
-    delta: -cost,
+    delta: -(reward.costPoints ?? 0),
     reason: 'reward_redeemed',
     rewardId: reward.id,
     createdAtMs: Date.now(),
   });
-  // Haftalık sistem ödülü tek kullanımlıktır: kullanılınca "kazanıldı" olur ve
-  // o hafta tekrar bozdurulamaz. (Kullanıcının kendi ödülleri tekrar kullanılır.)
-  if (reward.createdBy === SYSTEM_REWARD_AUTHOR) {
-    await updateDoc(doc(db, 'groups', gid, 'rewards', reward.id), {
-      status: 'won',
-      winnerId: uid,
-    });
-  }
+}
+
+/** Ödülü "uygulandı" işaretler (herhangi bir üye); sahibinin onayına gider. */
+export async function fulfillReward(
+  gid: string,
+  rewardId: string,
+  byUid: string,
+  byName: string,
+): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'rewards', rewardId), {
+    fulfilledBy: byUid,
+    fulfilledByName: byName,
+    fulfilledAtMs: Date.now(),
+  });
+}
+
+/** Sahibi onaylar → Tamamlanan'a geçer. */
+export async function completeReward(gid: string, rewardId: string): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'rewards', rewardId), {
+    status: 'completed',
+    completedAtMs: Date.now(),
+  });
+}
+
+/** Sahibi reddeder → uygulama işareti temizlenir (tekrar uygulanabilir). */
+export async function clearRewardFulfillment(gid: string, rewardId: string): Promise<void> {
+  await updateDoc(doc(requireDb(), 'groups', gid, 'rewards', rewardId), {
+    fulfilledBy: deleteField(),
+    fulfilledByName: deleteField(),
+    fulfilledAtMs: deleteField(),
+  });
 }
 
 /** Hane ödüllerini canlı dinler (yeni → eski). */
