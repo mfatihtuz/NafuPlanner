@@ -400,13 +400,22 @@ function TaskFormInner({
             <View style={{ gap: spacing.sm }}>
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                 <Chip
-                  label={time ? t('tasks.time') : t('tasks.addTime')}
-                  leftSlot={<Icon name="clock" size={14} color={time ? colors.primaryDark : colors.textMuted} />}
+                  label={time ? t('tasks.reminderTime') : t('tasks.addReminder')}
+                  leftSlot={
+                    <Icon name="bell" size={14} color={time ? colors.primaryDark : colors.textMuted} />
+                  }
                   selected={time !== null}
                   onPress={() => setTime((prev) => (prev ? null : { hour: 9, minute: 0 }))}
                 />
               </View>
-              {time ? <TimeWheel value={time} onChange={setTime} /> : null}
+              {time ? (
+                <>
+                  <TimeWheel value={time} onChange={setTime} />
+                  <Text variant="caption" tone="muted">
+                    {t('tasks.reminderHint')}
+                  </Text>
+                </>
+              ) : null}
             </View>
           ) : null}
         </View>

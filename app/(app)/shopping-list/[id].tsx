@@ -541,9 +541,9 @@ export default function ShoppingListDetailScreen() {
               <View style={{ gap: spacing.sm }}>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                   <Chip
-                    label={dueTime ? t('tasks.time') : t('tasks.addTime')}
+                    label={dueTime ? t('tasks.reminderTime') : t('tasks.addReminder')}
                     leftSlot={
-                      <Icon name="clock" size={14} color={dueTime ? colors.primaryDark : colors.textMuted} />
+                      <Icon name="bell" size={14} color={dueTime ? colors.primaryDark : colors.textMuted} />
                     }
                     selected={dueTime !== null}
                     onPress={() => applyReminder(dueDayKey, dueTime ? null : { hour: 9, minute: 0 })}
