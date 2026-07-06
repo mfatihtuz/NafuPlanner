@@ -1,0 +1,234 @@
+import { DIFFICULTY_META, POINTS_PER_LEVEL, PRIORITY_POINT_MULTIPLIER } from './constants';
+import { isConsecutiveDay } from './time';
+import type { Badge, DayKey, Difficulty, Millis, Priority, ShoppingList, Task } from './types';
+
+/**
+ * Saf oyunlaştırma kuralları — yan etkisiz, kolayca test edilebilir.
+ */
+
+/** Bir görevi tamamlayınca kazanılan puan: efor tabanı × öncelik çarpanı. */
+export function pointsForTask(priority: Priority, difficulty: Difficulty = 'medium'): number {
+  return Math.round(DIFFICULTY_META[difficulty].base * PRIORITY_POINT_MULTIPLIER[priority]);
+}
+
+/**
+ * Alışveriş listesi tamamlanınca kazanılan puan — ürün sayısına göre, alt/üst
+ * sınırlı (3 puan/ürün, en az 5, en çok 30). Boş liste puan vermez.
+ */
+export function shoppingListPoints(itemCount: number): number {
+  if (itemCount <= 0) return 0;
+  return Math.min(30, Math.max(5, itemCount * 3));
+}
+
+/** Toplam puandan seviye (1 tabanlı). */
+export function levelForPoints(points: number): number {
+  if (points <= 0) return 1;
+  return Math.floor(points / POINTS_PER_LEVEL) + 1;
+}
+
+/** İçinde bulunulan seviyedeki ilerleme (0..1). */
+export function levelProgress(points: number): number {
+  const into = ((points % POINTS_PER_LEVEL) + POINTS_PER_LEVEL) % POINTS_PER_LEVEL;
+  return into / POINTS_PER_LEVEL;
+}
+
+/** Bir sonraki seviyeye kalan puan. */
+export function pointsToNextLevel(points: number): number {
+  const current = levelForPoints(points);
+  return current * POINTS_PER_LEVEL - points;
+}
+
+// --- Seri (streak) -------------------------------------------------------------
+
+export interface StreakState {
+  streakCount: number;
+  lastActiveDayKey?: DayKey;
+}
+
+/**
+ * Görev tamamlama gününe göre seriyi ilerletir: aynı gün → değişmez,
+ * ardışık gün → +1, araya boşluk girdiyse → 1'den başlar.
+ */
+export function advanceStreak(state: StreakState, todayKey: DayKey): StreakState {
+  if (state.lastActiveDayKey === todayKey) return state;
+  if (state.lastActiveDayKey && isConsecutiveDay(state.lastActiveDayKey, todayKey)) {
+    return { streakCount: state.streakCount + 1, lastActiveDayKey: todayKey };
+  }
+  return { streakCount: 1, lastActiveDayKey: todayKey };
+}
+
+// --- Rozetler -------------------------------------------------------------------
+
+export interface BadgeStats {
+  tasksCompleted: number;
+  points: number;
+  streakCount: number;
+}
+
+export interface BadgeDef extends Badge {
+  /** Hangi istatistik eşiği bu rozeti kazandırır. */
+  metric: keyof BadgeStats;
+  threshold: number;
+}
+
+/** Rozet kataloğu (eşik tabanlı; kazanılan rozet kalıcıdır). */
+export const BADGES: readonly BadgeDef[] = [
+  {
+    key: 'first_task',
+    name: 'İlk Adım',
+    description: 'İlk görevini tamamla',
+    icon: 'star',
+    metric: 'tasksCompleted',
+    threshold: 1,
+  },
+  {
+    key: 'tasks_25',
+    name: 'Çalışkan Arı',
+    description: '25 görev tamamla',
+    icon: 'check',
+    metric: 'tasksCompleted',
+    threshold: 25,
+  },
+  {
+    key: 'tasks_100',
+    name: 'Görev Canavarı',
+    description: '100 görev tamamla',
+    icon: 'trophy',
+    metric: 'tasksCompleted',
+    threshold: 100,
+  },
+  {
+    key: 'streak_3',
+    name: 'Isınıyor',
+    description: '3 günlük seri yakala',
+    icon: 'flame',
+    metric: 'streakCount',
+    threshold: 3,
+  },
+  {
+    key: 'streak_7',
+    name: 'Haftalık Seri',
+    description: '7 günlük seri yakala',
+    icon: 'flame',
+    metric: 'streakCount',
+    threshold: 7,
+  },
+  {
+    key: 'streak_30',
+    name: 'Demir İrade',
+    description: '30 günlük seri yakala',
+    icon: 'flame',
+    metric: 'streakCount',
+    threshold: 30,
+  },
+  {
+    key: 'points_500',
+    name: 'Puan Avcısı',
+    description: '500 puana ulaş',
+    icon: 'sparkles',
+    metric: 'points',
+    threshold: 500,
+  },
+  {
+    key: 'points_2000',
+    name: 'Efsane',
+    description: '2000 puana ulaş',
+    icon: 'trophy',
+    metric: 'points',
+    threshold: 2000,
+  },
+] as const;
+
+/** Yeni kazanılan rozetler: hak edilenler − halihazırda sahip olunanlar. */
+export function newlyEarnedBadges(stats: BadgeStats, owned: string[]): BadgeDef[] {
+  const ownedSet = new Set(owned);
+  return BADGES.filter((b) => stats[b.metric] >= b.threshold && !ownedSet.has(b.key));
+}
+
+// --- Tamamlama ödülü (görev + alışveriş ortak) ---------------------------------
+
+export interface MemberRewardState {
+  points?: number;
+  streakCount?: number;
+  lastActiveDayKey?: DayKey;
+  tasksCompleted?: number;
+  earnedBadgeKeys?: string[];
+}
+
+export interface CompletionComputation {
+  beforePoints: number;
+  afterPoints: number;
+  streak: StreakState;
+  newBadges: BadgeDef[];
+  levelBefore: number;
+  levelAfter: number;
+}
+
+/**
+ * Bir tamamlama için puan/seri/seviye/rozet hesaplaması (saf). Görev ve
+ * alışveriş akışları bunu paylaşır. `countsTowardTaskBadges` yalnız GÖREVLER
+ * için true'dur; alışveriş tamamlama görev rozeti sayacını şişirmez (adalet).
+ */
+export function computeCompletionReward(opts: {
+  member: MemberRewardState | undefined;
+  pointsDelta: number;
+  todayKey: DayKey;
+  countsTowardTaskBadges: boolean;
+}): CompletionComputation {
+  const m = opts.member;
+  const beforePoints = m?.points ?? 0;
+  const afterPoints = beforePoints + opts.pointsDelta;
+  const streak = advanceStreak(
+    { streakCount: m?.streakCount ?? 0, lastActiveDayKey: m?.lastActiveDayKey },
+    opts.todayKey,
+  );
+  const taskCount = (m?.tasksCompleted ?? 0) + (opts.countsTowardTaskBadges ? 1 : 0);
+  const newBadges = newlyEarnedBadges(
+    { tasksCompleted: taskCount, points: afterPoints, streakCount: streak.streakCount },
+    m?.earnedBadgeKeys ?? [],
+  );
+  return {
+    beforePoints,
+    afterPoints,
+    streak,
+    newBadges,
+    levelBefore: levelForPoints(beforePoints),
+    levelAfter: levelForPoints(afterPoints),
+  };
+}
+
+// --- Haftalık lider tablosu -----------------------------------------------------
+
+/** Haftanın başlangıcı (Pazartesi 00:00, yerel saat). */
+export function startOfWeekMs(now: Millis): Millis {
+  const d = new Date(now);
+  const sinceMonday = (d.getDay() + 6) % 7; // Pzt=0 … Paz=6
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - sinceMonday).getTime();
+}
+
+/**
+ * Bu hafta tamamlanan GÖREV + ALIŞVERİŞ listelerinden üye başına puan toplar.
+ * Puan, görevde tamamlayana; alışverişte tamamlanma kaydındaki kişiye (atanan
+ * yoksa tamamlayan) yazılır — yani `completedBy` ve saklanan `awardedPoints`.
+ */
+export function weeklyPoints(
+  tasks: Task[],
+  lists: ShoppingList[],
+  now: Millis,
+): Map<string, number> {
+  const weekStart = startOfWeekMs(now);
+  const totals = new Map<string, number>();
+  const add = (uid: string, pts: number) => totals.set(uid, (totals.get(uid) ?? 0) + pts);
+
+  for (const task of tasks) {
+    if (task.status !== 'done' || !task.completedBy) continue;
+    if (task.completedAtMs == null || task.completedAtMs < weekStart) continue;
+    add(task.completedBy, task.points);
+  }
+  for (const list of lists) {
+    if (list.status !== 'done' || !list.completedBy) continue;
+    if (list.completedAtMs == null || list.completedAtMs < weekStart) continue;
+    add(list.completedBy, list.awardedPoints ?? 0);
+  }
+  return totals;
+}

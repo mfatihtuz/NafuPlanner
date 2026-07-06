@@ -1,0 +1,267 @@
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, Pressable, Switch, View } from 'react-native';
+
+import type { ClockTime, UserSettings } from '@/domain/types';
+import { t } from '@/i18n';
+import { useAuth } from '@/services/auth/AuthProvider';
+import { firestoreErrorMessage } from '@/services/firestore/errors';
+import { deleteUserData, saveUserSettings } from '@/services/firestore/users';
+import { useHousehold } from '@/services/household/HouseholdProvider';
+import { Button, Card, Screen, Text, TimeWheel } from '@/ui';
+import { useColors, useTheme, type ThemePref } from '@/ui/theme';
+import { radii } from '@/ui/theme/radii';
+import { spacing } from '@/ui/theme/spacing';
+
+const DEFAULT_QUIET_START: ClockTime = { hour: 22, minute: 0 };
+const DEFAULT_QUIET_END: ClockTime = { hour: 7, minute: 0 };
+const DEFAULT_DIGEST: ClockTime = { hour: 8, minute: 0 };
+
+function SettingRow({
+  title,
+  hint,
+  value,
+  onChange,
+}: {
+  title: string;
+  hint: string;
+  value: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  const colors = useColors();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+      <View style={{ flex: 1 }}>
+        <Text variant="bodyStrong">{title}</Text>
+        <Text variant="caption" tone="secondary">
+          {hint}
+        </Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ true: colors.primary, false: colors.border }}
+        thumbColor="#FFFFFF"
+      />
+    </View>
+  );
+}
+
+export default function SettingsScreen() {
+  const colors = useColors();
+  const { pref: themePref, setPref: setThemePref } = useTheme();
+  const router = useRouter();
+  const { user, deleteAccount } = useAuth();
+  const { profile, household } = useHousehold();
+  const [deleting, setDeleting] = useState(false);
+
+  const initial = profile?.settings;
+  const [quietEnabled, setQuietEnabled] = useState(Boolean(initial?.quietHoursStart));
+  const [quietStart, setQuietStart] = useState<ClockTime>(
+    initial?.quietHoursStart ?? DEFAULT_QUIET_START,
+  );
+  const [quietEnd, setQuietEnd] = useState<ClockTime>(initial?.quietHoursEnd ?? DEFAULT_QUIET_END);
+  const [digestEnabled, setDigestEnabled] = useState(initial?.dailyDigestEnabled ?? false);
+  const [digestTime, setDigestTime] = useState<ClockTime>(
+    initial?.dailyDigestTime ?? DEFAULT_DIGEST,
+  );
+  const [nudgesEnabled, setNudgesEnabled] = useState(initial?.nudgesEnabled ?? true);
+  const [saving, setSaving] = useState(false);
+
+  const onDeleteAccount = () => {
+    if (!user) return;
+    Alert.alert(
+      t('settings.deleteAccountConfirmTitle'),
+      t('settings.deleteAccountConfirmBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => {
+            setDeleting(true);
+            (async () => {
+              try {
+                await deleteUserData(user.uid, household?.id ?? null);
+                await deleteAccount();
+                // AuthGate, oturum düşünce giriş ekranına yönlendirir.
+              } catch (error) {
+                const code = (error as { code?: string }).code;
+                Alert.alert(
+                  t('common.appName'),
+                  code === 'auth/requires-recent-login'
+                    ? t('settings.deleteAccountRecentLogin')
+                    : t('common.error'),
+                );
+              } finally {
+                setDeleting(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
+
+  const onSave = async () => {
+    if (!user) return;
+    const settings: UserSettings = {
+      quietHoursStart: quietEnabled ? quietStart : undefined,
+      quietHoursEnd: quietEnabled ? quietEnd : undefined,
+      dailyDigestEnabled: digestEnabled,
+      dailyDigestTime: digestEnabled ? digestTime : undefined,
+      nudgesEnabled,
+    };
+    setSaving(true);
+    try {
+      await saveUserSettings(user.uid, household?.id ?? null, settings);
+      router.back();
+    } catch (error) {
+      console.warn('[settings] kaydedilemedi', error);
+      Alert.alert(t('common.appName'), firestoreErrorMessage(error, t('common.error')));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Screen scroll padded edges={['left', 'right', 'bottom']}>
+      <View style={{ gap: spacing.lg, paddingBottom: spacing.xxl }}>
+        {/* Görünüm: tema seçimi (canlı geçiş) */}
+        <Text variant="overline" tone="secondary">
+          {t('settings.appearance')}
+        </Text>
+        <Card style={{ gap: spacing.sm }}>
+          <Text variant="caption" tone="secondary">
+            {t('settings.appearanceHint')}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            {(['system', 'light', 'dark'] as ThemePref[]).map((opt) => {
+              const selected = themePref === opt;
+              const label =
+                opt === 'system'
+                  ? t('settings.themeSystem')
+                  : opt === 'light'
+                    ? t('settings.themeLight')
+                    : t('settings.themeDark');
+              return (
+                <Pressable
+                  key={opt}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => setThemePref(opt)}
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    paddingVertical: spacing.sm,
+                    borderRadius: radii.md,
+                    borderWidth: 1.5,
+                    borderColor: selected ? colors.primary : colors.border,
+                    backgroundColor: selected ? colors.primaryTint : colors.surface,
+                  }}
+                >
+                  <Text
+                    variant="small"
+                    style={{
+                      color: selected ? colors.primaryDark : colors.textSecondary,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+
+        <Text variant="overline" tone="secondary">
+          {t('settings.notifications')}
+        </Text>
+
+        <Card style={{ gap: spacing.md }}>
+          <SettingRow
+            title={t('settings.quietHours')}
+            hint={t('settings.quietHoursHint')}
+            value={quietEnabled}
+            onChange={setQuietEnabled}
+          />
+          {quietEnabled ? (
+            <View style={{ gap: spacing.sm }}>
+              <Text variant="caption" tone="muted">
+                {t('settings.quietStart')}
+              </Text>
+              <TimeWheel value={quietStart} onChange={setQuietStart} />
+              <Text variant="caption" tone="muted">
+                {t('settings.quietEnd')}
+              </Text>
+              <TimeWheel value={quietEnd} onChange={setQuietEnd} />
+            </View>
+          ) : null}
+        </Card>
+
+        <Card style={{ gap: spacing.md }}>
+          <SettingRow
+            title={t('settings.dailyDigest')}
+            hint={t('settings.dailyDigestHint')}
+            value={digestEnabled}
+            onChange={setDigestEnabled}
+          />
+          {digestEnabled ? (
+            <View style={{ gap: spacing.sm }}>
+              <Text variant="caption" tone="muted">
+                {t('settings.digestTime')}
+              </Text>
+              <TimeWheel value={digestTime} onChange={setDigestTime} />
+            </View>
+          ) : null}
+        </Card>
+
+        <Card style={{ gap: spacing.md }}>
+          <SettingRow
+            title={t('settings.nudges')}
+            hint={t('settings.nudgesHint')}
+            value={nudgesEnabled}
+            onChange={setNudgesEnabled}
+          />
+        </Card>
+
+        <Text variant="caption" tone="muted" center>
+          {t('settings.pushNote')}
+        </Text>
+
+        <Button title={t('common.save')} onPress={() => void onSave()} loading={saving} />
+
+        {/* Hane yönetimi */}
+        <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
+          <Text variant="overline" tone="secondary">
+            {t('settings.household')}
+          </Text>
+          <Button
+            title={t('categories.title')}
+            variant="secondary"
+            onPress={() => router.push('/categories')}
+          />
+        </View>
+
+        {/* Hesap silme (App Store 5.1.1 zorunluluğu) */}
+        <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
+          <Text variant="overline" tone="secondary">
+            {t('settings.account')}
+          </Text>
+          <Card style={{ gap: spacing.sm }}>
+            <Text variant="caption" tone="secondary">
+              {t('settings.deleteAccountHint')}
+            </Text>
+            <Button
+              title={t('settings.deleteAccount')}
+              variant="danger"
+              loading={deleting}
+              onPress={onDeleteAccount}
+            />
+          </Card>
+        </View>
+      </View>
+    </Screen>
+  );
+}

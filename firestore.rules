@@ -1,0 +1,113 @@
+rules_version = '2';
+
+// Nafu Planlayıcı — Firestore güvenlik kuralları.
+// Temel ilke: hane verisine YALNIZCA o hanenin üyeleri erişir.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isMember(gid) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/groups/$(gid)/members/$(request.auth.uid));
+    }
+
+    // Kullanıcı profili: yalnızca sahibi okur/yazar.
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Davetler: kod bilen (giriş yapmış) kullanıcı tek belge okuyabilir;
+    // listeleme kapalı (kod tahmini pratikte imkânsız). Yalnızca hane üyesi
+    // davet oluşturabilir.
+    match /invitations/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && isMember(request.resource.data.householdId);
+      allow update, delete: if signedIn() && isMember(resource.data.householdId);
+    }
+
+    match /groups/{gid} {
+      allow get: if isMember(gid);
+      allow list: if false;
+      // Hane kurma: kurucu kendisi olmalı ve tek üye kendisi olmalı.
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid];
+      allow update: if isMember(gid);
+      allow delete: if false;
+
+      // Üyelikler: kurucu kendi üyeliğini açar; diğerleri geçerli davet
+      // koduyla KENDİ üyeliğini oluşturur (üyelik belgesinde inviteCode alanı).
+      match /members/{uid} {
+        allow read: if isMember(gid);
+        allow create: if signedIn() && request.auth.uid == uid && (
+          get(/databases/$(database)/documents/groups/$(gid)).data.createdBy == request.auth.uid
+          || (
+            request.resource.data.inviteCode is string
+            && get(/databases/$(database)/documents/invitations/$(request.resource.data.inviteCode)).data.householdId == gid
+            && get(/databases/$(database)/documents/invitations/$(request.resource.data.inviteCode)).data.status == 'pending'
+            && request.time.toMillis() < get(/databases/$(database)/documents/invitations/$(request.resource.data.inviteCode)).data.expiresAtMs
+          )
+        );
+        allow update: if isMember(gid);
+        allow delete: if signedIn() && (request.auth.uid == uid || isMember(gid));
+      }
+
+      match /categories/{cid} {
+        allow read, write: if isMember(gid);
+      }
+
+      match /tasks/{tid} {
+        allow read, write: if isMember(gid);
+
+        match /comments/{cid} {
+          allow read, write: if isMember(gid);
+        }
+        match /attachments/{aid} {
+          allow read, write: if isMember(gid);
+        }
+      }
+
+      match /shopping/{iid} {
+        allow read, write: if isMember(gid);
+      }
+
+      match /shoppingLists/{lid} {
+        allow read, write: if isMember(gid);
+      }
+
+      match /recurrences/{rid} {
+        allow read, write: if isMember(gid);
+      }
+
+      match /activity/{aid} {
+        allow read, write: if isMember(gid);
+      }
+
+      match /points/{pid} {
+        allow read, write: if isMember(gid);
+      }
+
+      match /rewards/{rid} {
+        allow read, write: if isMember(gid);
+      }
+
+      // Bildirim kuyruğu: üye yalnız istek OLUŞTURUR; gönderimi Cloud Function
+      // (admin) yapar ve belgeyi siler. İstemci okuyamaz/silemez.
+      match /outbox/{oid} {
+        allow create: if isMember(gid);
+        allow read, update, delete: if false;
+      }
+
+      // Ertelenen (sessiz saat) bildirimler — yalnızca sunucu (admin) erişir.
+      match /deferred/{did} {
+        allow read, write: if false;
+      }
+    }
+  }
+}
